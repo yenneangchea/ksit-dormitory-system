@@ -55,7 +55,7 @@ function decodeSession(req) {
  */
 const login = async (req, res, next) => {
   try {
-    const { identifier, password, role } = req.body;
+    const { identifier, password } = req.body;
 
     if (!identifier || !password) {
       const error = new Error('Please provide an email or Telegram ID and a password.');
@@ -73,9 +73,6 @@ const login = async (req, res, next) => {
       ? query.eq('email', identifier.trim().toLowerCase())
       : query.eq('telegram_id', identifier.trim());
 
-    if (role) {
-      query = query.eq('role', role);
-    }
 
     const { data: users, error: queryError } = await query;
     if (queryError) {

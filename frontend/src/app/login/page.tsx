@@ -1,261 +1,147 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { authAPI } from "@/lib/api";
-import type { UserRole } from "@/types";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { LoaderCircle, LockKeyhole, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { authAPI } from '@/lib/api';
+import type { UserRole } from '@/types';
 
-const ROLES: { value: UserRole; label: string; description: string; color: string }[] = [
-  {
-    value: "admin",
-    label: "Admin",
-    description: "System administrator",
-    color: "bg-red-100 text-red-700 hover:bg-red-200 border-red-300",
-  },
-  {
-    value: "manager",
-    label: "Manager",
-    description: "Dormitory manager",
-    color: "bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-300",
-  },
-  {
-    value: "teacher",
-    label: "Teacher",
-    description: "Teaching staff",
-    color: "bg-green-100 text-green-700 hover:bg-green-200 border-green-300",
-  },
-  {
-    value: "student",
-    label: "Student",
-    description: "Dormitory resident",
-    color: "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-300",
-  },
-];
+const dashboardByRole: Record<UserRole, string> = {
+  admin: '/dashboard/admin',
+  manager: '/dashboard/manager',
+  teacher: '/dashboard/teacher',
+  student: '/dashboard/student',
+};
 
 export default function LoginPage() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const handleRoleSelect = (role: UserRole) => {
-    setSelectedRole(role);
-    setError("");
-  };
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
 
-  const handleBack = () => {
-    setSelectedRole(null);
-    setIdentifier("");
-    setPassword("");
-    setError("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
+    const identifier = email.trim().toLowerCase();
     if (!identifier || !password) {
-      setError("Please fill in all fields");
+      setError('Enter your registered email address and password.');
       return;
     }
 
     setIsLoading(true);
-
     try {
-      const response = await authAPI.login({
-        identifier,
-        password,
-        role: selectedRole || undefined,
-      });
+      // The Express endpoint verifies the password and returns the role stored in the user profile.
+      // No role is sent from the browser, so the redirect cannot be selected by the user interface.
+      const response = await authAPI.login({ identifier, password });
+      const role = response.user?.role;
+      const destination = role ? dashboardByRole[role] : undefined;
 
-      if (response.success && response.user && response.token) {
-        localStorage.setItem("user", JSON.stringify(response.user));
-        localStorage.setItem("ksit_session_token", response.token);
-        
-        // Redirect based on role
-        switch (response.user.role) {
-          case "admin":
-            router.push("/dashboard/admin");
-            break;
-          case "manager":
-            router.push("/dashboard/manager");
-            break;
-          case "teacher":
-            router.push("/dashboard/teacher");
-            break;
-          case "student":
-            router.push("/dashboard/student");
-            break;
-          default:
-            router.push("/dashboard");
-        }
-      } else {
-        setError(response.error?.message || "Login failed. Please check your credentials.");
+      if (!response.success || !response.user || !response.token || !destination) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('ksit_session_token');
+        setError(response.error?.message || 'Your account does not have a valid dashboard assignment. Please contact the system administrator.');
+        return;
       }
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
-      console.error("Login error:", err);
+
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('ksit_session_token', response.token);
+      router.replace(destination);
+    } catch {
+      setError('We could not complete your sign-in. Check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-4 hover:opacity-80 transition-opacity">
-            <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">K</span>
-            </div>
-            <div className="text-left">
-              <h1 className="font-bold text-xl leading-tight">KSIT Dormitory</h1>
-              <p className="text-sm text-gray-600">Management System</p>
-            </div>
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_#e9f5ed,_transparent_43%),linear-gradient(135deg,_#f8faf7,_#eef5ef)] px-4 py-10">
+      <section className="w-full max-w-md" aria-labelledby="login-title">
+        <div className="mb-8 text-center">
+          <Link href="/" className="inline-flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/70" aria-label="Back to KSIT Dormitory home">
+            <span className="flex size-11 items-center justify-center rounded-xl bg-[#0b5c2c] text-xl font-extrabold text-white shadow-sm">K</span>
+            <span className="text-left">
+              <span className="block text-[15px] font-bold tracking-[-0.02em] text-[#18231d]">KSIT Dormitory</span>
+              <span className="block text-xs text-[#68736c]">Management System</span>
+            </span>
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900 mt-6">Welcome Back</h2>
-          <p className="text-gray-600 mt-2">Sign in to access your dashboard</p>
         </div>
 
-        {/* Role Selection or Login Form */}
-        {!selectedRole ? (
-          <div>
-            <p className="text-center text-gray-700 font-medium mb-6">Select your role to continue</p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {ROLES.map((role) => (
-                <Card
-                  key={role.value}
-                  className="cursor-pointer transition-all hover:shadow-xl hover:scale-105 border-2"
-                  onClick={() => handleRoleSelect(role.value)}
-                >
-                  <CardHeader className="text-center pb-3">
-                    <div className={`w-16 h-16 rounded-full ${role.color.split(" ")[0]} mx-auto mb-3 flex items-center justify-center`}>
-                      {role.value === "admin" && (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                      )}
-                      {role.value === "manager" && (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      )}
-                      {role.value === "teacher" && (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      )}
-                      {role.value === "student" && (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      )}
-                    </div>
-                    <CardTitle className="text-xl">{role.label}</CardTitle>
-                    <CardDescription>{role.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              ))}
+        <Card className="border-[#dce6dd] bg-white/95 shadow-xl shadow-[#183d2430]">
+          <CardHeader className="space-y-3 pb-5 text-center">
+            <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#eaf6ec] text-[#0b5c2c]">
+              <LockKeyhole className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <CardTitle id="login-title" className="text-2xl font-bold tracking-[-0.03em] text-[#18231d]">Sign in to KSIT Dormitory</CardTitle>
+              <CardDescription className="mt-2 text-sm leading-6 text-[#68736c]">Use your registered email and password. Your assigned role will open the correct dashboard automatically.</CardDescription>
             </div>
-            <div className="text-center mt-8">
-              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
-                ← Back to Home
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <Card className="max-w-md mx-auto border-2 shadow-xl">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <Badge className={ROLES.find((r) => r.value === selectedRole)?.color}>
-                  {ROLES.find((r) => r.value === selectedRole)?.label}
-                </Badge>
-              </div>
-              <CardTitle className="text-2xl">Sign In</CardTitle>
-              <CardDescription>
-                Enter your credentials to access your {selectedRole} dashboard
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                    {error}
-                  </div>
-                )}
+          </CardHeader>
 
-                <div className="space-y-2">
-                  <Label htmlFor="identifier">Email or Telegram ID</Label>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isLoading}>
+              {error && (
+                <div role="alert" className="rounded-xl border border-[#f3c8c1] bg-[#fff4f2] px-4 py-3 text-sm leading-5 text-[#a4382a]">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[#39473f]">Email address</Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#718077]" aria-hidden="true" />
                   <Input
-                    id="identifier"
-                    type="text"
-                    placeholder="email@example.com or @username"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@ksit.edu.kh"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (error) setError('');
+                    }}
                     disabled={isLoading}
                     required
-                  />
-                  <p className="text-xs text-gray-500">
-                    Enter your registered email address or Telegram ID
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
+                    className="h-11 border-[#dce3dc] pl-10 focus-visible:ring-[#0b5c2c]"
                   />
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Signing in...
-                    </span>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-
-                <div className="text-center space-y-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-sm"
-                    onClick={handleBack}
-                    disabled={isLoading}
-                  >
-                    ← Change Role
-                  </Button>
-                </div>
-              </form>
-
-              <div className="mt-6 pt-6 border-t text-center text-sm text-gray-600">
-                <p>Need help? Contact your system administrator</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[#39473f]">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (error) setError('');
+                  }}
+                  disabled={isLoading}
+                  required
+                  className="h-11 border-[#dce3dc] focus-visible:ring-[#0b5c2c]"
+                />
+              </div>
+
+              <Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>
+                {isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" aria-hidden="true" />Signing in securely…</> : 'Sign In'}
+              </Button>
+            </form>
+
+            <p className="mt-6 border-t border-[#edf0ed] pt-5 text-center text-xs leading-5 text-[#68736c]">
+              Need help accessing your account? Contact the dormitory system administrator.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+    </main>
   );
 }

@@ -75,7 +75,7 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, authenti
 }
 
 export const authAPI = {
-  login: (credentials: { identifier: string; password: string; role?: UserRole }) =>
+  login: (credentials: { identifier: string; password: string }) =>
     fetchAPI<never>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) }, false),
   logout: () => fetchAPI<never>('/api/auth/logout', { method: 'POST' }),
   getCurrentUser: () => fetchAPI<never>('/api/auth/me'),
