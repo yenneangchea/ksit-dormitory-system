@@ -76,9 +76,9 @@ export default function LoginPage() {
         role: selectedRole || undefined,
       });
 
-      if (response.success && response.user) {
-        // Store user data in localStorage (in production, use secure session management)
+      if (response.success && response.user && response.token) {
         localStorage.setItem("user", JSON.stringify(response.user));
+        localStorage.setItem("ksit_session_token", response.token);
         
         // Redirect based on role
         switch (response.user.role) {

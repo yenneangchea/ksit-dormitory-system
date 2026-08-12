@@ -1,263 +1,150 @@
 # KSIT Dormitory Management System
 
-A comprehensive dormitory management system for Kampong Speu Institute of Technology (KSIT), built with modern web technologies.
+The **KSIT Dormitory Management System** is a role-based residence operations platform for Kampong Speu Institute of Technology. It combines a reference-matched management workspace with application review, waterfall room allocation, utility splitting with per-student KHQR payment references, Magic QR attendance, and maintenance ticket handling.
 
-## 🚀 Quick Start
+## Delivered capabilities
 
-**System is Ready!** Both servers are running:
+| Area | Implementation |
+| --- | --- |
+| Role access | Dedicated **Admin**, **Manager**, **Teacher**, and **Student** dashboards with a shared portal shell and role selector. |
+| Residence setup | Building and room APIs, a manager inventory panel, room capacity tracking, and unique room Magic QR values. |
+| Room allocation | A waterfall assignment service that prioritizes compatible gender, matching major/year cohorts, fuller suitable rooms, then building/floor/room order. |
+| Billing | Meter-based electricity, water, and trash calculations; equal active-resident splits; per-student amount and KHQR payment reference generation. |
+| Attendance | Magic QR room validation, active-resident verification, daily attendance upsert, and a teacher recording workflow. |
+| Maintenance | Student Magic QR ticket submission, manager/admin status updates, resolution notes, and role-filtered ticket lists. |
+| Supabase | A directly executable schema is available at `supabase/schema.sql`; the backend uses a server-side Supabase client. |
+| Visual design | The manager dashboard at `/dashboard/manager` reproduces the supplied KSIT reference hierarchy, colors, white card surfaces, compact controls, KPI grid, mint tab rail, and inventory empty state. |
 
-- **Frontend:** http://localhost:3000 ✅
-- **Backend:** http://localhost:5000 ✅
-- **Status:** See `YOUR_SYSTEM_IS_READY.md` for details
+## Architecture
 
-**Next Step:** Set up database schema → See `SUPABASE_SETUP.md`
-
-## 🏗️ Project Structure
-
-```
+```text
 ksit-dormitory-system/
-├── backend/                 # Express.js REST API
-│   ├── config/             # Configuration files
-│   ├── controllers/        # Route controllers
-│   ├── middleware/         # Express middleware
-│   ├── routes/             # API routes
-│   └── server.js           # Main server entry point
-├── frontend/               # Next.js web application
-│   └── src/
-│       ├── app/            # Next.js App Router pages
-│       ├── components/     # React components (shadcn/ui)
-│       ├── lib/            # Utilities and API client
-│       └── types/          # TypeScript type definitions
-└── system_design.md        # Database schema and system design
+├── frontend/                 Next.js 15.5 + React 19 portal
+│   ├── src/app/              App Router routes and four role dashboards
+│   ├── src/components/       Shared KSIT portal shell
+│   ├── src/lib/api.ts        Typed authenticated API client
+│   ├── public/ksit-logo.png  Shared header asset
+│   └── .env.local.example    Browser-safe configuration template
+├── backend/                  Node.js + Express REST API
+│   ├── config/               Lazy server-side Supabase client
+│   ├── controllers/          Auth and domain workflow services
+│   ├── middleware/           Token and role authorization middleware
+│   ├── routes/               Auth and protected domain API routes
+│   └── .env.example          Server-side configuration template
+├── supabase/schema.sql       PostgreSQL/Supabase DDL, types, and triggers
+└── system_design.md          Source schema specification
 ```
 
-## 🚀 Tech Stack
+## Requirements
 
-### Backend
-- **Node.js** + **Express.js** - REST API framework
-- **Supabase** (PostgreSQL) - Database with real-time capabilities
-- **CORS** - Cross-origin resource sharing
-- **dotenv** - Environment variable management
+Use **Node.js 18 or newer** and npm. The project was validated using Next.js **15.5.23**, React **19.1.1**, Express **5**, and the Supabase JavaScript client.
 
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS v4** - Utility-first CSS framework
-- **shadcn/ui** - Beautiful, accessible component library
-- **React 19** - Latest React features
+## Local setup
 
-## 📋 Features Implemented
+First apply `supabase/schema.sql` in the Supabase SQL Editor. This creates the user, profile, building, room, application, assignment, utility, bill, attendance, and maintenance tables, along with occupancy support indexes and triggers.
 
-### ✅ Phase 1: Authentication & Landing (Current)
-
-#### Backend
-- [x] Express server with error handling
-- [x] Supabase client configuration
-- [x] Authentication API (`/api/auth/login`)
-- [x] Mock login endpoint (validates against users table)
-- [x] CORS configuration for frontend
-
-#### Frontend
-- [x] Modern, responsive landing page
-- [x] Role-based login system (Admin, Manager, Teacher, Student)
-- [x] Role selection with visual cards
-- [x] Login form with email/telegram_id support
-- [x] Dashboard pages for all 4 roles
-- [x] Protected routes with role verification
-- [x] API client with authentication methods
-- [x] TypeScript types matching database schema
-
-### 🔄 Phase 2: Core Features (Planned)
-
-- [ ] Student dormitory applications with document upload
-- [ ] Waterfall auto-assignment algorithm
-- [ ] Room management interface
-- [ ] Utility bill creation and split calculation
-- [ ] KHQR (Bakong QR) payment integration
-- [ ] Attendance tracking with Magic QR codes
-- [ ] Maintenance request system
-- [ ] Student profile management
-
-## 🗄️ Database Schema
-
-The complete PostgreSQL schema is defined in `system_design.md` and includes:
-
-| Table | Description |
-|-------|-------------|
-| `users` | User credentials and profiles (4 roles) |
-| `academic_profiles` | Detailed student academic information |
-| `buildings` | Dormitory building information |
-| `rooms` | Room details with Magic QR codes |
-| `room_applications` | Student applications with document verification |
-| `room_assignments` | Bed assignments and history |
-| `utility_bills` | Monthly utility bills per room |
-| `student_bills` | Individual student bills with KHQR |
-| `attendances` | Daily room attendance records |
-| `maintenance_requests` | Maintenance tickets and tracking |
-
-## 🛠️ Setup Instructions
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Supabase account (or PostgreSQL database)
-- Git
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd ksit-dormitory-system
-```
-
-### 2. Backend Setup
+Create the backend configuration from the template. The service role key remains only in the backend and must never be added to a browser environment file.
 
 ```bash
 cd backend
+cp .env.example .env
 npm install
 ```
 
-Create `.env` file:
+Configure `backend/.env` with actual project values.
+
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 PORT=5000
 NODE_ENV=development
-JWT_SECRET=your_jwt_secret_key_here
+FRONTEND_URL=http://localhost:3000
+JWT_SECRET=replace_with_a_random_32_character_or_longer_secret
+KHR_PER_USD=4100
 ```
 
-Run the backend:
-```bash
-npm run dev
-```
-
-Backend will be available at `http://localhost:5000`
-
-### 3. Database Setup
-
-Execute the SQL schema from `system_design.md` in your Supabase SQL editor or PostgreSQL client to create all tables, types, and triggers.
-
-### 4. Frontend Setup
+Next configure and start the frontend in another terminal.
 
 ```bash
 cd frontend
+cp .env.local.example .env.local
 npm install
-```
-
-Create `.env.local` file:
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
-Run the frontend:
-```bash
 npm run dev
 ```
 
-Frontend will be available at `http://localhost:3000`
+Start the API in the first terminal.
 
-## 🔐 User Roles & Permissions
+```bash
+cd backend
+npm run dev
+```
 
-### Admin
-- Full system access
-- User management
-- Building and room configuration
-- System settings
-- Database management
+The default application route redirects to the reference-matched manager workspace at `http://localhost:3000/dashboard/manager`. The API health endpoint is `http://localhost:5000/health`.
 
-### Manager
-- Dormitory operations
-- Room assignments
-- Utility bill management
-- Application review and approval
-- Maintenance tracking
+## Authentication and roles
 
-### Teacher
-- Attendance tracking
-- Student monitoring
-- Room inspections
-- Leave request approval
-- Attendance reports
+The login endpoint verifies bcrypt password hashes in the `users.password_hash` field and returns a signed 12-hour bearer token. The frontend keeps the token in local storage under `ksit_session_token` and supplies it to the protected API. Before production deployment, configure a strong `JWT_SECRET`, HTTPS, Supabase row-level security policies, and an account provisioning process that creates bcrypt password hashes.
 
-### Student
-- View room assignment
-- Pay utility bills via KHQR
-- Submit maintenance requests
-- View attendance record
-- Apply for dormitory
+| Role | Primary workspace |
+| --- | --- |
+| Admin | User roles, system governance, capacity, applications, and maintenance oversight. |
+| Manager | Buildings, rooms, applications, waterfall assignment, CSV roster export, billing, and operations reporting. |
+| Teacher | Room Magic QR verification and daily attendance recording. |
+| Student | Personal bills, KHQR references, maintenance tickets, attendance visibility, and annual application submission. |
 
-## 📱 Key Features
+## API surface
 
-### 🏠 Smart Room Assignment
-Waterfall algorithm automatically assigns students based on:
-- Gender compatibility
-- Major and academic year grouping
-- Room capacity optimization
+All operational endpoints require `Authorization: Bearer <token>` after sign-in. Mutating endpoints also enforce the appropriate role.
 
-### 💳 KHQR Bill Payment
-Integration with Cambodia's Bakong payment system:
-- Dynamic QR code generation
-- Automatic bill splitting among roommates
-- Real-time payment verification
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/auth/login` | Password-based sign-in by email or Telegram ID. |
+| `GET` | `/api/auth/me` | Fetch the signed-in user profile. |
+| `GET` | `/api/dashboard/summary` | Capacity, occupancy, maintenance, applications, and attendance metrics. |
+| `GET`, `POST` | `/api/buildings` | Read buildings or create a building. |
+| `GET`, `POST` | `/api/rooms` | Read rooms or create a room with a unique Magic QR value. |
+| `GET`, `POST` | `/api/applications` | Read applications or submit a student application. |
+| `PATCH` | `/api/applications/:applicationId/review` | Mark an application under review, approved, or rejected. |
+| `POST` | `/api/applications/:applicationId/auto-assign` | Run waterfall bed allocation for an approved application. |
+| `GET`, `POST` | `/api/utility-bills` | Read room bills or create a dynamic split bill. |
+| `GET` | `/api/student-bills` | Read role-filtered individual bills and KHQR references. |
+| `PATCH` | `/api/student-bills/:studentBillId/payment` | Mark a bill paid with a transaction reference. |
+| `POST` | `/api/magic-qr/resolve` | Resolve a room Magic QR and its active residents. |
+| `POST` | `/api/attendance/scan` | Record attendance from a verified room QR. |
+| `GET` | `/api/attendance` | Read role-filtered attendance records. |
+| `GET`, `POST` | `/api/maintenance` | Read tickets or submit a Magic QR-linked maintenance request. |
+| `PATCH` | `/api/maintenance/:maintenanceId` | Move a ticket through its maintenance status and capture resolution notes. |
+| `GET` | `/api/users` | Admin-only user directory. |
+| `PATCH` | `/api/users/:userId/role` | Admin-only role update. |
 
-### 📱 Magic QR Codes
-Each room has a unique QR code for:
-- Daily attendance check-in
-- Quick access to room information
-- Maintenance request submission
+## KHQR integration boundary
 
-### 📊 Comprehensive Tracking
-- Real-time occupancy monitoring
-- Attendance analytics
-- Bill payment status
-- Maintenance request resolution
+The bill service calculates the required amounts and creates a deterministic `KHQR` payment reference for each student. A production deployment should replace that reference generator with a secured backend-only integration to the institution’s approved Bakong/KHQR provider. Never place provider credentials in `NEXT_PUBLIC_*` variables.
 
-## 🔄 API Endpoints
+## Validation
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout (TODO)
-- `GET /api/auth/me` - Get current user (TODO)
+Run these commands before pushing changes.
 
-### Health Check
-- `GET /health` - API health status
+```bash
+cd backend
+node --check server.js
+node --check controllers/domain.controller.js
 
-## 🎨 UI Components
+cd ../frontend
+npm run build
+```
 
-Using **shadcn/ui** component library:
-- Button, Card, Input, Label
-- Select, Badge
-- Responsive and accessible
-- Customizable with Tailwind CSS
+The production frontend build completes successfully in the supplied implementation. The backend health endpoint is intentionally available without database variables; all database-backed endpoints fail clearly with a `503` configuration message until Supabase variables are supplied.
 
-## 📝 Development Notes
+## GitHub handoff
 
-### Current Implementation Status
+The repository is ready for review and push after providing local Supabase credentials. Inspect the pending diff, then commit and push from the repository root.
 
-1. **Authentication** - Mock authentication (no password hashing yet)
-2. **Session Management** - Using localStorage (JWT implementation planned)
-3. **Database** - Schema defined, need to populate with initial data
-4. **Payment Integration** - KHQR implementation pending
+```bash
+git status
+git add backend frontend supabase README.md system_design.md
+git commit -m "feat: complete KSIT dormitory operations platform"
+git push origin main
+```
 
-### Next Steps
-
-1. Implement bcrypt password hashing
-2. Add JWT session management
-3. Build application form with file uploads
-4. Implement auto-assignment algorithm
-5. Integrate KHQR API for payments
-6. Add QR code scanning functionality
-
-## 🤝 Contributing
-
-This is an academic project for KSIT. For questions or contributions, please contact the system administrator.
-
-## 📄 License
-
-Copyright © 2025-2026 Kampong Speu Institute of Technology. All rights reserved.
-
----
-
-**Academic Year:** 2025-2026  
-**Institution:** Kampong Speu Institute of Technology (KSIT)  
-**System:** Dormitory Management Platform
+Do not commit `.env`, `frontend/.env.local`, Supabase service-role keys, or JWT secrets.

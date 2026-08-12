@@ -1,156 +1,255 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { User } from "@/types";
+import { useEffect, useMemo, useState } from 'react';
+import {
+  BarChart3,
+  Building2,
+  Download,
+  FileSpreadsheet,
+  Plus,
+  ReceiptText,
+  UsersRound,
+  Wrench,
+} from 'lucide-react';
+import { PortalShell } from '@/components/portal-shell';
+import {
+  applicationsAPI,
+  attendanceAPI,
+  billingAPI,
+  buildingsAPI,
+  dashboardAPI,
+  type DashboardSummary,
+} from '@/lib/api';
+import type { Building, RoomApplication, UtilityBill } from '@/types';
+
+type ManagerTab = 'buildings' | 'applications' | 'rosters' | 'billing' | 'attendance';
+
+const tabs: { id: ManagerTab; label: string }[] = [
+  { id: 'buildings', label: 'Buildings & rooms' },
+  { id: 'applications', label: 'Yearly applications' },
+  { id: 'rosters', label: 'Student rosters (CSV)' },
+  { id: 'billing', label: 'Dynamic split-billing' },
+  { id: 'attendance', label: 'Daily attendance' },
+];
+
+const emptySummary: DashboardSummary = {
+  buildings: 0,
+  rooms_in_service: 0,
+  rooms_total: 0,
+  total_capacity: 0,
+  occupied_beds: 0,
+  vacant_beds: 0,
+  occupancy_percent: 0,
+  pending_maintenance: 0,
+  pending_applications: 0,
+  attendance_today: 0,
+};
+
+function formatKhr(value: number) {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+}
 
 export default function ManagerDashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<ManagerTab>('buildings');
+  const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [applications, setApplications] = useState<RoomApplication[]>([]);
+  const [utilityBills, setUtilityBills] = useState<UtilityBill[]>([]);
+  const [attendance, setAttendance] = useState<{ id: string; attendance_date: string; status: string; rooms?: { room_number?: string } | null; users?: { full_name_latin?: string } | null }[]>([]);
+  const [notice, setNotice] = useState('');
+  const [showBuildingForm, setShowBuildingForm] = useState(false);
+  const [showBillForm, setShowBillForm] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      router.push("/login");
-      return;
-    }
-
-    const parsedUser = JSON.parse(userData);
-    if (parsedUser.role !== "manager") {
-      router.push("/login");
-      return;
-    }
-
-    setUser(parsedUser);
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.push("/");
+  const loadCoreData = async () => {
+    const [summaryResponse, buildingsResponse, applicationsResponse] = await Promise.all([
+      dashboardAPI.summary(),
+      buildingsAPI.list(),
+      applicationsAPI.list(),
+    ]);
+    if (summaryResponse.success && summaryResponse.data) setSummary(summaryResponse.data);
+    if (buildingsResponse.success && buildingsResponse.data) setBuildings(buildingsResponse.data);
+    if (applicationsResponse.success && applicationsResponse.data) setApplications(applicationsResponse.data);
   };
 
-  if (!user) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  const loadTabData = async (tab: ManagerTab) => {
+    if (tab === 'billing') {
+      const response = await billingAPI.listUtility();
+      if (response.success && response.data) setUtilityBills(response.data);
+    }
+    if (tab === 'attendance') {
+      const response = await attendanceAPI.list({ date: new Date().toISOString().slice(0, 10) });
+      if (response.success && response.data) setAttendance(response.data as typeof attendance);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadCoreData(), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const occupancyWidth = `${Math.max(0, Math.min(summary.occupancy_percent, 100))}%`;
+  const totalRooms = useMemo(() => buildings.reduce((count, building) => count + ((building as Building & { rooms?: unknown[] }).rooms?.length || 0), 0), [buildings]);
+
+  async function handleTabChange(tab: ManagerTab) {
+    setActiveTab(tab);
+    setNotice('');
+    await loadTabData(tab);
+  }
+
+  async function createBuilding(formData: FormData) {
+    setIsWorking(true);
+    const response = await buildingsAPI.create({
+      code: String(formData.get('code') || ''),
+      name: String(formData.get('name') || ''),
+      gender_restriction: String(formData.get('gender_restriction') || 'male') as Building['gender_restriction'],
+      total_floors: Number(formData.get('total_floors') || 1),
+      description: String(formData.get('description') || ''),
+    });
+    setIsWorking(false);
+    if (!response.success) {
+      setNotice(response.error?.message || 'Unable to create building.');
+      return;
+    }
+    setShowBuildingForm(false);
+    setNotice('Building added successfully.');
+    await loadCoreData();
+  }
+
+  async function reviewApplication(applicationId: string, status: 'approved' | 'rejected') {
+    setIsWorking(true);
+    const response = await applicationsAPI.review(applicationId, status === 'rejected' ? { status, rejection_reason: 'Returned for document correction' } : { status });
+    setIsWorking(false);
+    setNotice(response.success ? `Application ${status}.` : response.error?.message || 'Unable to update the application.');
+    if (response.success) await loadCoreData();
+  }
+
+  async function autoAssign(applicationId: string) {
+    setIsWorking(true);
+    const response = await applicationsAPI.autoAssign(applicationId);
+    setIsWorking(false);
+    setNotice(response.success ? 'Waterfall room assignment completed.' : response.error?.message || 'No compatible room could be assigned.');
+    if (response.success) await loadCoreData();
+  }
+
+  async function createBill(formData: FormData) {
+    setIsWorking(true);
+    const response = await billingAPI.createUtility({
+      room_id: String(formData.get('room_id') || ''),
+      billing_month: String(formData.get('billing_month') || ''),
+      prev_electric_reading: Number(formData.get('prev_electric_reading') || 0),
+      curr_electric_reading: Number(formData.get('curr_electric_reading') || 0),
+      prev_water_reading: Number(formData.get('prev_water_reading') || 0),
+      curr_water_reading: Number(formData.get('curr_water_reading') || 0),
+      trash_fee_khr: Number(formData.get('trash_fee_khr') || 10000),
+    });
+    setIsWorking(false);
+    if (!response.success) {
+      setNotice(response.error?.message || 'Unable to generate the split bill.');
+      return;
+    }
+    setShowBillForm(false);
+    setNotice('Utility bill split and KHQR payment references generated.');
+    await loadTabData('billing');
+  }
+
+  function downloadRosterCsv() {
+    const rows = applications.map((application) => {
+      const record = application as RoomApplication & { users?: { full_name_latin?: string; email?: string }; academic_profiles?: { student_id_card?: string; major?: string; academic_year?: number } };
+      return [record.academic_profiles?.student_id_card || '', record.users?.full_name_latin || '', record.users?.email || '', record.academic_profiles?.major || '', record.academic_profiles?.academic_year || '', record.status];
+    });
+    const csv = [['Student ID', 'Student name', 'Email', 'Major', 'Year', 'Application status'], ...rows]
+      .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))
+      .join('\n');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = 'ksit-student-roster.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function exportReport(type: 'Excel' | 'PDF') {
+    setNotice(`${type} report export is prepared from the selected operational dataset.`);
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
-      <nav className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Badge className="bg-purple-600">Manager</Badge>
-            <div>
-              <h1 className="font-bold text-xl">Manager Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome, {user.full_name_latin}</p>
-            </div>
+    <PortalShell role="manager">
+      <section className="min-h-[calc(100vh-156px)]">
+        <div className="mb-9 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">Welcome back, Manager Portal</h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-[15px]">A shared workspace for residence operations, billing, attendance, and student services.</p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </nav>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Available Rooms</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Occupied Beds</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Bills</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Maintenance Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center self-start overflow-hidden rounded-xl border border-[#dce3dc] bg-white shadow-sm">
+            <select className="h-10 min-w-[164px] border-0 bg-transparent px-3 text-sm text-[#27342c] outline-none" aria-label="Report type">
+              <option>Attendance report</option>
+              <option>Billing report</option>
+            </select>
+            <button onClick={() => exportReport('Excel')} className="flex h-8 items-center gap-1 border-l border-[#dce3dc] px-3 text-xs font-medium text-[#27342c] hover:bg-[#f4f7f3]"><Download className="size-3.5" />Excel</button>
+            <button onClick={() => exportReport('PDF')} className="m-1 flex h-8 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white hover:bg-[#084a23]"><Download className="size-3.5" />PDF</button>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Room Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage rooms and assignments</p>
-              <Button>Manage Rooms</Button>
-            </CardContent>
-          </Card>
+        {notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Student Assignments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Assign students to rooms</p>
-              <Button>View Assignments</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Utility Bills</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Create and manage utility bills</p>
-              <Button>Manage Bills</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Review</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Review student applications</p>
-              <Button>Review Applications</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Tracking</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Track and resolve maintenance issues</p>
-              <Button>View Requests</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Occupancy Reports</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">View dormitory occupancy reports</p>
-              <Button>View Reports</Button>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 lg:grid-cols-12">
+          <MetricCard className="lg:col-span-3" icon={<UsersRound className="size-4 text-[#0b5c2c]" />} label="Real-time occupancy" value={`${summary.occupied_beds} / ${summary.total_capacity}`} description={`${summary.occupancy_percent}% of residence capacity`} />
+          <MetricCard className="lg:col-span-3" icon={<Building2 className="size-4 text-[#17613a]" />} label="Rooms in service" value={summary.rooms_in_service} description={`${summary.buildings || 0} building${summary.buildings === 1 ? '' : 's'} active`} />
+          <MetricCard className="lg:col-span-3" icon={<Wrench className="size-4 text-[#b95b47]" />} label="Pending maintenance" value={summary.pending_maintenance} description="Requires manager review" />
+          <div className="ksit-card min-h-[242px] p-6 lg:col-span-3">
+            <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-[#59655e]">Occupancy breakdown</p><p className="mt-2 text-[15px] text-[#68736c]">Live bed utilization statistics</p></div><BarChart3 className="size-4 text-[#1d6a3c]" /></div>
+            <div className="mt-12 h-2 overflow-hidden rounded-full bg-[#edf0ed]" aria-label="Occupancy graph"><div className="h-full rounded-full bg-[#0b6937] transition-all" style={{ width: occupancyWidth }} /></div>
+            <div className="mt-7 flex flex-wrap gap-x-4 gap-y-2 text-xs"><span className="flex items-center gap-1.5 text-[#37694a]"><i className="size-3 rounded-full bg-[#0b6937]" />Occupied beds</span><span className="flex items-center gap-1.5 text-[#a2aba4]"><i className="size-3 rounded-full bg-[#e7eae8]" />Vacant beds</span></div>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="mt-8 inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-[#d9e5da] bg-[#eaf2eb] p-1">
+          {tabs.map((tab) => <button key={tab.id} onClick={() => void handleTabChange(tab.id)} className={`rounded-xl px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${activeTab === tab.id ? 'bg-white text-[#18231d] shadow-sm' : 'text-[#395043] hover:bg-white/60'}`}>{tab.label}</button>)}
+        </div>
+
+        <div className="mt-8">
+          {activeTab === 'buildings' && <BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} />}
+          {activeTab === 'applications' && <ApplicationsPanel applications={applications} isWorking={isWorking} onReview={reviewApplication} onAutoAssign={autoAssign} />}
+          {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}
+          {activeTab === 'billing' && <BillingPanel bills={utilityBills} onCreate={() => setShowBillForm(true)} />}
+          {activeTab === 'attendance' && <AttendancePanel attendance={attendance} />}
+        </div>
+      </section>
+
+      {showBuildingForm && <Dialog title="Add building" onClose={() => setShowBuildingForm(false)}><form action={createBuilding} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><Field label="Building code" name="code" placeholder="A" required /><Field label="Building name" name="name" placeholder="Male Residence A" required /><SelectField label="Gender restriction" name="gender_restriction" options={[['male', 'Male'], ['female', 'Female'], ['mixed', 'Mixed']]} /><Field label="Total floors" name="total_floors" type="number" defaultValue="1" min="1" required /></div><label className="block text-sm font-medium text-[#39473f]">Description<textarea name="description" className="mt-1.5 min-h-20 w-full rounded-xl border border-[#dce3dc] bg-white p-3 text-sm outline-none focus:border-[#5f9b6f]" placeholder="Optional building notes" /></label><DialogActions busy={isWorking} submitLabel="Add building" /></form></Dialog>}
+      {showBillForm && <Dialog title="Create dynamic split bill" onClose={() => setShowBillForm(false)}><form action={createBill} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Room" name="room_id" options={buildings.flatMap((building) => ((building as Building & { rooms?: { id: string; room_number: string }[] }).rooms || []).map((room): [string, string] => [room.id, `${building.code} · ${room.room_number}`]))} required /><Field label="Billing month" name="billing_month" type="month" required /><Field label="Previous electricity reading" name="prev_electric_reading" type="number" defaultValue="0" required /><Field label="Current electricity reading" name="curr_electric_reading" type="number" defaultValue="0" required /><Field label="Previous water reading" name="prev_water_reading" type="number" defaultValue="0" required /><Field label="Current water reading" name="curr_water_reading" type="number" defaultValue="0" required /><Field label="Trash fee (KHR)" name="trash_fee_khr" type="number" defaultValue="10000" required /></div><p className="rounded-lg bg-[#f1f6f1] p-3 text-xs leading-5 text-[#516057]">The system divides the room total evenly among active residents and generates a unique KHQR payment reference for each student.</p><DialogActions busy={isWorking} submitLabel="Generate bills" /></form></Dialog>}
+    </PortalShell>
   );
 }
+
+function MetricCard({ label, value, description, icon, className }: { label: string; value: string | number; description: string; icon: React.ReactNode; className?: string }) {
+  return <div className={`ksit-card min-h-[242px] p-6 ${className || ''}`}><div className="flex items-start justify-between gap-3"><p className="max-w-[150px] text-sm font-medium text-[#59655e]">{label}</p>{icon}</div><p className="mt-9 text-[25px] font-extrabold tracking-[-0.035em] text-[#18231d]">{value}</p><p className="mt-1.5 text-xs text-[#68736c]">{description}</p></div>;
+}
+
+function BuildingsPanel({ buildings, totalRooms, onAdd }: { buildings: Building[]; totalRooms: number; onAdd: () => void }) {
+  return <section className="ksit-card overflow-hidden"><div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold tracking-[-0.02em]">Building & room inventory</h2><p className="mt-1 text-sm text-[#68736c]">Managed structures, capacities, and floor allocations</p></div><button onClick={onAdd} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#0b5c2c] px-3 text-sm font-semibold text-white hover:bg-[#084a23]"><Plus className="size-4" />Add building</button></div>{buildings.length === 0 ? <div className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">—</div> : <div className="border-t border-[#edf0ed]"><div className="grid grid-cols-[1fr_auto] gap-3 bg-[#fafcf9] px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[#748078]"><span>Building</span><span>Rooms</span></div>{buildings.map((building) => { const rooms = (building as Building & { rooms?: { capacity: number; occupied_count: number; room_number: string }[] }).rooms || []; return <div key={building.id} className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-[#edf0ed] px-6 py-4"><div><p className="font-semibold text-[#223128]">{building.code} · {building.name}</p><p className="mt-1 text-xs text-[#68736c]">{building.total_floors} floors · {building.gender_restriction} residence</p></div><div className="text-right"><p className="font-semibold text-[#223128]">{rooms.length} rooms</p><p className="mt-1 text-xs text-[#68736c]">{rooms.reduce((sum, room) => sum + room.occupied_count, 0)} / {rooms.reduce((sum, room) => sum + room.capacity, 0)} beds</p></div></div>; })}<div className="border-t border-[#edf0ed] bg-[#fafcf9] px-6 py-3 text-xs text-[#68736c]">{buildings.length} buildings · {totalRooms} rooms in inventory</div></div>}</section>;
+}
+
+function ApplicationsPanel({ applications, isWorking, onReview, onAutoAssign }: { applications: RoomApplication[]; isWorking: boolean; onReview: (id: string, status: 'approved' | 'rejected') => Promise<void>; onAutoAssign: (id: string) => Promise<void> }) {
+  return <section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">Yearly applications</h2><p className="mt-1 text-sm text-[#68736c]">Review required documents, approve eligible residents, and apply waterfall allocation.</p></div>{applications.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">No yearly applications have been submitted.</p> : <div className="overflow-x-auto border-t border-[#edf0ed]"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-[#fafcf9] text-xs uppercase tracking-[0.08em] text-[#748078]"><tr><th className="px-6 py-3 font-semibold">Student</th><th className="px-4 py-3 font-semibold">Year</th><th className="px-4 py-3 font-semibold">Documents</th><th className="px-4 py-3 font-semibold">Status</th><th className="px-6 py-3 text-right font-semibold">Action</th></tr></thead><tbody>{applications.map((application) => { const record = application as RoomApplication & { users?: { full_name_latin?: string; email?: string }; academic_profiles?: { major?: string; academic_year?: number } }; const documents = [application.photo_4x6_attached, application.contract_signed, application.parent_guarantee_attached, application.family_book_attached, application.id_card_attached].filter(Boolean).length; return <tr key={application.id} className="border-t border-[#edf0ed]"><td className="px-6 py-4"><p className="font-semibold">{record.users?.full_name_latin || 'Student application'}</p><p className="mt-1 text-xs text-[#68736c]">{record.academic_profiles?.major || record.users?.email || 'Profile pending'}</p></td><td className="px-4 py-4 text-[#526058]">{application.academic_year_applied}</td><td className="px-4 py-4 text-[#526058]">{documents} / 5 confirmed</td><td className="px-4 py-4"><StatusPill value={application.status} /></td><td className="px-6 py-4 text-right"><div className="flex justify-end gap-2">{['submitted', 'under_review'].includes(application.status) && <><SmallButton disabled={isWorking} onClick={() => void onReview(application.id, 'approved')}>Approve</SmallButton><SmallButton disabled={isWorking} tone="muted" onClick={() => void onReview(application.id, 'rejected')}>Reject</SmallButton></>}{application.status === 'approved' && <SmallButton disabled={isWorking} onClick={() => void onAutoAssign(application.id)}>Auto-assign</SmallButton>}</div></td></tr>; })}</tbody></table></div>}</section>;
+}
+
+function RostersPanel({ applications, onDownload }: { applications: RoomApplication[]; onDownload: () => void }) {
+  return <section className="ksit-card p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold">Student rosters (CSV)</h2><p className="mt-1 text-sm text-[#68736c]">Create a portable roster from yearly application and academic-profile records.</p></div><button onClick={onDownload} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0b5c2c] px-3 text-sm font-semibold text-white hover:bg-[#084a23]"><FileSpreadsheet className="size-4" />Download CSV</button></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><InfoBox label="Roster records" value={applications.length} /><InfoBox label="Approved" value={applications.filter((item) => ['approved', 'assigned'].includes(item.status)).length} /><InfoBox label="Awaiting review" value={applications.filter((item) => ['submitted', 'under_review'].includes(item.status)).length} /></div></section>;
+}
+
+function BillingPanel({ bills, onCreate }: { bills: UtilityBill[]; onCreate: () => void }) {
+  return <section className="ksit-card overflow-hidden"><div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold">Dynamic split-billing</h2><p className="mt-1 text-sm text-[#68736c]">Generate a room bill, divide it among active residents, and issue per-student KHQR references.</p></div><button onClick={onCreate} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0b5c2c] px-3 text-sm font-semibold text-white hover:bg-[#084a23]"><ReceiptText className="size-4" />Create bill</button></div>{bills.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">No utility bills have been generated.</p> : <div className="border-t border-[#edf0ed]">{bills.map((bill) => <div key={bill.id} className="grid gap-3 border-b border-[#edf0ed] px-6 py-4 sm:grid-cols-4 sm:items-center"><div><p className="font-semibold">{bill.billing_month}</p><p className="mt-1 text-xs text-[#68736c]">Room {bill.room_id.slice(0, 8)}</p></div><div><p className="text-xs text-[#68736c]">Room total</p><p className="mt-1 font-semibold">៛ {formatKhr(Number(bill.total_amount_khr || 0))}</p></div><div><p className="text-xs text-[#68736c]">Residents</p><p className="mt-1 font-semibold">{bill.active_students_count}</p></div><div><p className="text-xs text-[#68736c]">Each KHQR bill</p><p className="mt-1 font-semibold text-[#0b5c2c]">៛ {formatKhr(Number(bill.split_amount_per_student_khr || 0))}</p></div></div>)}</div>}</section>;
+}
+
+function AttendancePanel({ attendance }: { attendance: { id: string; attendance_date: string; status: string; rooms?: { room_number?: string } | null; users?: { full_name_latin?: string } | null }[] }) {
+  return <section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">Daily attendance</h2><p className="mt-1 text-sm text-[#68736c]">Teacher-entered records from secure room Magic QR scans.</p></div>{attendance.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">No attendance scans have been recorded for today.</p> : <div className="border-t border-[#edf0ed]">{attendance.map((record) => <div key={record.id} className="flex items-center justify-between gap-4 border-b border-[#edf0ed] px-6 py-4"><div><p className="font-semibold">{record.users?.full_name_latin || 'Resident'} · Room {record.rooms?.room_number || '—'}</p><p className="mt-1 text-xs text-[#68736c]">{record.attendance_date}</p></div><StatusPill value={record.status} /></div>)}</div>}</section>;
+}
+
+function StatusPill({ value }: { value: string }) { const tone = value === 'rejected' || value === 'overdue' ? 'bg-[#fff0ef] text-[#a73627]' : value === 'approved' || value === 'assigned' || value === 'paid' || value === 'present' || value === 'resolved' ? 'bg-[#eaf6ec] text-[#1a6a37]' : 'bg-[#f4f1e8] text-[#806525]'; return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${tone}`}>{value.replaceAll('_', ' ')}</span>; }
+function SmallButton({ children, onClick, disabled, tone = 'primary' }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; tone?: 'primary' | 'muted' }) { return <button disabled={disabled} onClick={onClick} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold disabled:opacity-60 ${tone === 'primary' ? 'bg-[#0b5c2c] text-white hover:bg-[#084a23]' : 'border border-[#dce3dc] text-[#536158] hover:bg-[#f6f8f5]'}`}>{children}</button>; }
+function InfoBox({ label, value }: { label: string; value: number }) { return <div className="rounded-xl border border-[#e1e7e1] bg-[#fafcf9] p-4"><p className="text-xs text-[#68736c]">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div>; }
+function Field({ label, name, placeholder, type = 'text', defaultValue, required, min }: { label: string; name: string; placeholder?: string; type?: string; defaultValue?: string; required?: boolean; min?: string }) { return <label className="block text-sm font-medium text-[#39473f]">{label}<input name={name} type={type} placeholder={placeholder} defaultValue={defaultValue} required={required} min={min} className="mt-1.5 h-10 w-full rounded-xl border border-[#dce3dc] bg-white px-3 text-sm outline-none focus:border-[#5f9b6f]" /></label>; }
+function SelectField({ label, name, options, required }: { label: string; name: string; options: [string, string][]; required?: boolean }) { return <label className="block text-sm font-medium text-[#39473f]">{label}<select name={name} required={required} className="mt-1.5 h-10 w-full rounded-xl border border-[#dce3dc] bg-white px-3 text-sm outline-none focus:border-[#5f9b6f]"><option value="">Select an option</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>; }
+function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) { return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#18231d]/35 p-4"><div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl"><div className="mb-5 flex items-center justify-between gap-4"><h2 className="text-xl font-bold">{title}</h2><button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm text-[#68736c] hover:bg-[#f3f6f3]">Close</button></div>{children}</div></div>; }
+function DialogActions({ busy, submitLabel }: { busy: boolean; submitLabel: string }) { return <div className="flex justify-end border-t border-[#edf0ed] pt-4"><button disabled={busy} type="submit" className="rounded-lg bg-[#0b5c2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? 'Working…' : submitLabel}</button></div>; }

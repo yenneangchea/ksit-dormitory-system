@@ -1,156 +1,39 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { User } from "@/types";
+import { useEffect, useState } from 'react';
+import { Building2, ShieldCheck, UsersRound, Wrench } from 'lucide-react';
+import { PortalShell } from '@/components/portal-shell';
+import { dashboardAPI, type DashboardSummary, usersAPI } from '@/lib/api';
+import type { User, UserRole } from '@/types';
+
+const emptySummary: DashboardSummary = { buildings: 0, rooms_in_service: 0, rooms_total: 0, total_capacity: 0, occupied_beds: 0, vacant_beds: 0, occupancy_percent: 0, pending_maintenance: 0, pending_applications: 0, attendance_today: 0 };
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [summary, setSummary] = useState(emptySummary);
+  const [users, setUsers] = useState<User[]>([]);
+  const [notice, setNotice] = useState('');
+  const [savingUser, setSavingUser] = useState('');
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      router.push("/login");
-      return;
-    }
-
-    const parsedUser = JSON.parse(userData);
-    if (parsedUser.role !== "admin") {
-      router.push("/login");
-      return;
-    }
-
-    setUser(parsedUser);
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.push("/");
-  };
-
-  if (!user) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  async function load() {
+    const [summaryResponse, usersResponse] = await Promise.all([dashboardAPI.summary(), usersAPI.list()]);
+    if (summaryResponse.success && summaryResponse.data) setSummary(summaryResponse.data);
+    if (usersResponse.success && usersResponse.data) setUsers(usersResponse.data);
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50">
-      <nav className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Badge className="bg-red-600">Admin</Badge>
-            <div>
-              <h1 className="font-bold text-xl">Admin Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome, {user.full_name_latin}</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </nav>
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Total Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Occupied Rooms</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-gray-600">Pending Applications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">0</p>
-            </CardContent>
-          </Card>
-        </div>
+  async function changeRole(userId: string, role: UserRole) {
+    setSavingUser(userId);
+    const response = await usersAPI.updateRole(userId, role);
+    setSavingUser('');
+    setNotice(response.success ? 'User role updated.' : response.error?.message || 'Unable to update the user role.');
+    if (response.success) await load();
+  }
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage all system users and roles</p>
-              <Button>Manage Users</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Building Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Configure dormitory buildings and rooms</p>
-              <Button>Manage Buildings</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Configure system-wide settings</p>
-              <Button>Settings</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Review</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Review dormitory applications</p>
-              <Button>Review Applications</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports & Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">View system reports and analytics</p>
-              <Button>View Reports</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Database Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">Manage database and backups</p>
-              <Button>Database Tools</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
+  return <PortalShell role="admin"><section className="min-h-[calc(100vh-156px)]"><div className="mb-8"><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">Welcome back, Admin Portal</h1><p className="mt-1.5 text-sm text-[#68736c]">System governance, resident access, and residence configuration at a glance.</p></div>{notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Kpi icon={<UsersRound />} label="Registered users" value={users.length} note="All role accounts" /><Kpi icon={<Building2 />} label="Buildings" value={summary.buildings} note={`${summary.rooms_total} configured rooms`} /><Kpi icon={<ShieldCheck />} label="Pending review" value={summary.pending_applications} note="Residence applications" /><Kpi icon={<Wrench />} label="Open work orders" value={summary.pending_maintenance} note="Manager action queue" /></div><div className="mt-8 grid gap-6 xl:grid-cols-[1.4fr_1fr]"><section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">User access control</h2><p className="mt-1 text-sm text-[#68736c]">Assign the appropriate operating role to every registered member.</p></div><div className="max-h-[480px] overflow-auto border-t border-[#edf0ed]"><table className="w-full min-w-[650px] text-left text-sm"><thead className="sticky top-0 bg-[#fafcf9] text-xs uppercase tracking-[0.08em] text-[#748078]"><tr><th className="px-6 py-3">Account</th><th className="px-4 py-3">Contact</th><th className="px-6 py-3 text-right">Role</th></tr></thead><tbody>{users.length === 0 ? <tr><td colSpan={3} className="px-6 py-6 text-[#68736c]">No user records are available.</td></tr> : users.map((user) => <tr className="border-t border-[#edf0ed]" key={user.id}><td className="px-6 py-4"><p className="font-semibold">{user.full_name_latin}</p><p className="mt-1 text-xs text-[#68736c]">{user.full_name_khmer}</p></td><td className="px-4 py-4 text-[#68736c]">{user.email}</td><td className="px-6 py-4 text-right"><select disabled={savingUser === user.id} value={user.role} onChange={(event) => void changeRole(user.id, event.target.value as UserRole)} className="rounded-lg border border-[#dce3dc] bg-white px-2 py-1.5 text-xs font-semibold capitalize outline-none disabled:opacity-50"><option value="admin">Admin</option><option value="manager">Manager</option><option value="teacher">Teacher</option><option value="student">Student</option></select></td></tr>)}</tbody></table></div></section><section className="ksit-card p-6"><h2 className="text-lg font-bold">Operational status</h2><p className="mt-1 text-sm text-[#68736c]">Core system indicators that require leadership attention.</p><dl className="mt-6 divide-y divide-[#edf0ed]">{[['Occupancy', `${summary.occupied_beds} / ${summary.total_capacity} beds`], ['Room serviceability', `${summary.rooms_in_service} rooms active`], ['Attendance today', `${summary.attendance_today} scans recorded`], ['Available capacity', `${summary.vacant_beds} beds vacant`]].map(([label, value]) => <div className="flex items-center justify-between gap-4 py-4" key={label}><dt className="text-sm text-[#68736c]">{label}</dt><dd className="text-sm font-bold text-[#223128]">{value}</dd></div>)}</dl></section></div></section></PortalShell>;
 }
+
+function Kpi({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: number; note: string }) { return <div className="ksit-card min-h-[172px] p-5"><div className="flex items-start justify-between text-[#0b5c2c]"><p className="text-sm font-medium text-[#59655e]">{label}</p>{icon}</div><p className="mt-7 text-3xl font-extrabold tracking-[-0.04em]">{value}</p><p className="mt-1 text-xs text-[#68736c]">{note}</p></div>; }
