@@ -59,3 +59,9 @@ coverage/
 .turbo
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase local runtime state and generated database backups
+supabase/.temp/
+supabase/.branches/
+backups/*
+!backups/.gitkeep

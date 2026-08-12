@@ -81,6 +81,23 @@ npm run dev
 
 The default application route redirects to the reference-matched manager workspace at `http://localhost:3000/dashboard/manager`. The API health endpoint is `http://localhost:5000/health`.
 
+## Sample data for UI testing
+
+After applying the schema and configuring the backend environment, seed the hosted or local Supabase project with safe, idempotent sample data. The seeder creates a `DEMO` building, four rooms, six clearly identified `.demo` student accounts, active assignments, current-month utility bills, attendance records, and maintenance tickets. Re-running it updates the same sample records instead of creating duplicates.
+
+```bash
+cd backend
+npm run seed:sample
+```
+
+Do not run the sample seeder in a production database containing real residence data unless the demonstration records are explicitly desired.
+
+## Local Supabase backup and offline recovery
+
+Portable Bash and PowerShell backup/restore scripts are available under `scripts/`. They create a timestamped SQL export of the KSIT `public` schema and data, plus an integrity checksum. Generated backups remain ignored by Git in `backups/`.
+
+Read the complete [local Supabase backup and recovery guide](docs/LOCAL_SUPABASE_BACKUP.md) before restoring a backup. It includes Docker Desktop and `npx supabase start` setup, offline local restore commands, verification steps, and the guarded procedure for restoring a verified backup to a cloud project.
+
 ## Authentication and roles
 
 The login endpoint verifies bcrypt password hashes in the `users.password_hash` field and returns a signed 12-hour bearer token. The frontend keeps the token in local storage under `ksit_session_token` and supplies it to the protected API. Before production deployment, configure a strong `JWT_SECRET`, HTTPS, Supabase row-level security policies, and an account provisioning process that creates bcrypt password hashes.
