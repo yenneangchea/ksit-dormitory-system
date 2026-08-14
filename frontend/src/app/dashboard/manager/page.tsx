@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   BarChart3,
   Building2,
@@ -12,6 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
+import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import {
   applicationsAPI,
@@ -20,6 +22,7 @@ import {
   buildingsAPI,
   dashboardAPI,
   maintenanceAPI,
+  type DashboardAnalytics as DashboardAnalyticsData,
   type DashboardSummary,
 } from '@/lib/api';
 import type { Building, MaintenanceRequest, RoomApplication, UtilityBill } from '@/types';
@@ -52,10 +55,12 @@ function formatKhr(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
 
-export default function ManagerDashboard() {
+function ManagerDashboardContent() {
   const { isAuthorized, isChecking } = useRoleGuard('manager');
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ManagerTab>('buildings');
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
+  const [analytics, setAnalytics] = useState<DashboardAnalyticsData | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [applications, setApplications] = useState<RoomApplication[]>([]);
   const [utilityBills, setUtilityBills] = useState<UtilityBill[]>([]);
@@ -67,12 +72,14 @@ export default function ManagerDashboard() {
   const [isWorking, setIsWorking] = useState(false);
 
   const loadCoreData = async () => {
-    const [summaryResponse, buildingsResponse, applicationsResponse] = await Promise.all([
+    const [summaryResponse, analyticsResponse, buildingsResponse, applicationsResponse] = await Promise.all([
       dashboardAPI.summary(),
+      dashboardAPI.analytics(),
       buildingsAPI.list(),
       applicationsAPI.list(),
     ]);
     if (summaryResponse.success && summaryResponse.data) setSummary(summaryResponse.data);
+    if (analyticsResponse.success && analyticsResponse.data) setAnalytics(analyticsResponse.data);
     if (buildingsResponse.success && buildingsResponse.data) setBuildings(buildingsResponse.data);
     if (applicationsResponse.success && applicationsResponse.data) setApplications(applicationsResponse.data);
   };
@@ -97,6 +104,12 @@ export default function ManagerDashboard() {
     const timer = window.setTimeout(() => void loadCoreData(), 0);
     return () => window.clearTimeout(timer);
   }, [isAuthorized]);
+
+  useEffect(() => {
+    const requested = searchParams.get('tab');
+    const mapped: ManagerTab | null = requested === 'applications' ? 'applications' : requested === 'rooms' ? 'buildings' : requested === 'utilities' ? 'billing' : requested === 'maintenance' ? 'maintenance' : null;
+    if (mapped && mapped !== activeTab) void handleTabChange(mapped);
+  }, [searchParams]);
 
   const occupancyWidth = `${Math.max(0, Math.min(summary.occupancy_percent, 100))}%`;
   const totalRooms = useMemo(() => buildings.reduce((count, building) => count + ((building as Building & { rooms?: unknown[] }).rooms?.length || 0), 0), [buildings]);
@@ -156,6 +169,7 @@ export default function ManagerDashboard() {
 
   async function createBill(formData: FormData) {
     setIsWorking(true);
+    const trashFeeOverride = String(formData.get('trash_fee_khr') || '').trim();
     const response = await billingAPI.createUtility({
       room_id: String(formData.get('room_id') || ''),
       billing_month: String(formData.get('billing_month') || ''),
@@ -163,7 +177,7 @@ export default function ManagerDashboard() {
       curr_electric_reading: Number(formData.get('curr_electric_reading') || 0),
       prev_water_reading: Number(formData.get('prev_water_reading') || 0),
       curr_water_reading: Number(formData.get('curr_water_reading') || 0),
-      trash_fee_khr: Number(formData.get('trash_fee_khr') || 10000),
+      ...(trashFeeOverride ? { trash_fee_khr: Number(trashFeeOverride) } : {}),
     });
     setIsWorking(false);
     if (!response.success) {
@@ -227,6 +241,7 @@ export default function ManagerDashboard() {
             <div className="mt-7 flex flex-wrap gap-x-4 gap-y-2 text-xs"><span className="flex items-center gap-1.5 text-[#37694a]"><i className="size-3 rounded-full bg-[#0b6937]" />Occupied beds</span><span className="flex items-center gap-1.5 text-[#a2aba4]"><i className="size-3 rounded-full bg-[#e7eae8]" />Vacant beds</span></div>
           </div>
         </div>
+        {analytics && <DashboardAnalytics data={analytics} />}
 
         <div className="mt-8 inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-[#d9e5da] bg-[#eaf2eb] p-1">
           {tabs.map((tab) => <button key={tab.id} onClick={() => void handleTabChange(tab.id)} className={`rounded-xl px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${activeTab === tab.id ? 'bg-white text-[#18231d] shadow-sm' : 'text-[#395043] hover:bg-white/60'}`}>{tab.label}</button>)}
@@ -243,9 +258,13 @@ export default function ManagerDashboard() {
       </section>
 
       {showBuildingForm && <Dialog title="Add building" onClose={() => setShowBuildingForm(false)}><form action={createBuilding} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><Field label="Building code" name="code" placeholder="A" required /><Field label="Building name" name="name" placeholder="Male Residence A" required /><SelectField label="Gender restriction" name="gender_restriction" options={[['male', 'Male'], ['female', 'Female'], ['mixed', 'Mixed']]} /><Field label="Total floors" name="total_floors" type="number" defaultValue="1" min="1" required /></div><label className="block text-sm font-medium text-[#39473f]">Description<textarea name="description" className="mt-1.5 min-h-20 w-full rounded-xl border border-[#dce3dc] bg-white p-3 text-sm outline-none focus:border-[#5f9b6f]" placeholder="Optional building notes" /></label><DialogActions busy={isWorking} submitLabel="Add building" /></form></Dialog>}
-      {showBillForm && <Dialog title="Create dynamic split bill" onClose={() => setShowBillForm(false)}><form action={createBill} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Room" name="room_id" options={buildings.flatMap((building) => ((building as Building & { rooms?: { id: string; room_number: string }[] }).rooms || []).map((room): [string, string] => [room.id, `${building.code} · ${room.room_number}`]))} required /><Field label="Billing month" name="billing_month" type="month" required /><Field label="Previous electricity reading" name="prev_electric_reading" type="number" defaultValue="0" required /><Field label="Current electricity reading" name="curr_electric_reading" type="number" defaultValue="0" required /><Field label="Previous water reading" name="prev_water_reading" type="number" defaultValue="0" required /><Field label="Current water reading" name="curr_water_reading" type="number" defaultValue="0" required /><Field label="Trash fee (KHR)" name="trash_fee_khr" type="number" defaultValue="10000" required /></div><p className="rounded-lg bg-[#f1f6f1] p-3 text-xs leading-5 text-[#516057]">The system divides the room total evenly among active residents and generates a unique KHQR payment reference for each student.</p><DialogActions busy={isWorking} submitLabel="Generate bills" /></form></Dialog>}
+      {showBillForm && <Dialog title="Create dynamic split bill" onClose={() => setShowBillForm(false)}><form action={createBill} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Room" name="room_id" options={buildings.flatMap((building) => ((building as Building & { rooms?: { id: string; room_number: string }[] }).rooms || []).map((room): [string, string] => [room.id, `${building.code} · ${room.room_number}`]))} required /><Field label="Billing month" name="billing_month" type="month" required /><Field label="Previous electricity reading" name="prev_electric_reading" type="number" defaultValue="0" required /><Field label="Current electricity reading" name="curr_electric_reading" type="number" defaultValue="0" required /><Field label="Previous water reading" name="prev_water_reading" type="number" defaultValue="0" required /><Field label="Current water reading" name="curr_water_reading" type="number" defaultValue="0" required /><Field label="Trash fee override (KHR)" name="trash_fee_khr" type="number" placeholder="Uses System Settings by default" /></div><p className="rounded-lg bg-[#f1f6f1] p-3 text-xs leading-5 text-[#516057]">Electricity, water, and trash rates use the Admin System Settings unless an optional per-bill trash override is entered. The system divides the room total evenly among active residents and generates a unique KHQR payment reference for each student.</p><DialogActions busy={isWorking} submitLabel="Generate bills" /></form></Dialog>}
     </PortalShell>
   );
+}
+
+export default function ManagerDashboard() {
+  return <Suspense fallback={<DashboardRoleGuardLoading />}><ManagerDashboardContent /></Suspense>;
 }
 
 function MetricCard({ label, value, description, icon, className }: { label: string; value: string | number; description: string; icon: React.ReactNode; className?: string }) {

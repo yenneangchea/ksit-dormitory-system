@@ -48,3 +48,9 @@
 - [x] Reuse the established KSIT header, green navbar, footer, and Khmer typography on the Features page.
 - [x] Route homepage navigation and the hero learning button to `/features`.
 - [x] Validate, push, deploy, and verify the Features & Guide release; live `/features` page displays the Khmer overview, benefits, role slider, CTA, and shared KSIT navigation/footer.
+- [x] Add a role-aware Gemini-style collapsible sidebar with active tab state, profile snippet, and logout across all dashboards.
+- [x] Add tab-aware dashboard views and preserve each role's existing route guard and data boundaries.
+- [x] Add dashboard analytics charts based on live authorized application, occupancy, attendance, and billing records.
+- [x] Add safe Admin settings for academic structures and fee defaults; expose Telegram status without revealing secrets.
+- [x] Define a safe backup export approach and explicit restore safeguards rather than exposing raw database credentials or destructive actions in the browser.
+- [ ] Validate, push, deploy, and verify the dashboard modernization release.

@@ -9,6 +9,7 @@ router.get('/public/announcements', domain.getPublicAnnouncements);
 router.use(authenticate);
 
 router.get('/dashboard/summary', requireRole('admin', 'manager'), domain.dashboardSummary);
+router.get('/dashboard/analytics', requireRole('admin', 'manager'), domain.dashboardAnalytics);
 router.get('/users', requireRole('admin'), domain.listUsers);
 router.post('/users', requireRole('admin'), domain.createUser);
 router.patch('/users/:userId', requireRole('admin'), domain.updateUser);

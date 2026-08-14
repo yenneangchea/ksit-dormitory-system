@@ -34,6 +34,14 @@ export interface DashboardSummary {
   attendance_today: number;
 }
 
+export interface DashboardAnalytics {
+  applications: Record<string, number>;
+  occupancy: { occupied: number; capacity: number };
+  attendance: Record<string, number>;
+  attendance_days: { date: string; present?: number; absent?: number; leave?: number }[];
+  billing: Record<string, number> & { total_khr: number };
+}
+
 function getSessionToken() {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('ksit_session_token');
@@ -87,6 +95,7 @@ export const authAPI = {
 
 export const dashboardAPI = {
   summary: () => fetchAPI<DashboardSummary>('/api/dashboard/summary'),
+  analytics: () => fetchAPI<DashboardAnalytics>('/api/dashboard/analytics'),
 };
 
 export const usersAPI = {

@@ -73,6 +73,21 @@ async function getActiveAssignments(roomId) {
   return data || [];
 }
 
+async function getConfiguredUtilityRates(supabase) {
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('setting_value')
+    .eq('setting_key', 'system_settings')
+    .maybeSingle();
+  if (error) throw error;
+  const rates = data?.setting_value?.utility_rates || {};
+  return {
+    electricity_khr_per_kwh: Number.isFinite(Number(rates.electricity_khr_per_kwh)) ? Number(rates.electricity_khr_per_kwh) : 800,
+    water_khr_per_m3: Number.isFinite(Number(rates.water_khr_per_m3)) ? Number(rates.water_khr_per_m3) : 1500,
+    trash_khr_per_room: Number.isFinite(Number(rates.trash_khr_per_room)) ? Number(rates.trash_khr_per_room) : 10000,
+  };
+}
+
 async function listBuildings(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -423,9 +438,12 @@ async function listUtilityBills(req, res, next) {
 
 async function createUtilityBill(req, res, next) {
   try {
-    const { room_id, billing_month, prev_electric_reading = 0, curr_electric_reading = 0, electric_rate_khr = 800, prev_water_reading = 0, curr_water_reading = 0, water_rate_khr = 1500, trash_fee_khr = 10000 } = req.body;
+    const { room_id, billing_month, prev_electric_reading = 0, curr_electric_reading = 0, electric_rate_khr, prev_water_reading = 0, curr_water_reading = 0, water_rate_khr, trash_fee_khr } = req.body;
     if (!room_id || !billing_month) throw fail('Room and billing month are required.');
     if (!/^\d{4}-\d{2}$/.test(billing_month)) throw fail('Billing month must use YYYY-MM format.');
+
+    const supabase = getSupabase();
+    const configuredRates = await getConfiguredUtilityRates(supabase);
 
     const electricityUsed = asNumber(curr_electric_reading, 'Current electricity reading') - asNumber(prev_electric_reading, 'Previous electricity reading');
     const waterUsed = asNumber(curr_water_reading, 'Current water reading') - asNumber(prev_water_reading, 'Previous water reading');
@@ -434,9 +452,9 @@ async function createUtilityBill(req, res, next) {
     const activeAssignments = await getActiveAssignments(room_id);
     if (activeAssignments.length === 0) throw fail('A utility bill cannot be generated until the room has active residents.', 409);
 
-    const electricRate = asNumber(electric_rate_khr, 'Electricity rate');
-    const waterRate = asNumber(water_rate_khr, 'Water rate');
-    const trashFee = asNumber(trash_fee_khr, 'Trash fee');
+    const electricRate = asNumber(electric_rate_khr ?? configuredRates.electricity_khr_per_kwh, 'Electricity rate');
+    const waterRate = asNumber(water_rate_khr ?? configuredRates.water_khr_per_m3, 'Water rate');
+    const trashFee = asNumber(trash_fee_khr ?? configuredRates.trash_khr_per_room, 'Trash fee');
     const totalAmount = electricityUsed * electricRate + waterUsed * waterRate + trashFee;
     const perStudentAmount = Number((totalAmount / activeAssignments.length).toFixed(2));
 
@@ -455,7 +473,6 @@ async function createUtilityBill(req, res, next) {
       created_by: req.user.sub,
     };
 
-    const supabase = getSupabase();
     const { data: utilityBill, error: utilityBillError } = await supabase
       .from('utility_bills')
       .upsert(billPayload, { onConflict: 'room_id,billing_month' })
@@ -823,7 +840,7 @@ async function getAnnouncementManagement(req, res, next) {
   try {
     const supabase = getSupabase();
     const [settingsResponse, newsResponse] = await Promise.all([
-      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline', 'homepage_hero', 'homepage_features', 'footer_contact']),
+      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline', 'homepage_hero', 'homepage_features', 'footer_contact', 'system_settings']),
       supabase.from('news_posts').select('id, title, body, image_url, external_url, is_visible, published_at, created_at, updated_at').order('published_at', { ascending: false }),
     ]);
     if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
@@ -836,7 +853,7 @@ async function getAnnouncementManagement(req, res, next) {
 
 async function updateAnnouncementSettings(req, res, next) {
   try {
-    const { top_ticker, registration_deadline, homepage_hero, homepage_features, footer_contact } = req.body;
+    const { top_ticker, registration_deadline, homepage_hero, homepage_features, footer_contact, system_settings } = req.body;
     const rows = [];
     if (top_ticker !== undefined) {
       if (!top_ticker || typeof top_ticker.text !== 'string' || !top_ticker.text.trim()) throw fail('Ticker text is required.');
@@ -857,6 +874,19 @@ async function updateAnnouncementSettings(req, res, next) {
     if (footer_contact !== undefined) {
       if (!footer_contact || typeof footer_contact.address !== 'string' || typeof footer_contact.phones !== 'string' || typeof footer_contact.email !== 'string') throw fail('Footer address, phones, and email are required.');
       rows.push({ setting_key: 'footer_contact', setting_value: footer_contact, updated_at: new Date().toISOString() });
+    }
+    if (system_settings !== undefined) {
+      if (!system_settings || !Array.isArray(system_settings.academic_levels) || !system_settings.utility_rates || !system_settings.housing_fee) throw fail('Academic levels, utility rates, and housing fee settings are required.');
+      rows.push({ setting_key: 'system_settings', setting_value: {
+        academic_levels: system_settings.academic_levels.map((item) => String(item).trim()).filter(Boolean).slice(0, 16),
+        utility_rates: {
+          electricity_khr_per_kwh: Math.max(0, Number(system_settings.utility_rates.electricity_khr_per_kwh || 0)),
+          water_khr_per_m3: Math.max(0, Number(system_settings.utility_rates.water_khr_per_m3 || 0)),
+          trash_khr_per_room: Math.max(0, Number(system_settings.utility_rates.trash_khr_per_room || 0)),
+        },
+        housing_fee: { annual_khr: Math.max(0, Number(system_settings.housing_fee.annual_khr || 0)) },
+        telegram: { username: String(system_settings.telegram?.username || '@KSITDorm_bot').trim() || '@KSITDorm_bot', webhook_configured: Boolean(process.env.TELEGRAM_BOT_TOKEN) },
+      }, updated_at: new Date().toISOString() });
     }
     if (rows.length === 0) throw fail('Provide homepage settings to update.');
     const supabase = getSupabase();
@@ -958,6 +988,32 @@ async function dashboardSummary(req, res, next) {
   }
 }
 
+async function dashboardAnalytics(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const [applicationsResponse, roomsResponse, attendanceResponse, billsResponse] = await Promise.all([
+      supabase.from('room_applications').select('status'),
+      supabase.from('rooms').select('capacity, occupied_count, status'),
+      supabase.from('attendances').select('attendance_date, status').gte('attendance_date', new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10)),
+      supabase.from('student_bills').select('amount_khr, bill_status, billing_month'),
+    ]);
+    if (applicationsResponse.error || roomsResponse.error || attendanceResponse.error || billsResponse.error) throw applicationsResponse.error || roomsResponse.error || attendanceResponse.error || billsResponse.error;
+    const countStatuses = (rows, key = 'status') => rows.reduce((result, row) => ({ ...result, [row[key] || 'unknown']: (result[row[key] || 'unknown'] || 0) + 1 }), {});
+    const rooms = roomsResponse.data || [];
+    const bills = billsResponse.data || [];
+    const attendance = attendanceResponse.data || [];
+    res.json(publicPayload({
+      applications: countStatuses(applicationsResponse.data || []),
+      occupancy: { occupied: rooms.reduce((sum, room) => sum + Number(room.occupied_count || 0), 0), capacity: rooms.reduce((sum, room) => sum + Number(room.capacity || 0), 0) },
+      attendance: countStatuses(attendance),
+      attendance_days: [...new Set(attendance.map((row) => row.attendance_date))].sort().map((date) => ({ date, ...countStatuses(attendance.filter((row) => row.attendance_date === date)) })),
+      billing: { total_khr: bills.reduce((sum, bill) => sum + Number(bill.amount_khr || 0), 0), ...countStatuses(bills, 'bill_status') },
+    }));
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   listBuildings,
   createBuilding,
@@ -994,4 +1050,5 @@ module.exports = {
   updateNewsPost,
   deleteNewsPost,
   dashboardSummary,
+  dashboardAnalytics,
 };

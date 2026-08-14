@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ClipboardList, CreditCard, QrCode, Wrench } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
@@ -11,8 +12,9 @@ type StudentTab = 'overview' | 'bills' | 'maintenance' | 'application';
 type ResidenceDetails = { assignment: { bed_number: number; academic_year: string; rooms?: { room_number?: string; floor_number?: number; buildings?: { code?: string; name?: string } | null } | null } | null; roommates: { student_id: string; bed_number: number; users?: { full_name_latin?: string; full_name_khmer?: string } | null }[] };
 const tabs: { id: StudentTab; label: string }[] = [{ id: 'overview', label: 'My residence' }, { id: 'bills', label: 'KHQR bills' }, { id: 'maintenance', label: 'Maintenance' }, { id: 'application', label: 'Dormitory application' }];
 
-export default function StudentDashboard() {
+function StudentDashboardContent() {
   const { isAuthorized, isChecking } = useRoleGuard('student');
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<StudentTab>('overview');
   const [bills, setBills] = useState<StudentBill[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([]);
@@ -36,6 +38,12 @@ export default function StudentDashboard() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [isAuthorized, load]);
+
+  useEffect(() => {
+    const requested = searchParams.get('tab');
+    const mapped: StudentTab | null = requested === 'apply' ? 'application' : requested === 'bills' ? 'bills' : requested === 'maintenance' ? 'maintenance' : null;
+    if (mapped && mapped !== activeTab) void selectTab(mapped);
+  }, [searchParams]);
 
   async function selectTab(tab: StudentTab) {
     setActiveTab(tab);
@@ -75,6 +83,10 @@ export default function StudentDashboard() {
   if (!isAuthorized) return null;
 
   return <PortalShell role="student"><section className="min-h-[calc(100vh-156px)]"><div className="mb-8"><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">Welcome back, Student Portal</h1><p className="mt-1.5 text-sm text-[#68736c]">Your residence information, utilities, support requests, and annual application in one secure place.</p></div>{notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}<div className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-[#d9e5da] bg-[#eaf2eb] p-1">{tabs.map((tab) => <button key={tab.id} onClick={() => void selectTab(tab.id)} className={`rounded-xl px-3 py-2 text-sm font-medium ${activeTab === tab.id ? 'bg-white shadow-sm' : 'text-[#395043] hover:bg-white/60'}`}>{tab.label}</button>)}</div><div className="mt-8">{activeTab === 'overview' && <Overview bills={bills} maintenance={maintenance} applications={applications} present={present} residence={residence} />} {activeTab === 'bills' && <Bills bills={bills} working={working} onMarkPaid={confirmBillPayment} />} {activeTab === 'maintenance' && <Maintenance maintenance={maintenance} working={working} submit={submitMaintenance} />} {activeTab === 'application' && <Application applications={applications} working={working} submit={submitApplication} />}</div></section></PortalShell>;
+}
+
+export default function StudentDashboard() {
+  return <Suspense fallback={<DashboardRoleGuardLoading />}><StudentDashboardContent /></Suspense>;
 }
 
 function Overview({ bills, maintenance, applications, present, residence }: { bills: StudentBill[]; maintenance: MaintenanceRequest[]; applications: RoomApplication[]; present: number; residence: ResidenceDetails | null }) { const assignment = residence?.assignment; const room = assignment?.rooms; return <div className="grid gap-6 lg:grid-cols-3"><div className="ksit-card p-6 lg:col-span-2"><div className="flex items-center gap-2 text-[#0b5c2c]"><QrCode className="size-5" /><h2 className="text-lg font-bold text-[#18231d]">Residence status</h2></div><p className="mt-2 text-sm leading-6 text-[#68736c]">Your active room assignment and roommates are loaded from the residence record.</p><div className="mt-6 rounded-xl border border-dashed border-[#cdd9ce] bg-[#fafcf9] p-5">{assignment && room ? <><p className="font-semibold">{room.buildings?.code || 'Residence'} · Room {room.room_number} · Bed {assignment.bed_number}</p><p className="mt-1 text-sm text-[#68736c]">Floor {room.floor_number || '—'} · Academic year {assignment.academic_year}</p><p className="mt-4 text-xs font-bold uppercase tracking-wide text-[#68736c]">Roommates</p><p className="mt-1 text-sm text-[#526058]">{residence?.roommates.map((mate) => `${mate.users?.full_name_latin || mate.users?.full_name_khmer || 'Resident'} (Bed ${mate.bed_number})`).join(' · ') || 'No roommates assigned.'}</p></> : <><p className="font-semibold">Room assignment pending</p><p className="mt-1 text-sm text-[#68736c]">Your manager-assigned room details will appear after an approved application is allocated.</p></>}</div></div><div className="space-y-4"><OverviewStat icon={<CreditCard />} label="Unpaid KHQR bills" value={bills.filter((bill) => bill.bill_status !== 'paid').length} /><OverviewStat icon={<Wrench />} label="Open tickets" value={maintenance.filter((ticket) => !['resolved', 'cancelled'].includes(ticket.status)).length} /><OverviewStat icon={<ClipboardList />} label="Present records" value={present} /></div><section className="ksit-card p-6 lg:col-span-3"><h2 className="text-lg font-bold">Annual residence application</h2><p className="mt-1 text-sm text-[#68736c]">{applications.length ? `Latest application status: ${applications[0].status.replaceAll('_', ' ')}` : 'No application has been submitted for the current academic year.'}</p></section></div>; }

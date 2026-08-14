@@ -24,7 +24,8 @@ test('the shared portal shell cannot navigate a Student into another role portal
   const shell = fs.readFileSync(path.join(frontend, 'components', 'portal-shell.tsx'), 'utf8');
   assert.doesNotMatch(shell, /Role switcher/);
   assert.doesNotMatch(shell, /router\.push\(/);
-  assert.match(shell, /Current portal:/);
+  assert.match(shell, /Dashboard & Analytics/);
+  assert.match(shell, /System Settings/);
 });
 
 test('role middleware rejects a Student from privileged Admin and Manager API routes', () => {
