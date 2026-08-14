@@ -39,4 +39,4 @@
 - [x] Extend Supabase site settings and secure Admin APIs for footer, hero, feature-card, and homepage configuration data.
 - [x] Bind the existing homepage footer and configurable content to CMS settings without changing its layout or branding.
 - [x] Build the protected Admin Homepage Editor, link it from the Admin dashboard, and preserve all existing Admin controls.
-- [ ] Validate, push, deploy, and verify the localization and Homepage CMS release.
+- [x] Validate, push, deploy, and verify the localization and Homepage CMS release; production public API returns the extended CMS settings and the protected editor route enforces login.
