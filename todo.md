@@ -34,3 +34,9 @@
 - [x] Validate, push, deploy, and verify the logout and announcement-management release; Vercel is Ready and the public announcement API returns the migrated settings.
 - [x] Create a temporary Admin news post in production, verify the public announcement response and homepage propagation, then remove the test post; public API is clean afterward.
 - [x] Render visible Admin-managed news posts on the existing homepage so public news creation is verifiable in the browser.
+- [x] Add official Khmer font loading and preserve the KSIT visual identity across desktop and mobile.
+- [x] Add a shared Khmer/English localization dictionary and dynamic portal-shell language support across all role dashboards.
+- [x] Extend Supabase site settings and secure Admin APIs for footer, hero, feature-card, and homepage configuration data.
+- [x] Bind the existing homepage footer and configurable content to CMS settings without changing its layout or branding.
+- [x] Build the protected Admin Homepage Editor, link it from the Admin dashboard, and preserve all existing Admin controls.
+- [ ] Validate, push, deploy, and verify the localization and Homepage CMS release.

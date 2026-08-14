@@ -808,8 +808,8 @@ async function getPublicAnnouncements(req, res, next) {
   try {
     const supabase = getSupabase();
     const [settingsResponse, newsResponse] = await Promise.all([
-      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline']),
-      supabase.from('news_posts').select('id, title, body, published_at, created_at').eq('is_visible', true).order('published_at', { ascending: false }).limit(12),
+      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline', 'homepage_hero', 'homepage_features', 'footer_contact']),
+      supabase.from('news_posts').select('id, title, body, image_url, external_url, published_at, created_at').eq('is_visible', true).order('published_at', { ascending: false }).limit(12),
     ]);
     if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
     const settings = Object.fromEntries((settingsResponse.data || []).map((item) => [item.setting_key, item.setting_value]));
@@ -823,8 +823,8 @@ async function getAnnouncementManagement(req, res, next) {
   try {
     const supabase = getSupabase();
     const [settingsResponse, newsResponse] = await Promise.all([
-      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline']),
-      supabase.from('news_posts').select('id, title, body, is_visible, published_at, created_at, updated_at').order('published_at', { ascending: false }),
+      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline', 'homepage_hero', 'homepage_features', 'footer_contact']),
+      supabase.from('news_posts').select('id, title, body, image_url, external_url, is_visible, published_at, created_at, updated_at').order('published_at', { ascending: false }),
     ]);
     if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
     const settings = Object.fromEntries((settingsResponse.data || []).map((item) => [item.setting_key, item.setting_value]));
@@ -836,7 +836,7 @@ async function getAnnouncementManagement(req, res, next) {
 
 async function updateAnnouncementSettings(req, res, next) {
   try {
-    const { top_ticker, registration_deadline } = req.body;
+    const { top_ticker, registration_deadline, homepage_hero, homepage_features, footer_contact } = req.body;
     const rows = [];
     if (top_ticker !== undefined) {
       if (!top_ticker || typeof top_ticker.text !== 'string' || !top_ticker.text.trim()) throw fail('Ticker text is required.');
@@ -846,7 +846,19 @@ async function updateAnnouncementSettings(req, res, next) {
       if (!registration_deadline || typeof registration_deadline.title !== 'string' || !registration_deadline.title.trim() || typeof registration_deadline.deadline_at !== 'string') throw fail('Deadline title and deadline date are required.');
       rows.push({ setting_key: 'registration_deadline', setting_value: { title: registration_deadline.title.trim(), badge: typeof registration_deadline.badge === 'string' ? registration_deadline.badge.trim() : '', deadline_at: registration_deadline.deadline_at }, updated_at: new Date().toISOString() });
     }
-    if (rows.length === 0) throw fail('Provide ticker or registration deadline settings to update.');
+    if (homepage_hero !== undefined) {
+      if (!homepage_hero || typeof homepage_hero.title !== 'string' || !homepage_hero.title.trim()) throw fail('Hero title is required.');
+      rows.push({ setting_key: 'homepage_hero', setting_value: homepage_hero, updated_at: new Date().toISOString() });
+    }
+    if (homepage_features !== undefined) {
+      if (!Array.isArray(homepage_features) || homepage_features.length !== 4) throw fail('Provide exactly four homepage feature cards.');
+      rows.push({ setting_key: 'homepage_features', setting_value: homepage_features, updated_at: new Date().toISOString() });
+    }
+    if (footer_contact !== undefined) {
+      if (!footer_contact || typeof footer_contact.address !== 'string' || typeof footer_contact.phones !== 'string' || typeof footer_contact.email !== 'string') throw fail('Footer address, phones, and email are required.');
+      rows.push({ setting_key: 'footer_contact', setting_value: footer_contact, updated_at: new Date().toISOString() });
+    }
+    if (rows.length === 0) throw fail('Provide homepage settings to update.');
     const supabase = getSupabase();
     const { data, error } = await supabase.from('site_settings').upsert(rows, { onConflict: 'setting_key' }).select('setting_key, setting_value, updated_at');
     if (error) throw error;
@@ -858,12 +870,14 @@ async function updateAnnouncementSettings(req, res, next) {
 
 async function createNewsPost(req, res, next) {
   try {
-    const { title, body = '', is_visible = true, published_at } = req.body;
+    const { title, body = '', image_url = '', external_url = '', is_visible = true, published_at } = req.body;
     if (!String(title || '').trim()) throw fail('News post title is required.');
     const supabase = getSupabase();
     const { data, error } = await supabase.from('news_posts').insert({
       title: String(title).trim(),
       body: String(body || '').trim(),
+      image_url: String(image_url || '').trim() || null,
+      external_url: String(external_url || '').trim() || null,
       is_visible: Boolean(is_visible),
       published_at: published_at || new Date().toISOString(),
       created_by: req.user.sub,
@@ -877,13 +891,15 @@ async function createNewsPost(req, res, next) {
 
 async function updateNewsPost(req, res, next) {
   try {
-    const { title, body, is_visible, published_at } = req.body;
+    const { title, body, image_url, external_url, is_visible, published_at } = req.body;
     const patch = { updated_at: new Date().toISOString() };
     if (title !== undefined) {
       if (!String(title).trim()) throw fail('News post title cannot be empty.');
       patch.title = String(title).trim();
     }
     if (body !== undefined) patch.body = String(body || '').trim();
+    if (image_url !== undefined) patch.image_url = String(image_url || '').trim() || null;
+    if (external_url !== undefined) patch.external_url = String(external_url || '').trim() || null;
     if (is_visible !== undefined) patch.is_visible = Boolean(is_visible);
     if (published_at !== undefined) patch.published_at = published_at;
     const supabase = getSupabase();

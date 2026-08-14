@@ -1,11 +1,27 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist_Mono, Kantumruy_Pro, Koulen, Moul } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+const kantumruyPro = Kantumruy_Pro({
+  variable: '--font-kantumruy-pro',
+  subsets: ['khmer', 'latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const koulen = Koulen({
+  variable: '--font-koulen',
+  subsets: ['khmer'],
+  weight: '400',
+  display: 'swap',
+});
+
+const moul = Moul({
+  variable: '--font-moul',
+  subsets: ['khmer'],
+  weight: '400',
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -20,7 +36,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="km" className={`${kantumruyPro.variable} ${koulen.variable} ${moul.variable} ${geistMono.variable}`}>
       <body>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         {children}

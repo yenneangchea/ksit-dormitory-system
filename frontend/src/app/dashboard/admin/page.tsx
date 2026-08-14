@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Building2, Megaphone, Pencil, Plus, QrCode, ShieldCheck, Trash2, UsersRound, Wrench } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
@@ -148,7 +149,7 @@ export default function AdminDashboard() {
       <section className="min-h-[calc(100vh-156px)]">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">Welcome back, Admin Portal</h1><p className="mt-1.5 text-sm text-[#68736c]">Manage user access and residence configuration from one protected workspace.</p></div>
-          <div className="flex flex-wrap gap-2"><ActionButton icon={<Plus />} onClick={() => setModal({ type: 'user' })}>Add new user</ActionButton><ActionButton icon={<Building2 />} tone="secondary" onClick={() => setModal({ type: 'building' })}>Add building</ActionButton><ActionButton icon={<QrCode />} tone="secondary" onClick={() => setModal({ type: 'room' })}>Add room</ActionButton></div>
+          <div className="flex flex-wrap gap-2"><Link href="/dashboard/admin/homepage-editor" className="inline-flex items-center gap-2 rounded-lg border border-[#dce3dc] bg-white px-3 py-2 text-xs font-bold text-[#31513d] hover:bg-[#f4f8f4]">🎨 Edit Homepage</Link><ActionButton icon={<Plus />} onClick={() => setModal({ type: 'user' })}>Add new user</ActionButton><ActionButton icon={<Building2 />} tone="secondary" onClick={() => setModal({ type: 'building' })}>Add building</ActionButton><ActionButton icon={<QrCode />} tone="secondary" onClick={() => setModal({ type: 'room' })}>Add room</ActionButton></div>
         </div>
         {notice && <div role="status" className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Kpi icon={<UsersRound />} label="Registered users" value={users.length} note="Active role accounts" /><Kpi icon={<Building2 />} label="Buildings" value={summary.buildings} note={`${summary.rooms_total} configured rooms`} /><Kpi icon={<ShieldCheck />} label="Pending review" value={summary.pending_applications} note="Residence applications" /><Kpi icon={<Wrench />} label="Open work orders" value={summary.pending_maintenance} note="Manager action queue" /></div>
