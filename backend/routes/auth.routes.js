@@ -10,6 +10,13 @@ const authController = require('../controllers/auth.controller');
 router.post('/login', authController.login);
 
 /**
+ * @route   POST /api/auth/telegram
+ * @desc    Verify Telegram Mini App login data and issue a local role session
+ * @access  Public
+ */
+router.post('/telegram', authController.loginWithTelegram);
+
+/**
  * @route   POST /api/auth/logout
  * @desc    Logout user (future implementation with sessions)
  * @access  Private

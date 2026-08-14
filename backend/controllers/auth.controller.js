@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSupabase } = require('../config/supabase');
+const { verifyTelegramWebAppInitData } = require('../lib/telegram-webapp-auth');
 
 function publicUser(user) {
   return {
@@ -106,6 +107,49 @@ const login = async (req, res, next) => {
 };
 
 /**
+ * @desc Verify Telegram Mini App init data and sign in a previously linked dormitory user.
+ * @route POST /api/auth/telegram
+ * @access Public
+ */
+const loginWithTelegram = async (req, res, next) => {
+  try {
+    const { initData } = req.body;
+    const { telegramId } = verifyTelegramWebAppInitData(
+      initData,
+      process.env.TELEGRAM_BOT_TOKEN,
+      Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 600),
+    );
+    const supabase = getSupabase();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at')
+      .eq('telegram_id', telegramId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!user) {
+      const linkError = new Error('Your Telegram account is not linked to a KSIT dormitory profile. Use email login or ask an administrator to link your Telegram ID.');
+      linkError.statusCode = 401;
+      throw linkError;
+    }
+
+    res.json({
+      success: true,
+      message: 'Telegram login successful.',
+      user: publicUser(user),
+      token: createSessionToken(user),
+    });
+  } catch (error) {
+    if (!error.statusCode && /not configured/.test(error.message || '')) {
+      error.statusCode = 503;
+    } else if (!error.statusCode && /Telegram login|Telegram user|could not be verified|incomplete|expired/.test(error.message || '')) {
+      error.statusCode = 401;
+    }
+    next(error);
+  }
+};
+
+/**
  * @desc Log out of the local signed session.
  * @route POST /api/auth/logout
  * @access Private client cleanup; tokens are stateless.
@@ -147,6 +191,7 @@ const getCurrentUser = async (req, res, next) => {
 
 module.exports = {
   login,
+  loginWithTelegram,
   logout,
   getCurrentUser,
   decodeSession,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   Award,
+  BellRing,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -147,6 +148,19 @@ export default function HomePage() {
               {roles.map((role) => <Link key={role.name} href="/login" className="rounded-xl border border-white/15 bg-white/10 p-3.5 hover:bg-white/20"><span className={`block text-sm font-bold ${role.tone}`}>{role.name}</span><span className="mt-1 block leading-5 text-slate-200">{role.detail}</span></Link>)}
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section aria-label="សេចក្តីជូនដំណឹងអំពីថ្ងៃផុតកំណត់ដាក់ពាក្យ" className="border-b border-amber-200 bg-[linear-gradient(90deg,#fff8df,#fffef8,#f6fdf7)] px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 rounded-2xl border border-amber-300/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm lg:flex-row lg:items-center lg:p-5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-900"><BellRing className="size-5" /></span>
+            <div>
+              <p className="text-sm font-extrabold leading-6 text-slate-900">📢 សេចក្តីជូនដំណឹងសំខាន់៖ ការទទួលពាក្យសុំស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត ឆ្នាំសិក្សា ២០២៦-២០២៧ នឹងត្រូវផុតកំណត់នៅថ្ងៃទី ៣១ ខែសីហា ឆ្នាំ២០២៦ វេលាម៉ោង ១៧:០០ ជាកំហិត!</p>
+              <span className="mt-2 inline-flex rounded-full bg-[#147a5b] px-3 py-1 text-xs font-bold text-white">នៅសល់ ១៧ ថ្ងៃទៀត · កំណត់ត្រឹម ៣១ សីហា ២០២៦ · ១៧:០០</span>
+            </div>
+          </div>
+          <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#147a5b] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0f6047]">ដាក់ពាក្យឥឡូវនេះ <ChevronRight className="size-4" /></Link>
         </div>
       </section>
 
