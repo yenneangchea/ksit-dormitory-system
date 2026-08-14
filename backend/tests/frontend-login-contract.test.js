@@ -32,3 +32,15 @@ test('login page exposes email and Telegram choices plus all four demo-account q
     assert.match(login, new RegExp(email.replace('@', '@')));
   }
 });
+
+test('role-aware login maps every authorized role to its own dashboard route', () => {
+  const login = fs.readFileSync(path.join(frontendRoot, 'login', 'page.tsx'), 'utf8');
+  for (const [role, route] of Object.entries({
+    admin: '/dashboard/admin',
+    manager: '/dashboard/manager',
+    teacher: '/dashboard/teacher',
+    student: '/dashboard/student',
+  })) {
+    assert.match(login, new RegExp(`${role}: ["']${route}["']`));
+  }
+});
