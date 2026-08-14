@@ -44,3 +44,11 @@ test('role-aware login maps every authorized role to its own dashboard route', (
     assert.match(login, new RegExp(`${role}: ["']${route}["']`));
   }
 });
+
+test('Telegram role handoff stores the issued session locally and never puts a token in a dashboard URL', () => {
+  const login = fs.readFileSync(path.join(frontendRoot, 'login', 'page.tsx'), 'utf8');
+  assert.match(login, /localStorage\.setItem\("ksit_session_token", response\.token\)/);
+  assert.match(login, /router\.replace\(destination\)/);
+  assert.doesNotMatch(login, /router\.replace\([^)]*token=/);
+  assert.doesNotMatch(login, /dashboard\/[a-z]+\?[^"'`]*token=/);
+});
