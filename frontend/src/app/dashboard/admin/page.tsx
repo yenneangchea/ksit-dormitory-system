@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Building2, Pencil, Plus, QrCode, ShieldCheck, Trash2, UsersRound, Wrench } from 'lucide-react';
+import { Building2, Megaphone, Pencil, Plus, QrCode, ShieldCheck, Trash2, UsersRound, Wrench } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import { buildingsAPI, dashboardAPI, roomsAPI, type DashboardSummary, usersAPI } from '@/lib/api';
@@ -9,9 +9,24 @@ import type { Building, Room, User, UserRole } from '@/types';
 
 type BuildingWithRooms = Building & { rooms?: Room[] };
 type ModalState = { type: 'user'; user?: User } | { type: 'building'; building?: BuildingWithRooms } | { type: 'room'; room?: Room } | null;
+type NewsPost = { id: string; title: string; body: string; is_visible: boolean; published_at: string; created_at?: string; updated_at?: string };
+type AnnouncementManagement = { settings: { top_ticker?: { text?: string; link?: string }; registration_deadline?: { title?: string; badge?: string; deadline_at?: string } }; news_posts: NewsPost[] };
+type NewsModal = NewsPost | 'new' | null;
 
 const emptySummary: DashboardSummary = { buildings: 0, rooms_in_service: 0, rooms_total: 0, total_capacity: 0, occupied_beds: 0, vacant_beds: 0, occupancy_percent: 0, pending_maintenance: 0, pending_applications: 0, attendance_today: 0 };
 const roleOptions: UserRole[] = ['admin', 'manager', 'teacher', 'student'];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+async function announcementRequest<T>(path: string, init?: RequestInit): Promise<{ success: boolean; data?: T; message?: string; error?: { message: string } }> {
+  try {
+    const token = window.localStorage.getItem('ksit_session_token');
+    const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init?.headers || {}) } });
+    const payload = await response.json();
+    return response.ok ? payload : { success: false, error: { message: payload.error?.message || 'The announcement request could not be completed.' } };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'Network request failed.' } };
+  }
+}
 
 export default function AdminDashboard() {
   const { isAuthorized, isChecking } = useRoleGuard('admin');
@@ -21,12 +36,15 @@ export default function AdminDashboard() {
   const [notice, setNotice] = useState('');
   const [isWorking, setIsWorking] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
+  const [announcementManagement, setAnnouncementManagement] = useState<AnnouncementManagement>({ settings: {}, news_posts: [] });
+  const [newsModal, setNewsModal] = useState<NewsModal>(null);
 
   async function load() {
-    const [summaryResponse, usersResponse, buildingsResponse] = await Promise.all([dashboardAPI.summary(), usersAPI.list(), buildingsAPI.list()]);
+    const [summaryResponse, usersResponse, buildingsResponse, announcementsResponse] = await Promise.all([dashboardAPI.summary(), usersAPI.list(), buildingsAPI.list(), announcementRequest<AnnouncementManagement>('/api/announcements')]);
     if (summaryResponse.success && summaryResponse.data) setSummary(summaryResponse.data);
     if (usersResponse.success && usersResponse.data) setUsers(usersResponse.data);
     if (buildingsResponse.success && buildingsResponse.data) setBuildings(buildingsResponse.data as BuildingWithRooms[]);
+    if (announcementsResponse.success && announcementsResponse.data) setAnnouncementManagement(announcementsResponse.data);
   }
 
   useEffect(() => {
@@ -98,6 +116,30 @@ export default function AdminDashboard() {
     await runAction(() => roomsAPI.create(payload), 'Room created with a new Magic QR code.');
   }
 
+  async function saveAnnouncementSettings(formData: FormData) {
+    const deadlineInput = String(formData.get('deadline_at') || '');
+    await runAction(() => announcementRequest('/api/announcements/settings', { method: 'PUT', body: JSON.stringify({
+      top_ticker: { text: String(formData.get('ticker_text') || ''), link: String(formData.get('ticker_link') || '') },
+      registration_deadline: { title: String(formData.get('deadline_title') || ''), badge: String(formData.get('deadline_badge') || ''), deadline_at: deadlineInput ? new Date(deadlineInput).toISOString() : '' },
+    }) }), 'Homepage announcement settings updated.');
+  }
+
+  async function saveNewsPost(formData: FormData) {
+    const payload = { title: String(formData.get('title') || ''), body: String(formData.get('body') || ''), is_visible: formData.get('is_visible') === 'on', published_at: new Date(String(formData.get('published_at') || new Date().toISOString())).toISOString() };
+    const response = newsModal !== 'new' && newsModal ? announcementRequest(`/api/announcements/news/${newsModal.id}`, { method: 'PATCH', body: JSON.stringify(payload) }) : announcementRequest('/api/announcements/news', { method: 'POST', body: JSON.stringify(payload) });
+    await runAction(() => response, newsModal === 'new' ? 'News post created.' : 'News post updated.');
+    setNewsModal(null);
+  }
+
+  async function toggleNewsVisibility(post: NewsPost) {
+    await runAction(() => announcementRequest(`/api/announcements/news/${post.id}`, { method: 'PATCH', body: JSON.stringify({ is_visible: !post.is_visible }) }), 'News post visibility updated.');
+  }
+
+  async function deleteNews(post: NewsPost) {
+    if (!window.confirm(`Delete the news post “${post.title}”?`)) return;
+    await runAction(() => announcementRequest(`/api/announcements/news/${post.id}`, { method: 'DELETE' }), 'News post deleted.');
+  }
+
   if (isChecking) return <DashboardRoleGuardLoading />;
   if (!isAuthorized) return null;
 
@@ -117,13 +159,22 @@ export default function AdminDashboard() {
         </div>
 
         <section className="ksit-card mt-8 overflow-hidden"><div className="flex flex-col gap-3 p-6 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold">Buildings & rooms</h2><p className="mt-1 text-sm text-[#68736c]">Configure residence capacity, room eligibility, and Magic QR identities.</p></div><div className="flex gap-2"><button onClick={() => setModal({ type: 'building' })} className="rounded-lg border border-[#dce3dc] px-3 py-2 text-xs font-bold text-[#274333] hover:bg-[#f4f8f4]">Add building</button><button onClick={() => setModal({ type: 'room' })} className="rounded-lg bg-[#0b5c2c] px-3 py-2 text-xs font-bold text-white hover:bg-[#084a23]">Add room</button></div></div><div className="border-t border-[#edf0ed]"><div className="grid gap-4 p-5 lg:grid-cols-2">{buildings.length === 0 ? <p className="text-sm text-[#68736c]">Create a building to begin configuring rooms.</p> : buildings.map((building) => <div key={building.id} className="rounded-xl border border-[#e1e7e1] bg-[#fcfdfb] p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold">{building.code} · {building.name}</p><p className="mt-1 text-xs text-[#68736c]">{building.gender_restriction} residence · {building.total_floors} floors</p></div><div className="flex gap-1"><IconButton label="Edit building" onClick={() => setModal({ type: 'building', building })}><Pencil /></IconButton><IconButton label="Delete building" tone="danger" onClick={() => { if (window.confirm(`Delete ${building.name}? Rooms must be removed first.`)) void runAction(() => buildingsAPI.remove(building.id), 'Building deleted.'); }}><Trash2 /></IconButton></div></div><div className="mt-4 divide-y divide-[#edf0ed]">{(building.rooms || []).length === 0 ? <p className="py-3 text-xs text-[#7b857e]">No rooms configured.</p> : building.rooms?.map((room) => <div className="flex items-center justify-between gap-3 py-3" key={room.id}><div><p className="text-sm font-semibold">Room {room.room_number} · Floor {room.floor_number}</p><p className="mt-1 text-xs text-[#68736c]">{room.occupied_count}/{room.capacity} beds · {room.gender} · {room.status}</p></div><div className="flex gap-1"><IconButton label="Edit room" onClick={() => setModal({ type: 'room', room })}><Pencil /></IconButton><IconButton label="Delete room" tone="danger" onClick={() => { if (window.confirm(`Delete room ${room.room_number}?`)) void runAction(() => roomsAPI.remove(room.id), 'Room deleted.'); }}><Trash2 /></IconButton></div></div>)}</div></div>)}</div></div></section>
+        <AnnouncementManagementPanel management={announcementManagement} isWorking={isWorking} onSaveSettings={saveAnnouncementSettings} onCreate={() => setNewsModal('new')} onEdit={(post) => setNewsModal(post)} onToggle={(post) => void toggleNewsVisibility(post)} onDelete={(post) => void deleteNews(post)} />
       </section>
 
       {modal?.type === 'user' && <Modal title={modal.user ? 'Edit user account' : 'Add new user account'} onClose={() => setModal(null)}><form action={submitUser} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><Field label="Khmer full name" name="full_name_khmer" defaultValue={modal.user?.full_name_khmer} required /><Field label="Latin full name" name="full_name_latin" defaultValue={modal.user?.full_name_latin} required /><Field label="Email address" name="email" type="email" defaultValue={modal.user?.email} required /><Field label="Phone number" name="phone" defaultValue={modal.user?.phone} required /><SelectField label="Gender" name="gender" defaultValue={modal.user?.gender || 'male'} options={[['male', 'Male'], ['female', 'Female']]} /><SelectField label="Role" name="role" defaultValue={modal.user?.role || 'student'} options={roleOptions.map((role) => [role, role[0].toUpperCase() + role.slice(1)])} /></div><Field label={modal.user ? 'New temporary password (optional)' : 'Temporary password'} name="password" type="password" minLength={8} required={!modal.user} hint={modal.user ? 'Leave blank to keep the current password.' : 'Minimum 8 characters.'} /><ModalActions busy={isWorking} submitLabel={modal.user ? 'Save user changes' : 'Create user'} /></form></Modal>}
       {modal?.type === 'building' && <Modal title={modal.building ? 'Edit building' : 'Add building'} onClose={() => setModal(null)}><form action={submitBuilding} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><Field label="Building code" name="code" defaultValue={modal.building?.code} required /><Field label="Building name" name="name" defaultValue={modal.building?.name} required /><SelectField label="Gender restriction" name="gender_restriction" defaultValue={modal.building?.gender_restriction || 'mixed'} options={[['male', 'Male'], ['female', 'Female'], ['mixed', 'Mixed']]} /><Field label="Total floors" name="total_floors" type="number" min="1" defaultValue={String(modal.building?.total_floors || 1)} required /></div><label className="block text-sm font-medium text-[#39473f]">Description<textarea name="description" defaultValue={modal.building?.description} className="mt-1.5 min-h-24 w-full rounded-xl border border-[#dce3dc] bg-white p-3 text-sm outline-none focus:border-[#5f9b6f]" placeholder="Optional residence notes" /></label><ModalActions busy={isWorking} submitLabel={modal.building ? 'Save building' : 'Create building'} /></form></Modal>}
       {modal?.type === 'room' && <Modal title={modal.room ? 'Edit room configuration' : 'Add room'} onClose={() => setModal(null)}><form action={submitRoom} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Building" name="building_id" defaultValue={modal.room?.building_id || ''} options={[['', 'Choose building'], ...buildings.map((building) => [building.id, `${building.code} · ${building.name}`])]} required /><Field label="Room number" name="room_number" defaultValue={modal.room?.room_number} required /><Field label="Floor" name="floor_number" type="number" min="1" defaultValue={String(modal.room?.floor_number || 1)} required /><Field label="Capacity" name="capacity" type="number" min="1" defaultValue={String(modal.room?.capacity || 4)} required /><SelectField label="Assigned gender" name="gender" defaultValue={modal.room?.gender || 'male'} options={[['male', 'Male'], ['female', 'Female']]} /><SelectField label="Room status" name="status" defaultValue={modal.room?.status || 'available'} options={[['available', 'Available'], ['full', 'Full'], ['maintenance', 'Maintenance']]} /><Field label="Assigned major" name="assigned_major" defaultValue={modal.room?.assigned_major} hint="Optional cohort preference" /><Field label="Assigned academic year" name="assigned_year" type="number" min="1" max="4" defaultValue={modal.room?.assigned_year ? String(modal.room.assigned_year) : ''} hint="Optional year 1–4" /></div>{modal.room && <label className="flex items-center gap-2 rounded-lg bg-[#f3f8f3] px-3 py-2 text-sm text-[#31513d]"><input type="checkbox" name="regenerate_magic_qr" />Regenerate the room Magic QR code</label>}<ModalActions busy={isWorking} submitLabel={modal.room ? 'Save room' : 'Create room'} /></form></Modal>}
+      {newsModal && <Modal title={newsModal === 'new' ? 'Create news post' : 'Edit news post'} onClose={() => setNewsModal(null)}><form action={saveNewsPost} className="space-y-4"><Field label="Title" name="title" defaultValue={newsModal === 'new' ? '' : newsModal.title} required /><label className="block text-sm font-medium text-[#39473f]">News content<textarea name="body" defaultValue={newsModal === 'new' ? '' : newsModal.body} className="mt-1.5 min-h-28 w-full rounded-xl border border-[#dce3dc] bg-white p-3 text-sm outline-none focus:border-[#5f9b6f]" /></label><Field label="Published date" name="published_at" type="datetime-local" defaultValue={newsModal === 'new' ? new Date().toISOString().slice(0, 16) : new Date(newsModal.published_at).toISOString().slice(0, 16)} required /><label className="flex items-center gap-2 rounded-lg bg-[#f3f8f3] px-3 py-2 text-sm text-[#31513d]"><input type="checkbox" name="is_visible" defaultChecked={newsModal === 'new' ? true : newsModal.is_visible} />Visible on the public site</label><ModalActions busy={isWorking} submitLabel={newsModal === 'new' ? 'Create post' : 'Save post'} /></form></Modal>}
     </PortalShell>
   );
+}
+
+function AnnouncementManagementPanel({ management, isWorking, onSaveSettings, onCreate, onEdit, onToggle, onDelete }: { management: AnnouncementManagement; isWorking: boolean; onSaveSettings: (formData: FormData) => Promise<void>; onCreate: () => void; onEdit: (post: NewsPost) => void; onToggle: (post: NewsPost) => void; onDelete: (post: NewsPost) => void }) {
+  const ticker = management.settings.top_ticker || {};
+  const deadline = management.settings.registration_deadline || {};
+  const deadlineLocal = deadline.deadline_at ? new Date(deadline.deadline_at).toISOString().slice(0, 16) : '';
+  return <section className="ksit-card mt-8 overflow-hidden"><div className="flex flex-col gap-3 p-6 sm:flex-row sm:items-start sm:justify-between"><div className="flex gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e6f4e8] text-[#0b5c2c]"><Megaphone className="size-5" /></span><div><h2 className="text-lg font-bold">📢 Announcements & News Management</h2><p className="mt-1 text-sm text-[#68736c]">គ្រប់គ្រងសេចក្តីជូនដំណឹង · homepage ticker, application deadline, and public news posts.</p></div></div><button onClick={onCreate} className="rounded-lg bg-[#0b5c2c] px-3 py-2 text-xs font-bold text-white hover:bg-[#084a23]">Create news post</button></div><div className="grid gap-6 border-t border-[#edf0ed] p-6 xl:grid-cols-[1fr_.9fr]"><form action={onSaveSettings} className="space-y-5"><div><h3 className="font-bold text-[#223128]">Edit Top Ticker Announcement</h3><p className="mt-1 text-xs text-[#68736c]">This replaces only the existing top green ticker content.</p><Field label="Ticker text" name="ticker_text" defaultValue={ticker.text || ''} required /><Field label="Ticker link" name="ticker_link" type="url" defaultValue={ticker.link || ''} hint="Optional destination URL" /></div><div className="border-t border-[#edf0ed] pt-5"><h3 className="font-bold text-[#223128]">Edit Registration Deadline Banner</h3><Field label="Deadline title" name="deadline_title" defaultValue={deadline.title || ''} required /><Field label="Deadline date and time" name="deadline_at" type="datetime-local" defaultValue={deadlineLocal} required /><Field label="Countdown / status badge" name="deadline_badge" defaultValue={deadline.badge || ''} hint="Optional label displayed below the deadline title" /></div><ModalActions busy={isWorking} submitLabel="Save homepage announcements" /></form><div className="rounded-xl border border-[#e1e7e1] bg-[#fafcf9] p-4"><div className="flex items-center justify-between gap-3"><div><h3 className="font-bold text-[#223128]">News posts</h3><p className="mt-1 text-xs text-[#68736c]">Visible posts are available through the public announcements API.</p></div><span className="rounded-full bg-[#e6f4e8] px-2.5 py-1 text-xs font-bold text-[#16582b]">{management.news_posts.length} posts</span></div><div className="mt-4 max-h-[420px] divide-y divide-[#e4ebe4] overflow-auto">{management.news_posts.length === 0 ? <p className="py-5 text-sm text-[#68736c]">No news posts have been created.</p> : management.news_posts.map((post) => <article className="py-4" key={post.id}><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-[#25332a]">{post.title}</p><p className="mt-1 line-clamp-2 text-xs leading-5 text-[#68736c]">{post.body || 'No body content.'}</p><p className="mt-2 text-[11px] text-[#849087]">{new Date(post.published_at).toLocaleString()}</p></div><span className={`rounded-full px-2 py-1 text-[11px] font-bold ${post.is_visible ? 'bg-[#e6f4e8] text-[#16582b]' : 'bg-[#f1f2f1] text-[#6d766f]'}`}>{post.is_visible ? 'Visible' : 'Hidden'}</span></div><div className="mt-3 flex flex-wrap gap-2"><button onClick={() => onEdit(post)} className="rounded-lg border border-[#dce3dc] px-2.5 py-1.5 text-xs font-bold text-[#405349] hover:bg-white">Edit</button><button onClick={() => onToggle(post)} className="rounded-lg border border-[#dce3dc] px-2.5 py-1.5 text-xs font-bold text-[#405349] hover:bg-white">{post.is_visible ? 'Hide' : 'Show'}</button><button onClick={() => onDelete(post)} className="rounded-lg border border-[#f2cfca] px-2.5 py-1.5 text-xs font-bold text-[#ad4939] hover:bg-[#fff3f1]">Delete</button></div></article>)}</div></div></div></section>;
 }
 
 function Kpi({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: number; note: string }) { return <div className="ksit-card min-h-[172px] p-5"><div className="flex items-start justify-between text-[#0b5c2c]"><p className="text-sm font-medium text-[#59655e]">{label}</p>{icon}</div><p className="mt-7 text-3xl font-extrabold tracking-[-0.04em]">{value}</p><p className="mt-1 text-xs text-[#68736c]">{note}</p></div>; }

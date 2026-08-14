@@ -4,6 +4,8 @@ const domain = require('../controllers/domain.controller');
 
 const router = express.Router();
 
+router.get('/public/announcements', domain.getPublicAnnouncements);
+
 router.use(authenticate);
 
 router.get('/dashboard/summary', requireRole('admin', 'manager'), domain.dashboardSummary);
@@ -12,6 +14,12 @@ router.post('/users', requireRole('admin'), domain.createUser);
 router.patch('/users/:userId', requireRole('admin'), domain.updateUser);
 router.delete('/users/:userId', requireRole('admin'), domain.deleteUser);
 router.patch('/users/:userId/role', requireRole('admin'), domain.updateUserRole);
+
+router.get('/announcements', requireRole('admin'), domain.getAnnouncementManagement);
+router.put('/announcements/settings', requireRole('admin'), domain.updateAnnouncementSettings);
+router.post('/announcements/news', requireRole('admin'), domain.createNewsPost);
+router.patch('/announcements/news/:newsPostId', requireRole('admin'), domain.updateNewsPost);
+router.delete('/announcements/news/:newsPostId', requireRole('admin'), domain.deleteNewsPost);
 
 router.route('/buildings')
   .get(requireRole('admin', 'manager'), domain.listBuildings)

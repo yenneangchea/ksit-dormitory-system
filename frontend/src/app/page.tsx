@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Award,
   BellRing,
@@ -58,15 +58,38 @@ const features = [
   },
 ];
 
+const homepageDefaults = {
+  ticker: { text: "ដំណឹងអាហារូបករណ៍ ឆ្នាំសិក្សា ២០២៥–២០២៦", link: "https://ksit.edu.kh/category/scholarship/" },
+  deadline: { title: "📢 សេចក្តីជូនដំណឹងសំខាន់៖ ការទទួលពាក្យសុំស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត ឆ្នាំសិក្សា ២០២៦-២០២៧ នឹងត្រូវផុតកំណត់នៅថ្ងៃទី ៣១ ខែសីហា ឆ្នាំ២០២៦ វេលាម៉ោង ១៧:០០ ជាកំហិត!", badge: "នៅសល់ ១៧ ថ្ងៃទៀត · កំណត់ត្រឹម ៣១ សីហា ២០២៦ · ១៧:០០", deadline_at: "2026-08-31T17:00:00+07:00" },
+};
+
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [ticker, setTicker] = useState(homepageDefaults.ticker);
+  const [deadline, setDeadline] = useState(homepageDefaults.deadline);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    void fetch(`${baseUrl}/api/public/announcements`).then((response) => response.ok ? response.json() : null).then((payload) => {
+      const settings = payload?.data?.settings;
+      if (settings?.top_ticker?.text) setTicker({ text: settings.top_ticker.text, link: settings.top_ticker.link || homepageDefaults.ticker.link });
+      if (settings?.registration_deadline?.title && settings.registration_deadline?.deadline_at) setDeadline({ title: settings.registration_deadline.title, badge: settings.registration_deadline.badge || "", deadline_at: settings.registration_deadline.deadline_at });
+    }).catch(() => undefined);
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const deadlineTime = new Date(deadline.deadline_at).getTime();
+  const remainingDays = Math.max(0, Math.ceil((deadlineTime - now) / 86_400_000));
+  const deadlineBadge = remainingDays > 0 ? `នៅសល់ ${remainingDays} ថ្ងៃទៀត` : deadline.badge || "កាលកំណត់បានផុត";
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-800">
       <div className="border-b border-emerald-800 bg-[#147a5b] px-4 py-2 text-xs text-white sm:text-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="font-semibold underline-offset-4 hover:underline">
-            ដំណឹងអាហារូបករណ៍ ឆ្នាំសិក្សា ២០២៥–២០២៦
+          <a href={ticker.link} target="_blank" rel="noreferrer" className="font-semibold underline-offset-4 hover:underline">
+            {ticker.text}
           </a>
           <div className="hidden items-center gap-4 text-xs text-emerald-100 md:flex">
             <span className="flex items-center gap-1"><Phone className="size-3.5" /> 089 511 383 / 092 740 222</span>
@@ -156,8 +179,8 @@ export default function HomePage() {
           <div className="flex items-start gap-3">
             <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-slate-900"><BellRing className="size-5" /></span>
             <div>
-              <p className="text-sm font-extrabold leading-6 text-slate-900">📢 សេចក្តីជូនដំណឹងសំខាន់៖ ការទទួលពាក្យសុំស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត ឆ្នាំសិក្សា ២០២៦-២០២៧ នឹងត្រូវផុតកំណត់នៅថ្ងៃទី ៣១ ខែសីហា ឆ្នាំ២០២៦ វេលាម៉ោង ១៧:០០ ជាកំហិត!</p>
-              <span className="mt-2 inline-flex rounded-full bg-[#147a5b] px-3 py-1 text-xs font-bold text-white">នៅសល់ ១៧ ថ្ងៃទៀត · កំណត់ត្រឹម ៣១ សីហា ២០២៦ · ១៧:០០</span>
+              <p className="text-sm font-extrabold leading-6 text-slate-900">{deadline.title}</p>
+              <span className="mt-2 inline-flex rounded-full bg-[#147a5b] px-3 py-1 text-xs font-bold text-white">{deadlineBadge}{deadline.badge ? ` · ${deadline.badge}` : ''}</span>
             </div>
           </div>
           <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#147a5b] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0f6047]">ដាក់ពាក្យឥឡូវនេះ <ChevronRight className="size-4" /></Link>

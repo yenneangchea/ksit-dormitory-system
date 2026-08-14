@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { UserRole } from '@/types';
 
@@ -11,6 +13,17 @@ export function PortalShell({
   role: UserRole;
   children: ReactNode;
 }) {
+  const router = useRouter();
+
+  function logout() {
+    window.localStorage.removeItem('ksit_session_token');
+    Object.keys(window.localStorage)
+      .filter((key) => key.startsWith('sb-') && key.endsWith('-auth-token'))
+      .forEach((key) => window.localStorage.removeItem(key));
+    window.sessionStorage.removeItem('ksit_session_token');
+    router.replace('/login');
+  }
+
   return (
     <div className="ksit-shell">
       <header className="border-b border-[#dfe5df] bg-white">
@@ -31,6 +44,10 @@ export function PortalShell({
             <span className="ksit-control flex h-10 w-[150px] items-center px-3 text-sm font-medium text-[#25332a]" aria-label={`Current portal: ${roleDisplayName[role]}`}>
               {roleDisplayName[role]}
             </span>
+            <button type="button" onClick={logout} className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#b83e31] px-3 text-xs font-bold text-white transition hover:bg-[#963126]" aria-label="Logout (ចាកចេញ)">
+              <LogOut className="size-4" />
+              <span className="hidden sm:inline">Logout</span><span className="sm:hidden">ចាកចេញ</span>
+            </button>
           </div>
         </div>
       </header>

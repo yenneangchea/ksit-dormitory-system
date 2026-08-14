@@ -804,6 +804,108 @@ async function updateUserRole(req, res, next) {
   }
 }
 
+async function getPublicAnnouncements(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const [settingsResponse, newsResponse] = await Promise.all([
+      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline']),
+      supabase.from('news_posts').select('id, title, body, published_at, created_at').eq('is_visible', true).order('published_at', { ascending: false }).limit(12),
+    ]);
+    if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
+    const settings = Object.fromEntries((settingsResponse.data || []).map((item) => [item.setting_key, item.setting_value]));
+    res.json(publicPayload({ settings, news_posts: newsResponse.data || [] }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getAnnouncementManagement(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const [settingsResponse, newsResponse] = await Promise.all([
+      supabase.from('site_settings').select('setting_key, setting_value, updated_at').in('setting_key', ['top_ticker', 'registration_deadline']),
+      supabase.from('news_posts').select('id, title, body, is_visible, published_at, created_at, updated_at').order('published_at', { ascending: false }),
+    ]);
+    if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
+    const settings = Object.fromEntries((settingsResponse.data || []).map((item) => [item.setting_key, item.setting_value]));
+    res.json(publicPayload({ settings, news_posts: newsResponse.data || [] }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateAnnouncementSettings(req, res, next) {
+  try {
+    const { top_ticker, registration_deadline } = req.body;
+    const rows = [];
+    if (top_ticker !== undefined) {
+      if (!top_ticker || typeof top_ticker.text !== 'string' || !top_ticker.text.trim()) throw fail('Ticker text is required.');
+      rows.push({ setting_key: 'top_ticker', setting_value: { text: top_ticker.text.trim(), link: typeof top_ticker.link === 'string' ? top_ticker.link.trim() : '' }, updated_at: new Date().toISOString() });
+    }
+    if (registration_deadline !== undefined) {
+      if (!registration_deadline || typeof registration_deadline.title !== 'string' || !registration_deadline.title.trim() || typeof registration_deadline.deadline_at !== 'string') throw fail('Deadline title and deadline date are required.');
+      rows.push({ setting_key: 'registration_deadline', setting_value: { title: registration_deadline.title.trim(), badge: typeof registration_deadline.badge === 'string' ? registration_deadline.badge.trim() : '', deadline_at: registration_deadline.deadline_at }, updated_at: new Date().toISOString() });
+    }
+    if (rows.length === 0) throw fail('Provide ticker or registration deadline settings to update.');
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('site_settings').upsert(rows, { onConflict: 'setting_key' }).select('setting_key, setting_value, updated_at');
+    if (error) throw error;
+    res.json(publicPayload(data || [], 'Homepage announcement settings updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function createNewsPost(req, res, next) {
+  try {
+    const { title, body = '', is_visible = true, published_at } = req.body;
+    if (!String(title || '').trim()) throw fail('News post title is required.');
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('news_posts').insert({
+      title: String(title).trim(),
+      body: String(body || '').trim(),
+      is_visible: Boolean(is_visible),
+      published_at: published_at || new Date().toISOString(),
+      created_by: req.user.sub,
+    }).select().single();
+    if (error) throw error;
+    res.status(201).json(publicPayload(data, 'News post created.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateNewsPost(req, res, next) {
+  try {
+    const { title, body, is_visible, published_at } = req.body;
+    const patch = { updated_at: new Date().toISOString() };
+    if (title !== undefined) {
+      if (!String(title).trim()) throw fail('News post title cannot be empty.');
+      patch.title = String(title).trim();
+    }
+    if (body !== undefined) patch.body = String(body || '').trim();
+    if (is_visible !== undefined) patch.is_visible = Boolean(is_visible);
+    if (published_at !== undefined) patch.published_at = published_at;
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('news_posts').update(patch).eq('id', req.params.newsPostId).select().single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'News post updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteNewsPost(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase.from('news_posts').delete().eq('id', req.params.newsPostId);
+    if (error) throw error;
+    res.json(publicPayload({ id: req.params.newsPostId }, 'News post deleted.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function dashboardSummary(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -869,5 +971,11 @@ module.exports = {
   updateUser,
   deleteUser,
   updateUserRole,
+  getPublicAnnouncements,
+  getAnnouncementManagement,
+  updateAnnouncementSettings,
+  createNewsPost,
+  updateNewsPost,
+  deleteNewsPost,
   dashboardSummary,
 };
