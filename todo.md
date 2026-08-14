@@ -10,4 +10,4 @@
 - [x] Seed or reset the four user-authorized default demo accounts with correctly hashed passwords and active profiles.
 - [x] Verify email login and dashboard routing for Admin, Manager, Teacher, and Student accounts.
 - [x] Add automated coverage for the announcement utility, login behavior, and authentication responses.
-- [ ] Build, commit, push, deploy, and verify the updated Vercel frontend and backend flows.
+- [x] Build, commit, push, deploy, and verify the updated Vercel frontend and backend flows.
