@@ -44,3 +44,7 @@
 - [x] Remove the redundant Dorm Portal navigation control while retaining the primary Login action.
 - [x] Add a Khmer role-based system-usage walkthrough at the `#features` destination using the established KSIT green visual language.
 - [x] Validate, push, deploy, and verify the homepage refinement release; production confirms the updated KSIT Dormitory header, no Dorm Portal control, and the role walkthrough at `#features`.
+- [x] Create the dedicated `/features` Khmer System Features & Guide page with system overview, benefits, role cards, and CTA.
+- [x] Reuse the established KSIT header, green navbar, footer, and Khmer typography on the Features page.
+- [x] Route homepage navigation and the hero learning button to `/features`.
+- [ ] Validate, push, deploy, and verify the Features & Guide release.

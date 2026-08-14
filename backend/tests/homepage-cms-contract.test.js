@@ -50,3 +50,13 @@ test('uses the requested dormitory identity and provides a role-based feature wa
   assert.match(homepage, /roleWalkthrough/);
   assert.match(homepage, /របៀបប្រើប្រាស់ប្រព័ន្ធតាមតួនាទី/);
 });
+
+test('provides the dedicated Khmer features guide and links homepage learning actions to it', () => {
+  const homepage = read('frontend/src/app/page.tsx');
+  const featuresPage = read('frontend/src/app/features/page.tsx');
+  assert.match(homepage, /href="\/features"/);
+  assert.match(featuresPage, /អំពីប្រព័ន្ធអន្តេវាសិកដ្ឋានឌីជីថល/);
+  assert.match(featuresPage, /ហេតុអ្វីចាំបាច់ត្រូវមានប្រព័ន្ធនេះ/);
+  assert.match(featuresPage, /របៀបប្រើប្រាស់ប្រព័ន្ធតាមតួនាទី/);
+  assert.match(featuresPage, /ចាប់ផ្តើមចូលប្រើប្រាស់ប្រព័ន្ធអន្តេវាសិកដ្ឋានថ្ងៃនេះ/);
+});

@@ -153,7 +153,7 @@ export default function HomePage() {
                 <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block px-4 py-2.5 hover:bg-emerald-50 hover:text-[#147a5b]">អាហារូបករណ៍ ១០០%</a>
               </div>
             </li>
-            <li><a href="#features" className="block px-5 py-3 hover:bg-[#0f6047]">មុខងារប្រព័ន្ធ</a></li>
+            <li><Link href="/features" className="block px-5 py-3 hover:bg-[#0f6047]">មុខងារប្រព័ន្ធ</Link></li>
             <li><a href="#contact" className="block px-5 py-3 hover:bg-[#0f6047]">ទំនាក់ទំនង</a></li>
           </ul>
         </div>
@@ -164,7 +164,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl space-y-1">
             <Link href="/" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំព័រដើម</Link>
             <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block border-b border-emerald-700 py-2.5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a>
-            <a href="#features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">មុខងារប្រព័ន្ធ</a>
+            <Link href="/features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">មុខងារប្រព័ន្ធ</Link>
             <a href="#contact" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំនាក់ទំនង</a>
             <Link href="/login" onClick={() => setMobileOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-950"><LogIn className="size-4" /> ចូលប្រើប្រាស់ប្រព័ន្ធ</Link>
           </div>
@@ -179,7 +179,7 @@ export default function HomePage() {
             <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-emerald-100 sm:text-base lg:mx-0">{hero.subtitle}</p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
               <Link href={hero.primary_cta_url || '/login'} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-amber-500 sm:text-base">{hero.primary_cta_label} <ChevronRight className="size-4" /></Link>
-              <a href={hero.secondary_cta_url || '#features'} className="rounded-xl border border-white/20 bg-white/10 px-6 py-3.5 text-center text-sm font-semibold hover:bg-white/20 sm:text-base">{hero.secondary_cta_label}</a>
+              <Link href="/features" className="rounded-xl border border-white/20 bg-white/10 px-6 py-3.5 text-center text-sm font-semibold hover:bg-white/20 sm:text-base">{hero.secondary_cta_label}</Link>
             </div>
           </div>
           <aside aria-label="ការចូលប្រើប្រាស់តាមតួនាទី" className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-sm lg:col-span-5">
