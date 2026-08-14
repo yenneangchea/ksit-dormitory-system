@@ -61,5 +61,5 @@
 - [x] Validate, push, deploy, and verify the strict dashboard tab-switching release.
 - [x] Audit responsive mobile layout, navigation, content overflow, and touch controls across Admin, Manager, Teacher, and Student portals.
 - [x] Implement and validate fixes for any reproducible mobile portal defects.
-- [ ] Run regression validation and publish any responsive audit fixes.
-- [ ] Correct the remaining production mobile tap-target measurements for the drawer close control, Manager PDF action, and Teacher Magic QR input.
+- [x] Run regression validation and publish any responsive audit fixes.
+- [x] Correct the remaining production mobile tap-target measurements for the drawer close control, Manager PDF action, and Teacher Magic QR input.
