@@ -21,4 +21,4 @@
 - [x] Add frontend role guards that redirect every mismatched `/dashboard/<role>` route to the authenticated user's own dashboard.
 - [x] Add backend role middleware and restrict protected domain routes to their authorized role groups.
 - [x] Add regression tests proving a Student cannot open Admin, Manager, or Teacher pages or privileged APIs.
-- [ ] Confirm strict dashboard role isolation in a live Telegram Student session after deployment; code, build, backend tests, and production deployment are verified.
+- [x] Confirm strict dashboard role isolation in a live Telegram Student session after deployment; Student Portal displays as a fixed label with no role-switching control.
