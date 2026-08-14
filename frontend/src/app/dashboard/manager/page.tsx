@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   BarChart3,
@@ -27,16 +27,7 @@ import {
 } from '@/lib/api';
 import type { Building, MaintenanceRequest, RoomApplication, UtilityBill } from '@/types';
 
-type ManagerTab = 'buildings' | 'applications' | 'rosters' | 'billing' | 'maintenance' | 'attendance';
-
-const tabs: { id: ManagerTab; label: string }[] = [
-  { id: 'buildings', label: 'Buildings & rooms' },
-  { id: 'applications', label: 'Yearly applications' },
-  { id: 'rosters', label: 'Student rosters (CSV)' },
-  { id: 'billing', label: 'Dynamic split-billing' },
-  { id: 'maintenance', label: 'Maintenance tickets' },
-  { id: 'attendance', label: 'Daily attendance' },
-];
+type ManagerTab = 'dashboard' | 'buildings' | 'applications' | 'rosters' | 'billing' | 'maintenance' | 'attendance';
 
 const emptySummary: DashboardSummary = {
   buildings: 0,
@@ -58,7 +49,6 @@ function formatKhr(value: number) {
 function ManagerDashboardContent() {
   const { isAuthorized, isChecking } = useRoleGuard('manager');
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<ManagerTab>('buildings');
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [analytics, setAnalytics] = useState<DashboardAnalyticsData | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -84,7 +74,7 @@ function ManagerDashboardContent() {
     if (applicationsResponse.success && applicationsResponse.data) setApplications(applicationsResponse.data);
   };
 
-  const loadTabData = async (tab: ManagerTab) => {
+  const loadTabData = useCallback(async (tab: ManagerTab) => {
     if (tab === 'billing') {
       const response = await billingAPI.listUtility();
       if (response.success && response.data) setUtilityBills(response.data);
@@ -97,7 +87,7 @@ function ManagerDashboardContent() {
       const response = await maintenanceAPI.list();
       if (response.success && response.data) setMaintenance(response.data);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!isAuthorized) return;
@@ -105,20 +95,23 @@ function ManagerDashboardContent() {
     return () => window.clearTimeout(timer);
   }, [isAuthorized]);
 
-  useEffect(() => {
+  const activeTab = useMemo<ManagerTab>(() => {
     const requested = searchParams.get('tab');
-    const mapped: ManagerTab | null = requested === 'applications' ? 'applications' : requested === 'rooms' ? 'buildings' : requested === 'utilities' ? 'billing' : requested === 'maintenance' ? 'maintenance' : null;
-    if (mapped && mapped !== activeTab) void handleTabChange(mapped);
+    if (requested === 'applications') return 'applications';
+    if (requested === 'rooms') return 'buildings';
+    if (requested === 'utilities') return 'billing';
+    if (requested === 'maintenance') return 'maintenance';
+    return 'dashboard';
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    const timer = window.setTimeout(() => void loadTabData(activeTab), 0);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, isAuthorized, loadTabData]);
 
   const occupancyWidth = `${Math.max(0, Math.min(summary.occupancy_percent, 100))}%`;
   const totalRooms = useMemo(() => buildings.reduce((count, building) => count + ((building as Building & { rooms?: unknown[] }).rooms?.length || 0), 0), [buildings]);
-
-  async function handleTabChange(tab: ManagerTab) {
-    setActiveTab(tab);
-    setNotice('');
-    await loadTabData(tab);
-  }
 
   async function createBuilding(formData: FormData) {
     setIsWorking(true);
@@ -231,7 +224,7 @@ function ManagerDashboardContent() {
 
         {notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
 
-        <div className="grid gap-4 lg:grid-cols-12">
+        {activeTab === 'dashboard' && <><div className="grid gap-4 lg:grid-cols-12">
           <MetricCard className="lg:col-span-3" icon={<UsersRound className="size-4 text-[#0b5c2c]" />} label="Real-time occupancy" value={`${summary.occupied_beds} / ${summary.total_capacity}`} description={`${summary.occupancy_percent}% of residence capacity`} />
           <MetricCard className="lg:col-span-3" icon={<Building2 className="size-4 text-[#17613a]" />} label="Rooms in service" value={summary.rooms_in_service} description={`${summary.buildings || 0} building${summary.buildings === 1 ? '' : 's'} active`} />
           <MetricCard className="lg:col-span-3" icon={<Wrench className="size-4 text-[#b95b47]" />} label="Pending maintenance" value={summary.pending_maintenance} description="Requires manager review" />
@@ -240,14 +233,9 @@ function ManagerDashboardContent() {
             <div className="mt-12 h-2 overflow-hidden rounded-full bg-[#edf0ed]" aria-label="Occupancy graph"><div className="h-full rounded-full bg-[#0b6937] transition-all" style={{ width: occupancyWidth }} /></div>
             <div className="mt-7 flex flex-wrap gap-x-4 gap-y-2 text-xs"><span className="flex items-center gap-1.5 text-[#37694a]"><i className="size-3 rounded-full bg-[#0b6937]" />Occupied beds</span><span className="flex items-center gap-1.5 text-[#a2aba4]"><i className="size-3 rounded-full bg-[#e7eae8]" />Vacant beds</span></div>
           </div>
-        </div>
-        {analytics && <DashboardAnalytics data={analytics} />}
+        </div>{analytics && <DashboardAnalytics data={analytics} />}</>}
 
-        <div className="mt-8 inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-[#d9e5da] bg-[#eaf2eb] p-1">
-          {tabs.map((tab) => <button key={tab.id} onClick={() => void handleTabChange(tab.id)} className={`rounded-xl px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${activeTab === tab.id ? 'bg-white text-[#18231d] shadow-sm' : 'text-[#395043] hover:bg-white/60'}`}>{tab.label}</button>)}
-        </div>
-
-        <div className="mt-8">
+        <div className={activeTab === 'dashboard' ? 'hidden' : 'mt-8'}>
           {activeTab === 'buildings' && <BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} />}
           {activeTab === 'applications' && <ApplicationsPanel applications={applications} isWorking={isWorking} onReview={reviewApplication} onAutoAssign={autoAssign} />}
           {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}

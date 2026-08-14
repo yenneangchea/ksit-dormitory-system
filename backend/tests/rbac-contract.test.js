@@ -28,6 +28,42 @@ test('the shared portal shell cannot navigate a Student into another role portal
   assert.match(shell, /System Settings/);
 });
 
+test('dashboard sidebar URL parameters select strict isolated views in every role portal', () => {
+  const admin = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'admin', 'page.tsx'), 'utf8');
+  assert.match(admin, /const activeTab: AdminTab/);
+  assert.match(admin, /activeTab === 'dashboard' &&/);
+  assert.match(admin, /activeTab === 'users' && <UserManagementPanel/);
+  assert.match(admin, /activeTab === 'residence' && <ResidenceConfigurationPanel/);
+  assert.match(admin, /activeTab === 'cms' && <AnnouncementManagementPanel/);
+  assert.match(admin, /activeTab === 'settings' && <SystemSettingsPanel/);
+  assert.match(admin, /aria-label="Search users"/);
+
+  const manager = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'manager', 'page.tsx'), 'utf8');
+  assert.match(manager, /type ManagerTab = 'dashboard'/);
+  assert.match(manager, /requested === 'rooms'\) return 'buildings'/);
+  assert.match(manager, /requested === 'utilities'\) return 'billing'/);
+  assert.match(manager, /activeTab === 'dashboard' &&/);
+  assert.match(manager, /activeTab === 'applications' && <ApplicationsPanel/);
+  assert.match(manager, /activeTab === 'buildings' && <BuildingsPanel/);
+  assert.match(manager, /activeTab === 'billing' && <BillingPanel/);
+  assert.match(manager, /activeTab === 'maintenance' && <MaintenancePanel/);
+
+  const teacher = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'teacher', 'page.tsx'), 'utf8');
+  assert.match(teacher, /type TeacherTab = 'dashboard' \| 'attendance' \| 'leave'/);
+  assert.match(teacher, /activeTab === 'dashboard' &&/);
+  assert.match(teacher, /activeTab === 'attendance' &&/);
+  assert.match(teacher, /activeTab === 'leave'/);
+
+  const student = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'student', 'page.tsx'), 'utf8');
+  assert.match(student, /requestedTab === 'apply' \? 'application'/);
+  assert.match(student, /requestedTab === 'bills' \? 'bills'/);
+  assert.match(student, /requestedTab === 'maintenance' \? 'maintenance'/);
+  assert.match(student, /activeTab === 'overview' && <Overview/);
+  assert.match(student, /activeTab === 'application' && <Application/);
+  assert.match(student, /activeTab === 'bills' && <Bills/);
+  assert.match(student, /activeTab === 'maintenance' && <Maintenance/);
+});
+
 test('role middleware rejects a Student from privileged Admin and Manager API routes', () => {
   const routes = fs.readFileSync(path.join(backend, 'routes', 'domain.routes.js'), 'utf8');
   assert.match(routes, /router\.get\('\/dashboard\/summary', requireRole\('admin', 'manager'\)/);

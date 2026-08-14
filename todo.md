@@ -55,3 +55,7 @@
 - [x] Define a safe backup export approach and explicit restore safeguards rather than exposing raw database credentials or destructive actions in the browser.
 - [x] Validate, push, deploy, and verify the dashboard modernization release.
 - [x] Fix the desktop portal-shell layout so dashboard content begins beside the fixed sidebar rather than below it.
+- [x] Implement URL-synchronized strict conditional views for all Admin dashboard sidebar tabs.
+- [x] Implement URL-synchronized strict conditional views for all Manager, Teacher, and Student sidebar tabs.
+- [x] Add regression assertions for isolated tab content and active URL-tab synchronization.
+- [ ] Validate, push, deploy, and verify the strict dashboard tab-switching release.
