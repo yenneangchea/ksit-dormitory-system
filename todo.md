@@ -40,3 +40,7 @@
 - [x] Bind the existing homepage footer and configurable content to CMS settings without changing its layout or branding.
 - [x] Build the protected Admin Homepage Editor, link it from the Admin dashboard, and preserve all existing Admin controls.
 - [x] Validate, push, deploy, and verify the localization and Homepage CMS release; production public API returns the extended CMS settings and the protected editor route enforces login.
+- [x] Replace the institutional header label with the KSIT Dormitory Management System name and matching English subtitle.
+- [x] Remove the redundant Dorm Portal navigation control while retaining the primary Login action.
+- [x] Add a Khmer role-based system-usage walkthrough at the `#features` destination using the established KSIT green visual language.
+- [ ] Validate, push, deploy, and verify the homepage refinement release.

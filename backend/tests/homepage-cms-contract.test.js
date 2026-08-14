@@ -41,3 +41,12 @@ test('returns extended CMS settings and news metadata from server-side APIs', ()
   assert.match(controller, /image_url/);
   assert.match(controller, /external_url/);
 });
+
+test('uses the requested dormitory identity and provides a role-based feature walkthrough', () => {
+  const homepage = read('frontend/src/app/page.tsx');
+  assert.match(homepage, /ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT/);
+  assert.match(homepage, /KSIT DORMITORY MANAGEMENT SYSTEM/);
+  assert.doesNotMatch(homepage, /> Dorm Portal</);
+  assert.match(homepage, /roleWalkthrough/);
+  assert.match(homepage, /របៀបប្រើប្រាស់ប្រព័ន្ធតាមតួនាទី/);
+});

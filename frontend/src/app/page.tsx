@@ -18,7 +18,6 @@ import {
   QrCode,
   Receipt,
   ShieldCheck,
-  Sparkles,
   Users,
   Wrench,
   X,
@@ -29,6 +28,13 @@ const roles = [
   { name: "Manager", detail: "វត្តមាន និងកុងទ័រទឹកភ្លើង", tone: "text-amber-300" },
   { name: "Teacher", detail: "តាមដានវត្តមាន និងអនុម័ត", tone: "text-sky-300" },
   { name: "Student", detail: "ស្នើសុំបន្ទប់ និងបង់ KHQR", tone: "text-pink-300" },
+];
+
+const roleWalkthrough = [
+  { role: 'Admin', title: 'គ្រប់គ្រងប្រព័ន្ធ និងសមាជិក', summary: 'Admin គ្រប់គ្រងគណនីអ្នកប្រើ សិទ្ធិចូលប្រើ អគារ បន្ទប់ និងមាតិកាគេហទំព័រ។', steps: ['បង្កើត ឬកែសម្រួលគណនី', 'កំណត់តួនាទី Admin / Manager / Teacher / Student', 'គ្រប់គ្រងអគារ បន្ទប់ និង Magic QR'], icon: ShieldCheck, tone: 'border-emerald-300 bg-emerald-950 text-emerald-50', badge: 'bg-emerald-400 text-emerald-950' },
+  { role: 'Manager', title: 'ដឹកនាំប្រតិបត្តិការអន្តេវាសិកដ្ឋាន', summary: 'Manager ពិនិត្យពាក្យស្នើសុំ ចាត់បន្ទប់ស្វ័យប្រវត្តិ និងគណនាវិក្កយបត្រទឹកភ្លើង។', steps: ['អនុម័ត ឬបដិសេធពាក្យស្នើសុំ', 'ដំណើរការ Waterfall Room Assignment', 'បង្កើត Split Bill និងលេខយោង KHQR'], icon: Building2, tone: 'border-amber-300 bg-amber-50 text-slate-800', badge: 'bg-amber-400 text-amber-950' },
+  { role: 'Teacher', title: 'កត់ត្រាវត្តមានពេលយប់', summary: 'Teacher ស្កេន Magic QR របស់បន្ទប់ ដើម្បីគ្រប់គ្រង roster និងកត់ត្រាវត្តមាន។', steps: ['ស្កេន Magic QR នៅបន្ទប់', 'កត់ត្រា មានវត្តមាន / អវត្តមាន / សុំច្បាប់', 'តាមដានប្រវត្តិវត្តមានតាមកាលបរិច្ឆេទ'], icon: QrCode, tone: 'border-sky-300 bg-sky-50 text-slate-800', badge: 'bg-sky-400 text-sky-950' },
+  { role: 'Student', title: 'ស្នើសុំបន្ទប់ និងគ្រប់គ្រងសេវារបស់ខ្លួន', summary: 'Student មើលបន្ទប់ បង់វិក្កយបត្រ KHQR ដាក់ពាក្យស្នើសុំ និងរាយការណ៍ការជួសជុល។', steps: ['ដាក់ពាក្យស្នាក់នៅតាមឌីជីថល', 'ពិនិត្យបន្ទប់ និងអ្នករួមបន្ទប់', 'បញ្ជាក់ការបង់ KHQR និងដាក់សំណើជួសជុល'], icon: Receipt, tone: 'border-rose-300 bg-rose-50 text-slate-800', badge: 'bg-rose-400 text-rose-950' },
 ];
 
 const features = [
@@ -115,8 +121,8 @@ export default function HomePage() {
           <Link href="/" className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Image src="/ksit-logo.png" alt="វិទ្យាស្ថានបច្ចេកវិទ្យាកំពង់ស្ពឺ" width={80} height={80} priority className="size-14 shrink-0 object-contain sm:size-20" />
             <span className="min-w-0">
-              <span className="block truncate font-serif text-lg font-extrabold leading-tight text-[#147a5b] sm:text-2xl md:text-3xl">វិទ្យាស្ថានបច្ចេកវិទ្យាកំពង់ស្ពឺ</span>
-              <span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.1em] text-[#147a5b] sm:text-sm">KAMPONG SPEU INSTITUTE OF TECHNOLOGY</span>
+              <span className="block truncate text-base font-extrabold leading-tight text-[#147a5b] sm:text-xl md:text-2xl">ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT</span>
+              <span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span>
             </span>
           </Link>
           <Link href="/login" className="hidden items-center gap-2 rounded-lg bg-[#147a5b] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#0f6047] md:flex">
@@ -150,7 +156,6 @@ export default function HomePage() {
             <li><a href="#features" className="block px-5 py-3 hover:bg-[#0f6047]">មុខងារប្រព័ន្ធ</a></li>
             <li><a href="#contact" className="block px-5 py-3 hover:bg-[#0f6047]">ទំនាក់ទំនង</a></li>
           </ul>
-          <Link href="/login" className="mr-4 inline-flex items-center gap-1.5 rounded bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-slate-950 hover:bg-amber-500"><Sparkles className="size-3.5" /> Dorm Portal</Link>
         </div>
       </nav>
 
@@ -205,6 +210,12 @@ export default function HomePage() {
         <div className="mx-auto max-w-3xl text-center"><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#147a5b]">Smart Campus Features</span><h2 className="mt-4 font-serif text-3xl font-extrabold text-slate-900">មុខងារស្នូលនៃប្រព័ន្ធអន្តេវាសិកដ្ឋាន</h2><p className="mt-3 text-sm leading-6 text-slate-600">រចនាឡើងដើម្បីធ្វើឱ្យការគ្រប់គ្រង និងការរស់នៅរបស់និស្សិតមានភាពច្បាស់លាស់ សុវត្ថិភាព និងទាន់ពេល។</p></div>
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {featureCards.map((feature) => { const Icon = feature.icon; return <article key={feature.title} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"><div className={`flex size-12 items-center justify-center rounded-lg ${feature.iconStyle}`}><Icon className="size-6" /></div><h3 className="mt-4 text-base font-bold text-slate-800">{feature.title}</h3><p className="mt-2 text-xs leading-5 text-slate-600">{feature.detail}</p></article>; })}
+        </div>
+        <div className="mt-16 border-t border-emerald-100 pt-14">
+          <div className="max-w-3xl"><span className="rounded-full bg-[#147a5b] px-3 py-1 text-xs font-bold text-white">SYSTEM GUIDE</span><h2 className="mt-4 text-3xl font-extrabold text-slate-900">របៀបប្រើប្រាស់ប្រព័ន្ធតាមតួនាទី</h2><p className="mt-3 text-sm leading-6 text-slate-600">អូសផ្តេកដើម្បីមើលជំហានសំខាន់ៗសម្រាប់តួនាទីនីមួយៗ ឬប្រើ scroll bar ខាងក្រោម។</p></div>
+          <div className="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-5 [scrollbar-color:#147a5b_#e9f3eb] [scrollbar-width:thin]">
+            {roleWalkthrough.map((slide, index) => { const Icon = slide.icon; return <article key={slide.role} className={`min-w-[min(88vw,440px)] snap-start rounded-3xl border p-7 shadow-sm ${slide.tone}`}><div className="flex items-center justify-between"><span className={`inline-flex size-11 items-center justify-center rounded-2xl font-black ${slide.badge}`}>0{index + 1}</span><Icon className="size-8" /></div><p className="mt-8 text-xs font-bold uppercase tracking-[0.18em] opacity-70">{slide.role} Portal</p><h3 className="mt-3 text-2xl font-extrabold leading-tight">{slide.title}</h3><p className="mt-4 text-sm leading-7 opacity-85">{slide.summary}</p><ol className="mt-6 space-y-3">{slide.steps.map((step, stepIndex) => <li key={step} className="flex gap-3 text-sm leading-6"><span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${slide.badge}`}>{stepIndex + 1}</span>{step}</li>)}</ol><Link href="/login" className="mt-8 inline-flex items-center gap-2 text-sm font-bold underline underline-offset-4">ចូលប្រើប្រាស់ជា {slide.role} <ChevronRight className="size-4" /></Link></article>; })}
+          </div>
         </div>
       </section>
 
