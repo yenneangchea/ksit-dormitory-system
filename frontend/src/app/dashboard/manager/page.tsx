@@ -209,17 +209,17 @@ function ManagerDashboardContent() {
       <section className="min-h-[calc(100vh-156px)]">
         <div className="mb-9 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">Welcome back, Manager Portal</h1>
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-[15px]">A shared workspace for residence operations, billing, attendance, and student services.</p>
+            <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">{activeTab === 'dashboard' ? 'Operations Overview' : activeTab === 'applications' ? 'Applications Review' : activeTab === 'buildings' ? 'Room Matrix & Auto-Assign' : activeTab === 'billing' ? 'Electricity & Water' : 'Work Orders'}</h1>
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-[15px]">{activeTab === 'dashboard' ? 'A live overview of residence operations, attendance, billing, and student services.' : 'This protected workspace displays only the section selected in the sidebar.'}</p>
           </div>
-          <div className="flex items-center self-start overflow-hidden rounded-xl border border-[#dce3dc] bg-white shadow-sm">
+          {activeTab === 'dashboard' && <div className="flex items-center self-start overflow-hidden rounded-xl border border-[#dce3dc] bg-white shadow-sm">
             <select className="h-10 min-w-[164px] border-0 bg-transparent px-3 text-sm text-[#27342c] outline-none" aria-label="Report type">
               <option>Attendance report</option>
               <option>Billing report</option>
             </select>
             <button onClick={() => exportReport('Excel')} className="flex h-8 items-center gap-1 border-l border-[#dce3dc] px-3 text-xs font-medium text-[#27342c] hover:bg-[#f4f7f3]"><Download className="size-3.5" />Excel</button>
             <button onClick={() => exportReport('PDF')} className="m-1 flex h-8 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white hover:bg-[#084a23]"><Download className="size-3.5" />PDF</button>
-          </div>
+          </div>}
         </div>
 
         {notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
