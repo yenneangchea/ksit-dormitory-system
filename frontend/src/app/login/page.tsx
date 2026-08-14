@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserPlus, UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,8 @@ function LoginForm() {
   const [email, setEmail] = useState(() => registrationCompleted ? searchParams.get("email") || "" : "");
   const [password, setPassword] = useState("");
   const [telegramInitData] = useState(() => typeof window === "undefined" ? "" : window.Telegram?.WebApp?.initData || "");
+  const [telegramMode, setTelegramMode] = useState<"login" | "signup">("login");
+  const [telegramRegistration, setTelegramRegistration] = useState({ full_name_khmer: "", full_name_latin: "", email: "", phone: "", gender: "male" as "male" | "female", password: "", confirmPassword: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const registrationNotice = registrationCompleted ? "Registration completed. Enter the password you just created to sign in as a Student." : "";
@@ -100,6 +102,33 @@ function LoginForm() {
     }
   }
 
+  async function handleTelegramRegistration(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!telegramInitData) {
+      setError("Open this page from the KSITDorm Telegram Mini App to sign up with Telegram.");
+      return;
+    }
+    if (telegramRegistration.password !== telegramRegistration.confirmPassword) {
+      setError("The two passwords do not match.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      completeLogin(await authAPI.registerWithTelegram({
+        initData: telegramInitData,
+        full_name_khmer: telegramRegistration.full_name_khmer,
+        full_name_latin: telegramRegistration.full_name_latin,
+        email: telegramRegistration.email,
+        phone: telegramRegistration.phone,
+        gender: telegramRegistration.gender,
+        password: telegramRegistration.password,
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   function selectDemoAccount(account: (typeof demoAccounts)[number]) {
     setMode("email");
     setEmail(account.email);
@@ -140,10 +169,12 @@ function LoginForm() {
               </form>
             ) : (
               <div className="mt-5 space-y-4" aria-busy={isLoading}>
-                <div className="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-700"><div className="flex items-center gap-2 font-bold text-sky-900"><ShieldCheck className="size-4" /> Login with Telegram</div><p className="mt-2">When this page is opened as the KSIT Telegram Mini App, Telegram sends a signed session to the server. The server verifies it and opens the linked dormitory dashboard.</p></div>
-                <Button type="button" onClick={handleTelegramLogin} className="h-11 w-full bg-[#229ED9] font-semibold hover:bg-[#1787bd]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Verifying Telegram…</> : <><MessageCircle className="mr-2 size-4" /> Login with Telegram</>}</Button>
-                {!telegramInitData && <a href="https://t.me/KSITDorm_bot?start=login" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-[#dce3dc] px-4 py-2.5 text-sm font-bold text-[#0b5c2c] hover:bg-[#f5f8f5]"><UserRoundCheck className="size-4" /> Open KSITDorm_bot</a>}
-                <p className="text-center text-xs leading-5 text-[#68736c]">Telegram sign-in requires an administrator-linked Telegram ID. Email login remains available for every authorized account.</p>
+                <div className="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-700"><div className="flex items-center gap-2 font-bold text-sky-900"><ShieldCheck className="size-4" /> Telegram access</div><p className="mt-2">Open this page from KSITDorm in Telegram. Existing users log in directly; new users sign up once and receive the Student dashboard by default.</p></div>
+                {telegramInitData ? <>
+                  <div className="grid grid-cols-2 rounded-lg border border-sky-100 bg-sky-50 p-1"><button type="button" onClick={() => setTelegramMode("login")} className={`rounded-md px-3 py-2 text-xs font-bold ${telegramMode === "login" ? "bg-white text-sky-700 shadow-sm" : "text-slate-600"}`}>Login</button><button type="button" onClick={() => setTelegramMode("signup")} className={`rounded-md px-3 py-2 text-xs font-bold ${telegramMode === "signup" ? "bg-white text-sky-700 shadow-sm" : "text-slate-600"}`}>Sign up</button></div>
+                  {telegramMode === "login" ? <Button type="button" onClick={handleTelegramLogin} className="h-11 w-full bg-[#229ED9] font-semibold hover:bg-[#1787bd]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Verifying Telegram…</> : <><MessageCircle className="mr-2 size-4" /> Login with Telegram</>}</Button> : <form onSubmit={handleTelegramRegistration} className="space-y-3"><div className="grid grid-cols-2 gap-3"><Input required placeholder="Khmer name" value={telegramRegistration.full_name_khmer} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_khmer: event.target.value })} /><Input required placeholder="Latin name" value={telegramRegistration.full_name_latin} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_latin: event.target.value })} /></div><Input required type="email" placeholder="name@ksit.edu.kh" value={telegramRegistration.email} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, email: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input required placeholder="Phone number" value={telegramRegistration.phone} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, phone: event.target.value })} /><select value={telegramRegistration.gender} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, gender: event.target.value as "male" | "female" })} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="male">Male</option><option value="female">Female</option></select></div><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Create password (8+ characters)" value={telegramRegistration.password} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, password: event.target.value })} /><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Confirm password" value={telegramRegistration.confirmPassword} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, confirmPassword: event.target.value })} /><Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Creating Student account…</> : <><UserPlus className="mr-2 size-4" /> Sign up with Telegram</>}</Button></form>}
+                </> : <a href="https://t.me/KSITDorm_bot?start=login" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-[#dce3dc] px-4 py-2.5 text-sm font-bold text-[#0b5c2c] hover:bg-[#f5f8f5]"><UserRoundCheck className="size-4" /> Open KSITDorm_bot</a>}
+                <p className="text-center text-xs leading-5 text-[#68736c]">New Telegram accounts are Student by default. An Admin may later assign Manager, Teacher, or Admin access.</p>
               </div>
             )}
 

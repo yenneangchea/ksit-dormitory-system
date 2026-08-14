@@ -77,6 +77,8 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, authenti
 export const authAPI = {
   login: (credentials: { identifier: string; password: string }) =>
     fetchAPI<never>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) }, false),
+  registerWithTelegram: (payload: { initData: string; full_name_khmer: string; full_name_latin: string; email: string; phone: string; gender: 'male' | 'female'; password: string }) =>
+    fetchAPI<never>('/api/auth/telegram/register', { method: 'POST', body: JSON.stringify(payload) }, false),
   loginWithTelegram: (initData: string) =>
     fetchAPI<never>('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) }, false),
   logout: () => fetchAPI<never>('/api/auth/logout', { method: 'POST' }),
