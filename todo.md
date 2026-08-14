@@ -16,9 +16,9 @@
 - [x] Add an admin-only API to list users and change roles to student, manager, teacher, or admin with audit-safe authorization.
 - [x] Add a Telegram Mini App registration screen and an admin role-management interface for the approved flows.
 - [x] Test registration defaults, denial of privilege escalation, admin promotion, and role-based routing.
-- [ ] Commit, deploy, and verify the end-to-end registration and role-management release.
+- [x] Commit, deploy, and verify the end-to-end registration and role-management release.
 - [x] Remove the portal-role switcher for non-admin accounts so Students cannot select Admin, Manager, or Teacher portals.
 - [x] Add frontend role guards that redirect every mismatched `/dashboard/<role>` route to the authenticated user's own dashboard.
 - [x] Add backend role middleware and restrict protected domain routes to their authorized role groups.
 - [x] Add regression tests proving a Student cannot open Admin, Manager, or Teacher pages or privileged APIs.
-- [ ] Build, push, deploy, and verify strict dashboard role isolation in the live Telegram Mini App.
+- [ ] Confirm strict dashboard role isolation in a live Telegram Student session after deployment; code, build, backend tests, and production deployment are verified.
