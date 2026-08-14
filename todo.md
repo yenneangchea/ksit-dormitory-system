@@ -53,5 +53,5 @@
 - [x] Add dashboard analytics charts based on live authorized application, occupancy, attendance, and billing records.
 - [x] Add safe Admin settings for academic structures and fee defaults; expose Telegram status without revealing secrets.
 - [x] Define a safe backup export approach and explicit restore safeguards rather than exposing raw database credentials or destructive actions in the browser.
-- [ ] Validate, push, deploy, and verify the dashboard modernization release.
-- [ ] Fix the desktop portal-shell layout so dashboard content begins beside the fixed sidebar rather than below it.
+- [x] Validate, push, deploy, and verify the dashboard modernization release.
+- [x] Fix the desktop portal-shell layout so dashboard content begins beside the fixed sidebar rather than below it.
