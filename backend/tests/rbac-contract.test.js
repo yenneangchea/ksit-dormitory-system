@@ -79,7 +79,7 @@ test('mobile portal controls preserve accessible touch targets without introduci
   assert.match(manager, /min-h-11 rounded-lg px-2\.5/);
 
   const teacher = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'teacher', 'page.tsx'), 'utf8');
-  assert.match(teacher, /h-11 flex-1 rounded-xl/);
+  assert.match(teacher, /flex-1 rounded-xl border[^>]+style=\{\{ height: 44 \}\}/);
   assert.match(teacher, /min-h-11 rounded-lg px-3/);
 
   const student = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'student', 'page.tsx'), 'utf8');

@@ -218,7 +218,7 @@ function ManagerDashboardContent() {
               <option>Billing report</option>
             </select>
             <button onClick={() => exportReport('Excel')} className="flex h-11 items-center gap-1 border-l border-[#dce3dc] px-3 text-xs font-medium text-[#27342c] hover:bg-[#f4f7f3]"><Download className="size-3.5" />Excel</button>
-            <button onClick={() => exportReport('PDF')} className="m-1 flex h-9 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white hover:bg-[#084a23]"><Download className="size-3.5" />PDF</button>
+            <button onClick={() => exportReport('PDF')} className="mr-1 flex h-11 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white hover:bg-[#084a23]"><Download className="size-3.5" />PDF</button>
           </div>}
         </div>
 
