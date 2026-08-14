@@ -63,10 +63,13 @@ const homepageDefaults = {
   deadline: { title: "📢 សេចក្តីជូនដំណឹងសំខាន់៖ ការទទួលពាក្យសុំស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត ឆ្នាំសិក្សា ២០២៦-២០២៧ នឹងត្រូវផុតកំណត់នៅថ្ងៃទី ៣១ ខែសីហា ឆ្នាំ២០២៦ វេលាម៉ោង ១៧:០០ ជាកំហិត!", badge: "នៅសល់ ១៧ ថ្ងៃទៀត · កំណត់ត្រឹម ៣១ សីហា ២០២៦ · ១៧:០០", deadline_at: "2026-08-31T17:00:00+07:00" },
 };
 
+type PublicNewsPost = { id: string; title: string; body: string; published_at: string };
+
 export default function HomePage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [ticker, setTicker] = useState(homepageDefaults.ticker);
   const [deadline, setDeadline] = useState(homepageDefaults.deadline);
+  const [newsPosts, setNewsPosts] = useState<PublicNewsPost[]>([]);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function HomePage() {
       const settings = payload?.data?.settings;
       if (settings?.top_ticker?.text) setTicker({ text: settings.top_ticker.text, link: settings.top_ticker.link || homepageDefaults.ticker.link });
       if (settings?.registration_deadline?.title && settings.registration_deadline?.deadline_at) setDeadline({ title: settings.registration_deadline.title, badge: settings.registration_deadline.badge || "", deadline_at: settings.registration_deadline.deadline_at });
+      if (Array.isArray(payload?.data?.news_posts)) setNewsPosts(payload.data.news_posts);
     }).catch(() => undefined);
     const interval = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(interval);
@@ -186,6 +190,8 @@ export default function HomePage() {
           <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#147a5b] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0f6047]">ដាក់ពាក្យឥឡូវនេះ <ChevronRight className="size-4" /></Link>
         </div>
       </section>
+
+      {newsPosts.length > 0 && <section aria-label="ព័ត៌មាន និងសេចក្តីជូនដំណឹង" className="border-b border-emerald-100 bg-white px-4 py-7 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><div className="mb-4 flex items-center gap-2"><BellRing className="size-5 text-[#147a5b]" /><h2 className="font-serif text-xl font-extrabold text-slate-900">ព័ត៌មាន និងសេចក្តីជូនដំណឹង</h2></div><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{newsPosts.map((post) => <article key={post.id} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4"><p className="text-[11px] font-bold uppercase tracking-wider text-[#147a5b]">{new Date(post.published_at).toLocaleDateString()}</p><h3 className="mt-2 text-sm font-extrabold text-slate-900">{post.title}</h3>{post.body && <p className="mt-2 text-xs leading-5 text-slate-600">{post.body}</p>}</article>)}</div></div></section>}
 
       <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center"><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#147a5b]">Smart Campus Features</span><h2 className="mt-4 font-serif text-3xl font-extrabold text-slate-900">មុខងារស្នូលនៃប្រព័ន្ធអន្តេវាសិកដ្ឋាន</h2><p className="mt-3 text-sm leading-6 text-slate-600">រចនាឡើងដើម្បីធ្វើឱ្យការគ្រប់គ្រង និងការរស់នៅរបស់និស្សិតមានភាពច្បាស់លាស់ សុវត្ថិភាព និងទាន់ពេល។</p></div>

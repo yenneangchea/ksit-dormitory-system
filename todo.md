@@ -32,3 +32,5 @@
 - [x] Bind only the existing homepage ticker and deadline-banner text to the public announcement API, preserving all homepage layout and branding.
 - [x] Apply the approved non-destructive Supabase migration for site settings and news posts.
 - [x] Validate, push, deploy, and verify the logout and announcement-management release; Vercel is Ready and the public announcement API returns the migrated settings.
+- [ ] Create a temporary Admin news post in production, verify the public announcement response and homepage propagation, then remove the test post.
+- [x] Render visible Admin-managed news posts on the existing homepage so public news creation is verifiable in the browser.
