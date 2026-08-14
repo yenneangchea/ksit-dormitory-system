@@ -64,6 +64,29 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(student, /activeTab === 'maintenance' && <Maintenance/);
 });
 
+test('mobile portal controls preserve accessible touch targets without introducing fixed-width overflow', () => {
+  const shell = fs.readFileSync(path.join(frontend, 'components', 'portal-shell.tsx'), 'utf8');
+  assert.match(shell, /size-11 items-center justify-center rounded-lg text-\[#31513d\]/);
+  assert.match(shell, /h-11 w-full rounded-lg border border-\[#dce3dc\]/);
+  assert.match(shell, /inline-flex h-11 w-full items-center justify-center/);
+
+  const admin = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'admin', 'page.tsx'), 'utf8');
+  assert.match(admin, /min-h-11 items-center gap-2 rounded-lg border/);
+  assert.match(admin, /min-h-11 rounded-lg border border-\[#dce3dc\] px-2\.5/);
+
+  const manager = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'manager', 'page.tsx'), 'utf8');
+  assert.match(manager, /h-11 items-center gap-1 border-l/);
+  assert.match(manager, /min-h-11 rounded-lg px-2\.5/);
+
+  const teacher = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'teacher', 'page.tsx'), 'utf8');
+  assert.match(teacher, /h-11 flex-1 rounded-xl/);
+  assert.match(teacher, /min-h-11 rounded-lg px-3/);
+
+  const student = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'student', 'page.tsx'), 'utf8');
+  assert.match(student, /flex min-h-11 items-center gap-3/);
+  assert.match(student, /size-5 shrink-0 accent-\[\#0b5c2c\]/);
+});
+
 test('role middleware rejects a Student from privileged Admin and Manager API routes', () => {
   const routes = fs.readFileSync(path.join(backend, 'routes', 'domain.routes.js'), 'utf8');
   assert.match(routes, /router\.get\('\/dashboard\/summary', requireRole\('admin', 'manager'\)/);
