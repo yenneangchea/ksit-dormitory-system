@@ -47,4 +47,4 @@
 - [x] Create the dedicated `/features` Khmer System Features & Guide page with system overview, benefits, role cards, and CTA.
 - [x] Reuse the established KSIT header, green navbar, footer, and Khmer typography on the Features page.
 - [x] Route homepage navigation and the hero learning button to `/features`.
-- [ ] Validate, push, deploy, and verify the Features & Guide release.
+- [x] Validate, push, deploy, and verify the Features & Guide release; live `/features` page displays the Khmer overview, benefits, role slider, CTA, and shared KSIT navigation/footer.
