@@ -31,4 +31,4 @@
 - [x] Add secure Admin APIs and dashboard controls for announcements and news management.
 - [x] Bind only the existing homepage ticker and deadline-banner text to the public announcement API, preserving all homepage layout and branding.
 - [x] Apply the approved non-destructive Supabase migration for site settings and news posts.
-- [ ] Validate, push, deploy, and verify the logout and announcement-management release.
+- [x] Validate, push, deploy, and verify the logout and announcement-management release; Vercel is Ready and the public announcement API returns the migrated settings.
