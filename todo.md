@@ -11,3 +11,9 @@
 - [x] Verify email login and dashboard routing for Admin, Manager, Teacher, and Student accounts.
 - [x] Add automated coverage for the announcement utility, login behavior, and authentication responses.
 - [x] Build, commit, push, deploy, and verify the updated Vercel frontend and backend flows.
+- [ ] Review the existing role-management dashboard, authorization middleware, and Telegram identity data model.
+- [x] Add a secure Telegram registration API that creates an unprivileged student profile by default and prevents self-selected elevated roles.
+- [x] Add an admin-only API to list users and change roles to student, manager, teacher, or admin with audit-safe authorization.
+- [x] Add a Telegram Mini App registration screen and an admin role-management interface for the approved flows.
+- [x] Test registration defaults, denial of privilege escalation, admin promotion, and role-based routing.
+- [ ] Commit, deploy, and verify the end-to-end registration and role-management release.

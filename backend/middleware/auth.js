@@ -1,8 +1,22 @@
 const { decodeSession } = require('../controllers/auth.controller');
+const { getSupabase } = require('../config/supabase');
 
-function authenticate(req, _res, next) {
+async function authenticate(req, _res, next) {
   try {
-    req.user = decodeSession(req);
+    const session = decodeSession(req);
+    const supabase = getSupabase();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', session.sub)
+      .maybeSingle();
+    if (error) throw error;
+    if (!user) {
+      const missingUser = new Error('The account associated with this session could not be found.');
+      missingUser.statusCode = 401;
+      throw missingUser;
+    }
+    req.user = { sub: user.id, role: user.role };
     next();
   } catch (error) {
     next(error);

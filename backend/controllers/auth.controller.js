@@ -107,6 +107,92 @@ const login = async (req, res, next) => {
 };
 
 /**
+ * @desc Register a Telegram-verified person as a student or return their existing linked profile.
+ *       The role is deliberately fixed server-side to `student`; callers cannot self-promote.
+ * @route POST /api/auth/telegram/register
+ * @access Public, with verified Telegram Mini App init data
+ */
+const registerWithTelegram = async (req, res, next) => {
+  try {
+    const { initData, full_name_khmer, full_name_latin, email, phone, gender } = req.body;
+    const { telegramId, user: telegramUser } = verifyTelegramWebAppInitData(
+      initData,
+      process.env.TELEGRAM_BOT_TOKEN,
+      Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 600),
+    );
+
+    const khmerName = String(full_name_khmer || '').trim();
+    const latinName = String(full_name_latin || '').trim();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedPhone = String(phone || '').trim();
+    if (!khmerName || !latinName || !normalizedEmail || !normalizedPhone || !['male', 'female'].includes(gender)) {
+      const validationError = new Error('Khmer name, Latin name, email, phone number, and gender are required to register.');
+      validationError.statusCode = 400;
+      throw validationError;
+    }
+
+    const supabase = getSupabase();
+    const selectFields = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
+    const { data: linkedUser, error: linkedError } = await supabase
+      .from('users')
+      .select(selectFields)
+      .eq('telegram_id', telegramId)
+      .maybeSingle();
+    if (linkedError) throw linkedError;
+    if (linkedUser) {
+      return res.json({
+        success: true,
+        message: 'Your Telegram account is already registered.',
+        user: publicUser(linkedUser),
+        token: createSessionToken(linkedUser),
+      });
+    }
+
+    const { data: emailOwner, error: emailLookupError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+    if (emailLookupError) throw emailLookupError;
+    if (emailOwner) {
+      const conflict = new Error('This email address is already registered. Sign in with the existing account or ask an administrator to link Telegram.');
+      conflict.statusCode = 409;
+      throw conflict;
+    }
+
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        telegram_id: telegramId,
+        role: 'student',
+        full_name_khmer: khmerName,
+        full_name_latin: latinName,
+        gender,
+        phone: normalizedPhone,
+        email: normalizedEmail,
+        avatar_url: telegramUser.photo_url || null,
+      })
+      .select(selectFields)
+      .single();
+    if (insertError) throw insertError;
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration completed. Your default role is Student.',
+      user: publicUser(newUser),
+      token: createSessionToken(newUser),
+    });
+  } catch (error) {
+    if (!error.statusCode && /not configured/.test(error.message || '')) {
+      error.statusCode = 503;
+    } else if (!error.statusCode && /Telegram login|Telegram user|could not be verified|incomplete|expired/.test(error.message || '')) {
+      error.statusCode = 401;
+    }
+    next(error);
+  }
+};
+
+/**
  * @desc Verify Telegram Mini App init data and sign in a previously linked dormitory user.
  * @route POST /api/auth/telegram
  * @access Public
@@ -191,6 +277,7 @@ const getCurrentUser = async (req, res, next) => {
 
 module.exports = {
   login,
+  registerWithTelegram,
   loginWithTelegram,
   logout,
   getCurrentUser,

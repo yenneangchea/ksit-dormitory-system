@@ -585,6 +585,23 @@ async function updateUserRole(req, res, next) {
     const { role } = req.body;
     if (!['admin', 'manager', 'teacher', 'student'].includes(role)) throw fail('Invalid user role.');
     const supabase = getSupabase();
+    const { data: targetUser, error: targetError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', req.params.userId)
+      .maybeSingle();
+    if (targetError) throw targetError;
+    if (!targetUser) throw fail('User not found.', 404);
+
+    if (targetUser.id === req.user.sub && targetUser.role === 'admin' && role !== 'admin') {
+      const { count, error: countError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'admin');
+      if (countError) throw countError;
+      if ((count || 0) <= 1) throw fail('The last administrator cannot remove their own admin access.', 409);
+    }
+
     const { data, error } = await supabase
       .from('users')
       .update({ role, updated_at: new Date().toISOString() })
