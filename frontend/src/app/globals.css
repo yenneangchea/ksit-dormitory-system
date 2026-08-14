@@ -95,6 +95,12 @@ h1,
   background: #f7f8f4;
 }
 
+@media (min-width: 768px) {
+  .ksit-shell {
+    flex-direction: row;
+  }
+}
+
 .ksit-container {
   width: min(100%, 1280px);
   margin: 0 auto;
