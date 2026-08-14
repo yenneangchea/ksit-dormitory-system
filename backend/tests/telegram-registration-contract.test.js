@@ -9,6 +9,7 @@ test('Telegram registration always creates a student and never accepts a client-
   const source = fs.readFileSync(path.join(backendRoot, 'controllers', 'auth.controller.js'), 'utf8');
   const registrationBlock = source.slice(source.indexOf('const registerWithTelegram'), source.indexOf('const loginWithTelegram'));
   assert.match(registrationBlock, /role:\s*'student'/);
+  assert.match(registrationBlock, /password_hash:\s*await bcrypt\.hash\(password, 12\)/);
   assert.doesNotMatch(registrationBlock, /const\s*\{[^}]*\brole\b[^}]*\}\s*=\s*req\.body/);
 });
 

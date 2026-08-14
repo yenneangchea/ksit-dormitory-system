@@ -114,7 +114,7 @@ const login = async (req, res, next) => {
  */
 const registerWithTelegram = async (req, res, next) => {
   try {
-    const { initData, full_name_khmer, full_name_latin, email, phone, gender } = req.body;
+    const { initData, full_name_khmer, full_name_latin, email, phone, gender, password } = req.body;
     const { telegramId, user: telegramUser } = verifyTelegramWebAppInitData(
       initData,
       process.env.TELEGRAM_BOT_TOKEN,
@@ -125,8 +125,8 @@ const registerWithTelegram = async (req, res, next) => {
     const latinName = String(full_name_latin || '').trim();
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const normalizedPhone = String(phone || '').trim();
-    if (!khmerName || !latinName || !normalizedEmail || !normalizedPhone || !['male', 'female'].includes(gender)) {
-      const validationError = new Error('Khmer name, Latin name, email, phone number, and gender are required to register.');
+    if (!khmerName || !latinName || !normalizedEmail || !normalizedPhone || !['male', 'female'].includes(gender) || typeof password !== 'string' || password.length < 8) {
+      const validationError = new Error('Khmer name, Latin name, email, phone number, gender, and a password of at least 8 characters are required to register.');
       validationError.statusCode = 400;
       throw validationError;
     }
@@ -170,6 +170,7 @@ const registerWithTelegram = async (req, res, next) => {
         gender,
         phone: normalizedPhone,
         email: normalizedEmail,
+        password_hash: await bcrypt.hash(password, 12),
         avatar_url: telegramUser.photo_url || null,
       })
       .select(selectFields)

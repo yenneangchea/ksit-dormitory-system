@@ -17,6 +17,8 @@ test('login page exposes email and Telegram choices plus all four demo-account q
   assert.match(login, /Login with Email/);
   assert.match(login, /Login with Telegram/);
   assert.match(login, /loginWithTelegram/);
+  assert.match(login, /searchParams\.get\("registered"\)/);
+  assert.match(login, /Registration completed\. Enter the password you just created/);
   for (const email of ['admin@ksit.edu.kh', 'manager@ksit.edu.kh', 'teacher@ksit.edu.kh', 'student@ksit.edu.kh']) {
     assert.match(login, new RegExp(email.replace('@', '@')));
   }

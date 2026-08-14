@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +32,20 @@ const demoAccounts: Array<{ label: string; email: string; role: UserRole }> = [
 ];
 
 export default function LoginPage() {
+  return <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-[#0b5c2c]">Loading KSIT Dormitory login…</main>}><LoginForm /></Suspense>;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const registrationCompleted = searchParams.get("registered") === "1";
   const [mode, setMode] = useState<"email" | "telegram">("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => registrationCompleted ? searchParams.get("email") || "" : "");
   const [password, setPassword] = useState("");
   const [telegramInitData] = useState(() => typeof window === "undefined" ? "" : window.Telegram?.WebApp?.initData || "");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const registrationNotice = registrationCompleted ? "Registration completed. Enter the password you just created to sign in as a Student." : "";
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -122,6 +129,7 @@ export default function LoginPage() {
               <button type="button" role="tab" aria-selected={mode === "telegram"} onClick={() => { setMode("telegram"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "telegram" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><MessageCircle className="size-4" /> Telegram</button>
             </div>
 
+            {registrationNotice && <div role="status" className="mt-5 rounded-xl border border-[#b8ddc0] bg-[#eff9f1] px-4 py-3 text-sm leading-5 text-[#166534]">{registrationNotice}</div>}
             {error && <div role="alert" className="mt-5 rounded-xl border border-[#f3c8c1] bg-[#fff4f2] px-4 py-3 text-sm leading-5 text-[#a4382a]">{error}</div>}
 
             {mode === "email" ? (
