@@ -43,4 +43,4 @@
 - [x] Replace the institutional header label with the KSIT Dormitory Management System name and matching English subtitle.
 - [x] Remove the redundant Dorm Portal navigation control while retaining the primary Login action.
 - [x] Add a Khmer role-based system-usage walkthrough at the `#features` destination using the established KSIT green visual language.
-- [ ] Validate, push, deploy, and verify the homepage refinement release.
+- [x] Validate, push, deploy, and verify the homepage refinement release; production confirms the updated KSIT Dormitory header, no Dorm Portal control, and the role walkthrough at `#features`.
