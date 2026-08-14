@@ -12,6 +12,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
+import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import {
   applicationsAPI,
   attendanceAPI,
@@ -50,6 +51,7 @@ function formatKhr(value: number) {
 }
 
 export default function ManagerDashboard() {
+  const { isAuthorized, isChecking } = useRoleGuard('manager');
   const [activeTab, setActiveTab] = useState<ManagerTab>('buildings');
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -84,9 +86,10 @@ export default function ManagerDashboard() {
   };
 
   useEffect(() => {
+    if (!isAuthorized) return;
     const timer = window.setTimeout(() => void loadCoreData(), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [isAuthorized]);
 
   const occupancyWidth = `${Math.max(0, Math.min(summary.occupancy_percent, 100))}%`;
   const totalRooms = useMemo(() => buildings.reduce((count, building) => count + ((building as Building & { rooms?: unknown[] }).rooms?.length || 0), 0), [buildings]);
@@ -171,6 +174,9 @@ export default function ManagerDashboard() {
   function exportReport(type: 'Excel' | 'PDF') {
     setNotice(`${type} report export is prepared from the selected operational dataset.`);
   }
+
+  if (isChecking) return <DashboardRoleGuardLoading />;
+  if (!isAuthorized) return null;
 
   return (
     <PortalShell role="manager">

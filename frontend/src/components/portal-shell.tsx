@@ -1,16 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { UserRole } from '@/types';
-
-const roleOptions: { value: UserRole; label: string }[] = [
-  { value: 'admin', label: 'Admin Portal' },
-  { value: 'manager', label: 'Manager Portal' },
-  { value: 'teacher', label: 'Teacher Portal' },
-  { value: 'student', label: 'Student Portal' },
-];
 
 export function PortalShell({
   role,
@@ -19,8 +11,6 @@ export function PortalShell({
   role: UserRole;
   children: ReactNode;
 }) {
-  const router = useRouter();
-
   return (
     <div className="ksit-shell">
       <header className="border-b border-[#dfe5df] bg-white">
@@ -38,14 +28,9 @@ export function PortalShell({
               <option>English</option>
               <option>Khmer</option>
             </select>
-            <select
-              className="ksit-control w-[150px] appearance-auto"
-              value={role}
-              aria-label="Role switcher"
-              onChange={(event) => router.push(`/dashboard/${event.target.value}`)}
-            >
-              {roleOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <span className="ksit-control flex h-10 w-[150px] items-center px-3 text-sm font-medium text-[#25332a]" aria-label={`Current portal: ${roleDisplayName[role]}`}>
+              {roleDisplayName[role]}
+            </span>
           </div>
         </div>
       </header>

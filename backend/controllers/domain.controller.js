@@ -401,7 +401,7 @@ async function listStudentBills(req, res, next) {
       .from('student_bills')
       .select('id, utility_bill_id, student_id, room_id, billing_month, amount_khr, amount_usd, khqr_string, khqr_md5, bill_status, payment_method, transaction_ref, paid_at, created_at, rooms(room_number, buildings(code, name))')
       .order('created_at', { ascending: false });
-    const userId = req.query.studentId || (req.user.role === 'student' ? req.user.sub : null);
+    const userId = req.user.role === 'student' ? req.user.sub : req.query.studentId || null;
     if (userId) query = query.eq('student_id', userId);
     if (req.query.status) query = query.eq('bill_status', req.query.status);
     const { data, error } = await query;
@@ -417,12 +417,23 @@ async function recordBillPayment(req, res, next) {
     const { payment_method = 'khqr', transaction_ref } = req.body;
     if (!transaction_ref) throw fail('A payment transaction reference is required.');
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    const { data: targetBill, error: targetBillError } = await supabase
+      .from('student_bills')
+      .select('id, student_id')
+      .eq('id', req.params.studentBillId)
+      .maybeSingle();
+    if (targetBillError) throw targetBillError;
+    if (!targetBill) throw fail('Student bill not found.', 404);
+    if (req.user.role === 'student' && targetBill.student_id !== req.user.sub) {
+      throw fail('Students can only record payments for their own bills.', 403);
+    }
+
+    let updateQuery = supabase
       .from('student_bills')
       .update({ bill_status: 'paid', payment_method, transaction_ref, paid_at: new Date().toISOString() })
-      .eq('id', req.params.studentBillId)
-      .select()
-      .single();
+      .eq('id', req.params.studentBillId);
+    if (req.user.role === 'student') updateQuery = updateQuery.eq('student_id', req.user.sub);
+    const { data, error } = await updateQuery.select().single();
     if (error) throw error;
     res.json(publicPayload(data, 'Payment recorded.'));
   } catch (error) {

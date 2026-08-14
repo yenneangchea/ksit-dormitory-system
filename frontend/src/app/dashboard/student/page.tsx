@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, CreditCard, QrCode, Wrench } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
+import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import { applicationsAPI, attendanceAPI, billingAPI, maintenanceAPI } from '@/lib/api';
 import type { MaintenanceRequest, RoomApplication, StudentBill } from '@/types';
 
@@ -10,6 +11,7 @@ type StudentTab = 'overview' | 'bills' | 'maintenance' | 'application';
 const tabs: { id: StudentTab; label: string }[] = [{ id: 'overview', label: 'My residence' }, { id: 'bills', label: 'KHQR bills' }, { id: 'maintenance', label: 'Maintenance' }, { id: 'application', label: 'Dormitory application' }];
 
 export default function StudentDashboard() {
+  const { isAuthorized, isChecking } = useRoleGuard('student');
   const [activeTab, setActiveTab] = useState<StudentTab>('overview');
   const [bills, setBills] = useState<StudentBill[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([]);
@@ -27,9 +29,10 @@ export default function StudentDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!isAuthorized) return;
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [isAuthorized, load]);
 
   async function selectTab(tab: StudentTab) {
     setActiveTab(tab);
@@ -54,6 +57,9 @@ export default function StudentDashboard() {
   }
 
   const present = attendance.filter((item) => item.status === 'present').length;
+
+  if (isChecking) return <DashboardRoleGuardLoading />;
+  if (!isAuthorized) return null;
 
   return <PortalShell role="student"><section className="min-h-[calc(100vh-156px)]"><div className="mb-8"><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">Welcome back, Student Portal</h1><p className="mt-1.5 text-sm text-[#68736c]">Your residence information, utilities, support requests, and annual application in one secure place.</p></div>{notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}<div className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-[#d9e5da] bg-[#eaf2eb] p-1">{tabs.map((tab) => <button key={tab.id} onClick={() => void selectTab(tab.id)} className={`rounded-xl px-3 py-2 text-sm font-medium ${activeTab === tab.id ? 'bg-white shadow-sm' : 'text-[#395043] hover:bg-white/60'}`}>{tab.label}</button>)}</div><div className="mt-8">{activeTab === 'overview' && <Overview bills={bills} maintenance={maintenance} applications={applications} present={present} />} {activeTab === 'bills' && <Bills bills={bills} />} {activeTab === 'maintenance' && <Maintenance maintenance={maintenance} working={working} submit={submitMaintenance} />} {activeTab === 'application' && <Application applications={applications} working={working} submit={submitApplication} />}</div></section></PortalShell>;
 }

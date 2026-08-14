@@ -23,7 +23,7 @@ async function authenticate(req, _res, next) {
   }
 }
 
-function allowRoles(...roles) {
+function requireRole(...roles) {
   return (req, _res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
       const error = new Error('You do not have permission to perform this action.');
@@ -34,4 +34,6 @@ function allowRoles(...roles) {
   };
 }
 
-module.exports = { authenticate, allowRoles };
+const allowRoles = requireRole;
+
+module.exports = { authenticate, requireRole, allowRoles };
