@@ -19,17 +19,19 @@ import {
   billingAPI,
   buildingsAPI,
   dashboardAPI,
+  maintenanceAPI,
   type DashboardSummary,
 } from '@/lib/api';
-import type { Building, RoomApplication, UtilityBill } from '@/types';
+import type { Building, MaintenanceRequest, RoomApplication, UtilityBill } from '@/types';
 
-type ManagerTab = 'buildings' | 'applications' | 'rosters' | 'billing' | 'attendance';
+type ManagerTab = 'buildings' | 'applications' | 'rosters' | 'billing' | 'maintenance' | 'attendance';
 
 const tabs: { id: ManagerTab; label: string }[] = [
   { id: 'buildings', label: 'Buildings & rooms' },
   { id: 'applications', label: 'Yearly applications' },
   { id: 'rosters', label: 'Student rosters (CSV)' },
   { id: 'billing', label: 'Dynamic split-billing' },
+  { id: 'maintenance', label: 'Maintenance tickets' },
   { id: 'attendance', label: 'Daily attendance' },
 ];
 
@@ -58,6 +60,7 @@ export default function ManagerDashboard() {
   const [applications, setApplications] = useState<RoomApplication[]>([]);
   const [utilityBills, setUtilityBills] = useState<UtilityBill[]>([]);
   const [attendance, setAttendance] = useState<{ id: string; attendance_date: string; status: string; rooms?: { room_number?: string } | null; users?: { full_name_latin?: string } | null }[]>([]);
+  const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([]);
   const [notice, setNotice] = useState('');
   const [showBuildingForm, setShowBuildingForm] = useState(false);
   const [showBillForm, setShowBillForm] = useState(false);
@@ -82,6 +85,10 @@ export default function ManagerDashboard() {
     if (tab === 'attendance') {
       const response = await attendanceAPI.list({ date: new Date().toISOString().slice(0, 10) });
       if (response.success && response.data) setAttendance(response.data as typeof attendance);
+    }
+    if (tab === 'maintenance') {
+      const response = await maintenanceAPI.list();
+      if (response.success && response.data) setMaintenance(response.data);
     }
   };
 
@@ -120,11 +127,23 @@ export default function ManagerDashboard() {
   }
 
   async function reviewApplication(applicationId: string, status: 'approved' | 'rejected') {
+    const rejection_reason = status === 'rejected' ? window.prompt('State the reason for rejecting this application:', 'Returned for document correction') || '' : '';
+    if (status === 'rejected' && !rejection_reason.trim()) return;
     setIsWorking(true);
-    const response = await applicationsAPI.review(applicationId, status === 'rejected' ? { status, rejection_reason: 'Returned for document correction' } : { status });
+    const response = await applicationsAPI.review(applicationId, status === 'rejected' ? { status, rejection_reason } : { status });
     setIsWorking(false);
     setNotice(response.success ? `Application ${status}.` : response.error?.message || 'Unable to update the application.');
     if (response.success) await loadCoreData();
+  }
+
+  async function updateMaintenanceStatus(maintenanceId: string, status: MaintenanceRequest['status']) {
+    const resolution_notes = status === 'resolved' ? window.prompt('Enter resolution notes for this ticket:') || '' : '';
+    if (status === 'resolved' && !resolution_notes.trim()) return;
+    setIsWorking(true);
+    const response = await maintenanceAPI.update(maintenanceId, { status, ...(resolution_notes ? { resolution_notes } : {}) });
+    setIsWorking(false);
+    setNotice(response.success ? `Maintenance ticket marked ${status.replace('_', ' ')}.` : response.error?.message || 'Unable to update maintenance ticket.');
+    if (response.success) await loadTabData('maintenance');
   }
 
   async function autoAssign(applicationId: string) {
@@ -218,6 +237,7 @@ export default function ManagerDashboard() {
           {activeTab === 'applications' && <ApplicationsPanel applications={applications} isWorking={isWorking} onReview={reviewApplication} onAutoAssign={autoAssign} />}
           {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}
           {activeTab === 'billing' && <BillingPanel bills={utilityBills} onCreate={() => setShowBillForm(true)} />}
+          {activeTab === 'maintenance' && <MaintenancePanel tickets={maintenance} isWorking={isWorking} onUpdate={updateMaintenanceStatus} />}
           {activeTab === 'attendance' && <AttendancePanel attendance={attendance} />}
         </div>
       </section>
@@ -246,6 +266,10 @@ function RostersPanel({ applications, onDownload }: { applications: RoomApplicat
 
 function BillingPanel({ bills, onCreate }: { bills: UtilityBill[]; onCreate: () => void }) {
   return <section className="ksit-card overflow-hidden"><div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold">Dynamic split-billing</h2><p className="mt-1 text-sm text-[#68736c]">Generate a room bill, divide it among active residents, and issue per-student KHQR references.</p></div><button onClick={onCreate} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0b5c2c] px-3 text-sm font-semibold text-white hover:bg-[#084a23]"><ReceiptText className="size-4" />Create bill</button></div>{bills.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">No utility bills have been generated.</p> : <div className="border-t border-[#edf0ed]">{bills.map((bill) => <div key={bill.id} className="grid gap-3 border-b border-[#edf0ed] px-6 py-4 sm:grid-cols-4 sm:items-center"><div><p className="font-semibold">{bill.billing_month}</p><p className="mt-1 text-xs text-[#68736c]">Room {bill.room_id.slice(0, 8)}</p></div><div><p className="text-xs text-[#68736c]">Room total</p><p className="mt-1 font-semibold">៛ {formatKhr(Number(bill.total_amount_khr || 0))}</p></div><div><p className="text-xs text-[#68736c]">Residents</p><p className="mt-1 font-semibold">{bill.active_students_count}</p></div><div><p className="text-xs text-[#68736c]">Each KHQR bill</p><p className="mt-1 font-semibold text-[#0b5c2c]">៛ {formatKhr(Number(bill.split_amount_per_student_khr || 0))}</p></div></div>)}</div>}</section>;
+}
+
+function MaintenancePanel({ tickets, isWorking, onUpdate }: { tickets: MaintenanceRequest[]; isWorking: boolean; onUpdate: (id: string, status: MaintenanceRequest['status']) => Promise<void> }) {
+  return <section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">Maintenance tickets</h2><p className="mt-1 text-sm text-[#68736c]">Assign the appropriate lifecycle status and record resolution notes when work is complete.</p></div>{tickets.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">No maintenance tickets are currently open.</p> : <div className="divide-y divide-[#edf0ed] border-t border-[#edf0ed]">{tickets.map((ticket) => <div className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between" key={ticket.id}><div><p className="font-semibold">{ticket.title}</p><p className="mt-1 text-sm text-[#68736c]">{ticket.category} · {ticket.urgency} urgency · Room {ticket.room_id.slice(0, 8)}</p><p className="mt-1 text-xs text-[#748078]">{ticket.description}</p></div><div className="flex flex-wrap items-center gap-2"><StatusPill value={ticket.status} />{ticket.status === 'open' && <SmallButton disabled={isWorking} onClick={() => void onUpdate(ticket.id, 'in_progress')}>Start work</SmallButton>}{ticket.status === 'in_progress' && <SmallButton disabled={isWorking} onClick={() => void onUpdate(ticket.id, 'resolved')}>Resolve</SmallButton>}</div></div>)}</div>}</section>;
 }
 
 function AttendancePanel({ attendance }: { attendance: { id: string; attendance_date: string; status: string; rooms?: { room_number?: string } | null; users?: { full_name_latin?: string } | null }[] }) {

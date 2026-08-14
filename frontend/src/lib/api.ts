@@ -91,17 +91,24 @@ export const dashboardAPI = {
 
 export const usersAPI = {
   list: (filters?: { role?: UserRole }) => fetchAPI<User[]>(`/api/users${queryString(filters)}`),
+  create: (payload: Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'> & { password: string }) => fetchAPI<User>('/api/users', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (userId: string, payload: Partial<Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'>> & { password?: string }) => fetchAPI<User>(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (userId: string) => fetchAPI<{ id: string }>(`/api/users/${userId}`, { method: 'DELETE' }),
   updateRole: (userId: string, role: UserRole) => fetchAPI<User>(`/api/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
 };
 
 export const buildingsAPI = {
   list: () => fetchAPI<Building[]>('/api/buildings'),
   create: (payload: Omit<Building, 'id' | 'created_at'>) => fetchAPI<Building>('/api/buildings', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (buildingId: string, payload: Partial<Omit<Building, 'id' | 'created_at'>>) => fetchAPI<Building>(`/api/buildings/${buildingId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (buildingId: string) => fetchAPI<{ id: string }>(`/api/buildings/${buildingId}`, { method: 'DELETE' }),
 };
 
 export const roomsAPI = {
   list: (filters?: { buildingId?: string; status?: string }) => fetchAPI<Room[]>(`/api/rooms${queryString(filters)}`),
   create: (payload: Partial<Room> & { building_id: string; room_number: string; gender: 'male' | 'female' }) => fetchAPI<Room>('/api/rooms', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (roomId: string, payload: Partial<Room> & { regenerate_magic_qr?: boolean }) => fetchAPI<Room>(`/api/rooms/${roomId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (roomId: string) => fetchAPI<{ id: string }>(`/api/rooms/${roomId}`, { method: 'DELETE' }),
 };
 
 export const applicationsAPI = {
@@ -116,6 +123,10 @@ export const billingAPI = {
   createUtility: (payload: Record<string, unknown>) => fetchAPI('/api/utility-bills', { method: 'POST', body: JSON.stringify(payload) }),
   listStudent: (filters?: { studentId?: string; status?: string }) => fetchAPI<StudentBill[]>(`/api/student-bills${queryString(filters)}`),
   markPaid: (studentBillId: string, payload: { transaction_ref: string; payment_method?: string }) => fetchAPI<StudentBill>(`/api/student-bills/${studentBillId}/payment`, { method: 'PATCH', body: JSON.stringify(payload) }),
+};
+
+export const residenceAPI = {
+  mine: () => fetchAPI('/api/residence'),
 };
 
 export const magicQrAPI = {

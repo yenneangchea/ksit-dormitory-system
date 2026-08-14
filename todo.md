@@ -22,3 +22,8 @@
 - [x] Add backend role middleware and restrict protected domain routes to their authorized role groups.
 - [x] Add regression tests proving a Student cannot open Admin, Manager, or Teacher pages or privileged APIs.
 - [x] Confirm strict dashboard role isolation in a live Telegram Student session after deployment; Student Portal displays as a fixed label with no role-switching control.
+- [x] Add admin user lifecycle actions and editable building/room configuration workflows.
+- [x] Add manager application review, waterfall allocation, meter split-billing, and maintenance-status workflows.
+- [x] Add teacher attendance roster actions and student digital application, room, billing, and maintenance workflows.
+- [x] Extend the permitted API client, controllers, and routes for the approved operational workflows.
+- [ ] Push and verify the four-dashboard CRUD release in production.

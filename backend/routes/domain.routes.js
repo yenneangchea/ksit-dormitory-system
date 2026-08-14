@@ -8,15 +8,24 @@ router.use(authenticate);
 
 router.get('/dashboard/summary', requireRole('admin', 'manager'), domain.dashboardSummary);
 router.get('/users', requireRole('admin'), domain.listUsers);
+router.post('/users', requireRole('admin'), domain.createUser);
+router.patch('/users/:userId', requireRole('admin'), domain.updateUser);
+router.delete('/users/:userId', requireRole('admin'), domain.deleteUser);
 router.patch('/users/:userId/role', requireRole('admin'), domain.updateUserRole);
 
 router.route('/buildings')
   .get(requireRole('admin', 'manager'), domain.listBuildings)
   .post(requireRole('admin', 'manager'), domain.createBuilding);
+router.route('/buildings/:buildingId')
+  .patch(requireRole('admin', 'manager'), domain.updateBuilding)
+  .delete(requireRole('admin'), domain.deleteBuilding);
 
 router.route('/rooms')
   .get(requireRole('admin', 'manager'), domain.listRooms)
   .post(requireRole('admin', 'manager'), domain.createRoom);
+router.route('/rooms/:roomId')
+  .patch(requireRole('admin', 'manager'), domain.updateRoom)
+  .delete(requireRole('admin'), domain.deleteRoom);
 
 router.route('/applications')
   .get(requireRole('admin', 'manager', 'student'), domain.listApplications)
@@ -27,6 +36,7 @@ router.post('/applications/:applicationId/auto-assign', requireRole('admin', 'ma
 router.route('/utility-bills')
   .get(requireRole('admin', 'manager'), domain.listUtilityBills)
   .post(requireRole('admin', 'manager'), domain.createUtilityBill);
+router.get('/residence', requireRole('student'), domain.getMyResidence);
 router.get('/student-bills', requireRole('admin', 'manager', 'student'), domain.listStudentBills);
 router.patch('/student-bills/:studentBillId/payment', requireRole('admin', 'manager', 'student'), domain.recordBillPayment);
 

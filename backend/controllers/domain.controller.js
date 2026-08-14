@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { getSupabase } = require('../config/supabase');
 
 const KHR_PER_USD = Number(process.env.KHR_PER_USD || 4100);
@@ -20,6 +21,17 @@ function asNumber(value, label) {
 
 function publicPayload(data, message) {
   return { success: true, ...(message ? { message } : {}), data };
+}
+
+const USER_FIELDS = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
+const VALID_ROLES = ['admin', 'manager', 'teacher', 'student'];
+const VALID_GENDERS = ['male', 'female'];
+
+async function ensureAdminContinuity(supabase, targetUser, requestedRole) {
+  if (!targetUser || targetUser.role !== 'admin' || requestedRole === 'admin') return;
+  const { count, error } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'admin');
+  if (error) throw error;
+  if ((count || 0) <= 1) throw fail('The last administrator cannot lose administrator access.', 409);
 }
 
 function buildKhqrReference({ billId, studentId, amountKhr, billingMonth, roomId }) {
@@ -98,6 +110,43 @@ async function createBuilding(req, res, next) {
   }
 }
 
+async function updateBuilding(req, res, next) {
+  try {
+    const { code, name, gender_restriction, total_floors, description } = req.body;
+    const patch = {};
+    if (code !== undefined) patch.code = String(code).trim().toUpperCase();
+    if (name !== undefined) patch.name = String(name).trim();
+    if (gender_restriction !== undefined) {
+      if (!['male', 'female', 'mixed'].includes(gender_restriction)) throw fail('Invalid building gender restriction.');
+      patch.gender_restriction = gender_restriction;
+    }
+    if (total_floors !== undefined) patch.total_floors = asNumber(total_floors, 'Total floors');
+    if (description !== undefined) patch.description = description || null;
+    if (Object.keys(patch).length === 0) throw fail('Provide at least one building value to update.');
+
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('buildings').update(patch).eq('id', req.params.buildingId).select().single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'Building updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteBuilding(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { count, error: roomError } = await supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('building_id', req.params.buildingId);
+    if (roomError) throw roomError;
+    if ((count || 0) > 0) throw fail('Remove or reassign this building’s rooms before deleting the building.', 409);
+    const { error } = await supabase.from('buildings').delete().eq('id', req.params.buildingId);
+    if (error) throw error;
+    res.json(publicPayload({ id: req.params.buildingId }, 'Building deleted.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function listRooms(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -140,6 +189,54 @@ async function createRoom(req, res, next) {
       .single();
     if (error) throw error;
     res.status(201).json(publicPayload(data, 'Room created with a Magic QR code.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateRoom(req, res, next) {
+  try {
+    const { building_id, room_number, floor_number, capacity, gender, assigned_major, assigned_year, status, regenerate_magic_qr } = req.body;
+    const patch = {};
+    if (building_id !== undefined) patch.building_id = building_id;
+    if (room_number !== undefined) patch.room_number = String(room_number).trim();
+    if (floor_number !== undefined) patch.floor_number = asNumber(floor_number, 'Floor number');
+    if (capacity !== undefined) {
+      const roomCapacity = asNumber(capacity, 'Capacity');
+      if (roomCapacity < 1) throw fail('Capacity must be at least one bed.');
+      patch.capacity = roomCapacity;
+    }
+    if (gender !== undefined) {
+      if (!VALID_GENDERS.includes(gender)) throw fail('Invalid room gender.');
+      patch.gender = gender;
+    }
+    if (assigned_major !== undefined) patch.assigned_major = assigned_major || null;
+    if (assigned_year !== undefined) patch.assigned_year = assigned_year ? asNumber(assigned_year, 'Assigned academic year') : null;
+    if (status !== undefined) {
+      if (!['available', 'full', 'maintenance'].includes(status)) throw fail('Invalid room status.');
+      patch.status = status;
+    }
+    if (regenerate_magic_qr) patch.magic_qr_code = `KSIT:${crypto.randomUUID()}`;
+    if (Object.keys(patch).length === 0) throw fail('Provide at least one room value to update.');
+
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('rooms').update(patch).eq('id', req.params.roomId).select().single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'Room updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteRoom(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { count, error: assignmentError } = await supabase.from('room_assignments').select('*', { count: 'exact', head: true }).eq('room_id', req.params.roomId).eq('is_active', true);
+    if (assignmentError) throw assignmentError;
+    if ((count || 0) > 0) throw fail('A room with active residents cannot be deleted.', 409);
+    const { error } = await supabase.from('rooms').delete().eq('id', req.params.roomId);
+    if (error) throw error;
+    res.json(publicPayload({ id: req.params.roomId }, 'Room deleted.'));
   } catch (error) {
     next(error);
   }
@@ -394,6 +491,24 @@ async function createUtilityBill(req, res, next) {
   }
 }
 
+async function getMyResidence(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { data: assignment, error } = await supabase
+      .from('room_assignments')
+      .select('id, room_id, bed_number, academic_year, assigned_at, rooms(id, room_number, floor_number, capacity, occupied_count, gender, status, buildings(code, name))')
+      .eq('student_id', req.user.sub)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
+    if (!assignment) return res.json(publicPayload({ assignment: null, roommates: [] }));
+    const roommates = await getActiveAssignments(assignment.room_id);
+    res.json(publicPayload({ assignment, roommates }));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function listStudentBills(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -591,6 +706,76 @@ async function listUsers(req, res, next) {
   }
 }
 
+async function createUser(req, res, next) {
+  try {
+    const { full_name_khmer, full_name_latin, email, phone, gender, role = 'student', password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!String(full_name_khmer || '').trim() || !String(full_name_latin || '').trim() || !normalizedEmail || !String(phone || '').trim() || !VALID_GENDERS.includes(gender) || !VALID_ROLES.includes(role) || typeof password !== 'string' || password.length < 8) {
+      throw fail('Khmer name, Latin name, email, phone, gender, role, and a temporary password of at least 8 characters are required.');
+    }
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from('users').insert({
+      full_name_khmer: String(full_name_khmer).trim(),
+      full_name_latin: String(full_name_latin).trim(),
+      email: normalizedEmail,
+      phone: String(phone).trim(),
+      gender,
+      role,
+      password_hash: await bcrypt.hash(password, 12),
+    }).select(USER_FIELDS).single();
+    if (error) throw error;
+    res.status(201).json(publicPayload(data, 'User account created.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateUser(req, res, next) {
+  try {
+    const { full_name_khmer, full_name_latin, email, phone, gender, role, password } = req.body;
+    const supabase = getSupabase();
+    const { data: targetUser, error: targetError } = await supabase.from('users').select('id, role').eq('id', req.params.userId).maybeSingle();
+    if (targetError) throw targetError;
+    if (!targetUser) throw fail('User not found.', 404);
+    if (role !== undefined && !VALID_ROLES.includes(role)) throw fail('Invalid user role.');
+    if (gender !== undefined && !VALID_GENDERS.includes(gender)) throw fail('Invalid gender.');
+    if (role !== undefined) await ensureAdminContinuity(supabase, targetUser, role);
+
+    const patch = { updated_at: new Date().toISOString() };
+    if (full_name_khmer !== undefined) patch.full_name_khmer = String(full_name_khmer).trim();
+    if (full_name_latin !== undefined) patch.full_name_latin = String(full_name_latin).trim();
+    if (email !== undefined) patch.email = String(email).trim().toLowerCase();
+    if (phone !== undefined) patch.phone = String(phone).trim();
+    if (gender !== undefined) patch.gender = gender;
+    if (role !== undefined) patch.role = role;
+    if (password !== undefined) {
+      if (typeof password !== 'string' || password.length < 8) throw fail('Temporary password must be at least 8 characters.');
+      patch.password_hash = await bcrypt.hash(password, 12);
+    }
+    const { data, error } = await supabase.from('users').update(patch).eq('id', targetUser.id).select(USER_FIELDS).single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'User account updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteUser(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { data: targetUser, error: targetError } = await supabase.from('users').select('id, role').eq('id', req.params.userId).maybeSingle();
+    if (targetError) throw targetError;
+    if (!targetUser) throw fail('User not found.', 404);
+    if (targetUser.id === req.user.sub) throw fail('Administrators cannot delete their own account.', 409);
+    await ensureAdminContinuity(supabase, targetUser, 'deleted');
+    const { error } = await supabase.from('users').delete().eq('id', targetUser.id);
+    if (error) throw error;
+    res.json(publicPayload({ id: targetUser.id }, 'User account deleted.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function updateUserRole(req, res, next) {
   try {
     const { role } = req.body;
@@ -604,14 +789,7 @@ async function updateUserRole(req, res, next) {
     if (targetError) throw targetError;
     if (!targetUser) throw fail('User not found.', 404);
 
-    if (targetUser.id === req.user.sub && targetUser.role === 'admin' && role !== 'admin') {
-      const { count, error: countError } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'admin');
-      if (countError) throw countError;
-      if ((count || 0) <= 1) throw fail('The last administrator cannot remove their own admin access.', 409);
-    }
+    await ensureAdminContinuity(supabase, targetUser, role);
 
     const { data, error } = await supabase
       .from('users')
@@ -665,14 +843,19 @@ async function dashboardSummary(req, res, next) {
 module.exports = {
   listBuildings,
   createBuilding,
+  updateBuilding,
+  deleteBuilding,
   listRooms,
   createRoom,
+  updateRoom,
+  deleteRoom,
   listApplications,
   createApplication,
   reviewApplication,
   autoAssignApplication,
   listUtilityBills,
   createUtilityBill,
+  getMyResidence,
   listStudentBills,
   recordBillPayment,
   resolveMagicQr,
@@ -682,6 +865,9 @@ module.exports = {
   createMaintenance,
   updateMaintenance,
   listUsers,
+  createUser,
+  updateUser,
+  deleteUser,
   updateUserRole,
   dashboardSummary,
 };
