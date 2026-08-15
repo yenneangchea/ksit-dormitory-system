@@ -80,4 +80,4 @@
 - [x] Remove the homepage Smart Campus Features grid and System Guide slider while preserving the requested primary sections and KSIT branding.
 - [x] Replace the desktop navigation with the requested clean horizontal menu and a single About System dropdown, while retaining the full mobile drawer.
 - [x] Add the selected About KSIT desktop navigation link and a dedicated `/about` page grounded in official institutional information.
-- [ ] Add regression coverage, validate the production build, publish, and verify the streamlined homepage release.
+- [x] Add regression coverage, validate the production build, publish, and verify the streamlined homepage release.

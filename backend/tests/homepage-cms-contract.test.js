@@ -50,6 +50,8 @@ test('uses the requested dormitory identity with the streamlined public navigati
   assert.match(homepage, /អំពីវិទ្យាស្ថាន/);
   assert.match(homepage, /កម្មវិធីសិក្សា និងអាហារូបករណ៍/);
   assert.match(homepage, /href="\/about"/);
+  assert.match(homepage, /https:\/\/ksit\.edu\.kh\/category\/scholarship\//);
+  assert.match(homepage, /lg:hidden/);
   assert.doesNotMatch(homepage, /const roleWalkthrough/);
   assert.doesNotMatch(homepage, /Smart Campus Features/);
 });
