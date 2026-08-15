@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Download, FileText, Loader2, UploadCloud } from 'lucide-react';
 import { applicationsAPI } from '@/lib/api';
 import type { ApplicationEducation, ApplicationEmergencyContact, ApplicationSibling, RoomApplication } from '@/types';
@@ -85,12 +85,16 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
   const [files, setFiles] = useState<Record<string, File | null>>({ student_photo: null, national_id: null, family_book: null, signed_application: null });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const preservedDraftStage = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const latest = applications[0] || null;
+      const derivedStage = stageFor(latest);
+      const savedStage = preservedDraftStage.current;
       setApplication(latest);
-      setStage(stageFor(latest));
+      setStage(savedStage && derivedStage < savedStage ? savedStage : derivedStage);
+      if (!savedStage || derivedStage >= savedStage) preservedDraftStage.current = null;
       setForm(initialForm(latest));
       setSiblings(initialSiblings(latest));
       setEducation(initialEducation(latest));
@@ -108,6 +112,7 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
     const response = await applicationsAPI.saveDraft({ academic_year_applied: String(form.academic_year_applied || '2025-2026'), form_data: { ...form, siblings_json: siblings, education_history_json: education, emergency_contacts_json: contacts } });
     setBusy(false);
     if (!response.success || !response.data) { setNotice(response.error?.message || 'Unable to save the application draft.'); return; }
+    preservedDraftStage.current = nextStage;
     setApplication(response.data);
     setStage(nextStage);
     setNotice('ទិន្នន័យទម្រង់ត្រូវបានរក្សាទុកដោយសុវត្ថិភាព។');

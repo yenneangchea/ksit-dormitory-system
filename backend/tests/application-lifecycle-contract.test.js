@@ -67,3 +67,12 @@ test('student wizard exposes all official form sections and five protected lifec
   assert.match(wizard, /applicationsAPI\.uploadSigned/);
   assert.match(wizard, /applicationsAPI\.prefilledPdf/);
 });
+
+test('student draft save preserves the reference-document stage across its parent data refresh', () => {
+  const wizard = fs.readFileSync(path.join(frontend, 'components', 'student-application-wizard.tsx'), 'utf8');
+  assert.match(wizard, /useRef/);
+  assert.match(wizard, /const preservedDraftStage = useRef<number \| null>\(null\)/);
+  assert.match(wizard, /const savedStage = preservedDraftStage\.current/);
+  assert.match(wizard, /setStage\(savedStage && derivedStage < savedStage \? savedStage : derivedStage\)/);
+  assert.match(wizard, /preservedDraftStage\.current = nextStage/);
+});

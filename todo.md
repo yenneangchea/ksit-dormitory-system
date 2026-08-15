@@ -98,3 +98,7 @@
 - [x] Build the manager review experience with status filters, protected document previews, correction/rejection notes, approval, and room-assignment handoff.
 - [x] Add lifecycle, authorization, upload-validation, and PDF/document regression coverage.
 - [x] Validate local flows, run the production build, publish, and verify the live Student application lifecycle and Manager review release.
+- [ ] Run a clearly labeled live Student-to-Manager end-to-end application simulation using the authorized demo accounts.
+- [ ] Verify generated PDF, private reference files, signed-document submission, and Manager approval state in the live workflow.
+- [x] Fix the Student application wizard so a successful draft save remains on the document-upload stage instead of resetting to the form stage after the parent data refresh.
+- [x] Add regression coverage for the post-save Student wizard stage transition and validate the repair before resuming the controlled live simulation.
