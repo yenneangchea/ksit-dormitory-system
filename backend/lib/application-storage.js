@@ -50,6 +50,10 @@ function isDriveReference(value) {
   return typeof value === 'string' && value.startsWith('drive:');
 }
 
+function setDriveClientForTest(client) {
+  driveClient = client;
+}
+
 function driveFileId(value) {
   if (!isDriveReference(value)) return null;
   return value.slice('drive:'.length) || null;
@@ -132,5 +136,5 @@ module.exports = {
   getDriveFileStream,
   isDriveConfigured,
   isDriveReference,
-  __private: { parseServiceAccount, safeFolderSegment },
+  __private: { parseServiceAccount, safeFolderSegment, setDriveClientForTest },
 };

@@ -115,3 +115,6 @@
 - [x] Update lifecycle document presentation and regression coverage for Drive-primary and Supabase-fallback storage modes.
 - [ ] Validate, commit, push, and verify the Google Drive storage integration release.
 - [ ] Configure GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_DRIVE_ROOT_FOLDER_ID in the Vercel backend environment after the fallback-ready release is published.
+- [x] Add a credential-free mocked Google Drive submission simulation that verifies student-folder creation, reference upload, PDF upload, signed-document upload, and stored Drive references.
+- [x] Run the full regression suite and production frontend build after the Drive-enabled simulation is added.
+- [x] Create and present a concise Google Drive integration architecture and deployment guide slide deck.
