@@ -3,18 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PublicNavigation } from "@/components/public-navigation";
 import {
   Award,
   BellRing,
-  ChevronDown,
   ChevronRight,
   LogIn,
   Mail,
   MapPin,
-  Menu,
   Phone,
   Users,
-  X,
 } from "lucide-react";
 
 const roles = [
@@ -34,7 +32,6 @@ const homepageDefaults = {
 type PublicNewsPost = { id: string; title: string; body: string; image_url?: string | null; external_url?: string | null; published_at: string };
 
 export default function HomePage() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [ticker, setTicker] = useState(homepageDefaults.ticker);
   const [deadline, setDeadline] = useState(homepageDefaults.deadline);
   const [newsPosts, setNewsPosts] = useState<PublicNewsPost[]>([]);
@@ -83,47 +80,11 @@ export default function HomePage() {
               <span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span>
             </span>
           </Link>
-          <button type="button" aria-label={mobileOpen ? "បិទម៉ឺនុយ" : "បើកម៉ឺនុយ"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="rounded-lg p-2 text-[#147a5b] hover:bg-emerald-50 lg:hidden">
-            {mobileOpen ? <X className="size-7" /> : <Menu className="size-7" />}
-          </button>
+          <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#147a5b] px-3 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#0f6047] sm:px-5"><LogIn className="size-4 text-emerald-200" /><span className="hidden sm:inline">ចូលប្រើប្រាស់</span></Link>
         </div>
       </header>
 
-      <nav aria-label="ម៉ឺនុយមេ" className="sticky top-0 z-40 hidden bg-[#147a5b] text-white shadow-md lg:flex">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
-          <div className="flex items-center text-sm font-bold">
-            <Link href="/" className="px-4 py-3 hover:bg-[#0f6047] xl:px-5">ទំព័រដើម</Link>
-            <Link href="/about" className="px-4 py-3 hover:bg-[#0f6047] xl:px-5">អំពីវិទ្យាស្ថាន</Link>
-            <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="px-4 py-3 hover:bg-[#0f6047] xl:px-5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a>
-            <div className="group relative">
-              <button type="button" aria-haspopup="true" className="flex items-center gap-1 px-4 py-3 hover:bg-[#0f6047] xl:px-5">អំពីប្រព័ន្ធ <ChevronDown className="size-4 text-emerald-200" /></button>
-              <div className="invisible absolute left-0 top-full w-80 border border-slate-200 bg-white py-2 text-xs text-slate-800 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                <Link href="/docs" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📖 ឯកសារណែនាំប្រព័ន្ធ</span><span className="mt-0.5 block text-slate-500">System Documentation</span></Link>
-                <Link href="/features" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</span><span className="mt-0.5 block text-slate-500">Core Features &amp; Guides</span></Link>
-                <Link href="/changelog" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📢 កំណត់ត្រាកំណែទម្រង់</span><span className="mt-0.5 block text-slate-500">Changelog &amp; Latest Updates</span></Link>
-              </div>
-            </div>
-            <a href="#contact" className="px-4 py-3 hover:bg-[#0f6047] xl:px-5">ទំនាក់ទំនង</a>
-          </div>
-          <Link href="/login" className="mr-2 inline-flex items-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-500"><LogIn className="size-4" /> ចូលប្រើប្រាស់</Link>
-        </div>
-      </nav>
-
-      {mobileOpen && (
-        <nav aria-label="ម៉ឺនុយទូរស័ព្ទ" className="border-t border-emerald-600 bg-[#147a5b] px-4 py-3 text-sm font-semibold text-white lg:hidden">
-          <div className="mx-auto max-w-7xl space-y-1">
-            <Link href="/" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំព័រដើម</Link>
-            <Link href="/about" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">អំពីវិទ្យាស្ថាន</Link>
-            <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block border-b border-emerald-700 py-2.5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a>
-            <p className="pt-2 text-xs font-bold uppercase tracking-wider text-emerald-200">អំពីប្រព័ន្ធ</p>
-            <Link href="/docs" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📖 ឯកសារណែនាំប្រព័ន្ធ</Link>
-            <Link href="/features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</Link>
-            <Link href="/changelog" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📢 កំណត់ត្រាកំណែទម្រង់</Link>
-            <a href="#contact" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំនាក់ទំនង</a>
-            <Link href="/login" onClick={() => setMobileOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-950"><LogIn className="size-4" /> ចូលប្រើប្រាស់ប្រព័ន្ធ</Link>
-          </div>
-        </nav>
-      )}
+      <PublicNavigation />
 
       <section style={hero.background ? { background: hero.background } : undefined} className="overflow-hidden bg-[radial-gradient(circle_at_75%_20%,rgba(255,255,255,0.16),transparent_25%),linear-gradient(135deg,#147a5b_0%,#0f6047_55%,#0f172a_100%)] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-12">

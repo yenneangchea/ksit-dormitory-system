@@ -81,3 +81,7 @@
 - [x] Replace the desktop navigation with the requested clean horizontal menu and a single About System dropdown, while retaining the full mobile drawer.
 - [x] Add the selected About KSIT desktop navigation link and a dedicated `/about` page grounded in official institutional information.
 - [x] Add regression coverage, validate the production build, publish, and verify the streamlined homepage release.
+- [x] Review each public-page header and navigation implementation for permanent horizontal-menu compatibility.
+- [x] Remove vertical public mobile drawers and close toggles, replacing them with a permanent horizontally scrollable green menu bar beneath the logo on every viewport.
+- [x] Preserve the six requested navigation destinations and ensure the About System dropdown works without breaking mobile layout.
+- [ ] Add regression coverage, validate the production build, publish, and verify the permanent public-navigation release.

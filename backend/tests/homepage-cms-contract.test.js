@@ -42,16 +42,29 @@ test('returns extended CMS settings and news metadata from server-side APIs', ()
   assert.match(controller, /external_url/);
 });
 
-test('uses the requested dormitory identity with the streamlined public navigation', () => {
+test('uses the requested dormitory identity with permanent responsive public navigation', () => {
   const homepage = read('frontend/src/app/page.tsx');
+  const featuresPage = read('frontend/src/app/features/page.tsx');
+  const publicChrome = read('frontend/src/components/public-site-chrome.tsx');
+  const publicNavigation = read('frontend/src/components/public-navigation.tsx');
   assert.match(homepage, /ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT/);
   assert.match(homepage, /KSIT DORMITORY MANAGEMENT SYSTEM/);
   assert.doesNotMatch(homepage, /> Dorm Portal</);
-  assert.match(homepage, /អំពីវិទ្យាស្ថាន/);
-  assert.match(homepage, /កម្មវិធីសិក្សា និងអាហារូបករណ៍/);
-  assert.match(homepage, /href="\/about"/);
-  assert.match(homepage, /https:\/\/ksit\.edu\.kh\/category\/scholarship\//);
-  assert.match(homepage, /lg:hidden/);
+  assert.match(publicNavigation, /អំពីវិទ្យាស្ថាន/);
+  assert.match(publicNavigation, /កម្មវិធីសិក្សា និងអាហារូបករណ៍/);
+  assert.match(publicNavigation, /href="\/about"/);
+  assert.match(publicNavigation, /https:\/\/ksit\.edu\.kh\/category\/scholarship\//);
+  assert.match(homepage, /<PublicNavigation/);
+  assert.doesNotMatch(homepage, /mobileOpen/);
+  assert.match(featuresPage, /<PublicNavigation active="features"/);
+  assert.doesNotMatch(featuresPage, /mobileOpen/);
+  assert.match(publicChrome, /<PublicNavigation active=\{active\}/);
+  assert.doesNotMatch(publicChrome, /mobileOpen/);
+  assert.match(publicNavigation, /overflow-x-auto/);
+  assert.match(publicNavigation, /whitespace-nowrap/);
+  assert.match(publicNavigation, /scrollbar-none/);
+  assert.match(publicNavigation, /font-sans/);
+  assert.match(publicNavigation, /<details/);
   assert.doesNotMatch(homepage, /const roleWalkthrough/);
   assert.doesNotMatch(homepage, /Smart Campus Features/);
 });
@@ -67,19 +80,17 @@ test('provides the dedicated Khmer features guide and links homepage learning ac
 });
 
 test('provides public documentation and a data-driven changelog with consistent About System navigation', () => {
-  const homepage = read('frontend/src/app/page.tsx');
   const featuresPage = read('frontend/src/app/features/page.tsx');
+  const publicNavigation = read('frontend/src/components/public-navigation.tsx');
   const aboutPage = read('frontend/src/app/about/page.tsx');
   const docsPage = read('frontend/src/app/docs/page.tsx');
   const changelogPage = read('frontend/src/app/changelog/page.tsx');
   const changelogData = read('frontend/src/data/changelog.ts');
 
-  assert.match(homepage, /អំពីប្រព័ន្ធ/);
-  assert.match(homepage, /href="\/docs"/);
-  assert.match(homepage, /href="\/changelog"/);
-  assert.match(featuresPage, /អំពីប្រព័ន្ធ/);
-  assert.match(featuresPage, /href="\/docs"/);
-  assert.match(featuresPage, /href="\/changelog"/);
+  assert.match(publicNavigation, /អំពីប្រព័ន្ធ/);
+  assert.match(publicNavigation, /href: 'docs'/);
+  assert.match(publicNavigation, /href: 'changelog'/);
+  assert.match(featuresPage, /<PublicNavigation active="features"/);
   assert.match(aboutPage, /អំពីវិទ្យាស្ថានបច្ចេកវិទ្យាកំពង់ស្ពឺ/);
   assert.match(aboutPage, /គុណភាព និងភាពលេចធ្លោ/);
   assert.match(aboutPage, /ចូលទៅកាន់ប្រព័ន្ធគ្រប់គ្រងអន្តេវាសិកដ្ឋាន/);

@@ -124,6 +124,14 @@ h1,
   font-size: 0.875rem;
 }
 
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .ksit-container {
     padding-inline: 1rem;

@@ -2,12 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
+import { PublicNavigation } from '@/components/public-navigation';
 import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   CreditCard,
@@ -16,14 +16,12 @@ import {
   LogIn,
   Mail,
   MapPin,
-  Menu,
   Phone,
   QrCode,
   Receipt,
   ShieldCheck,
   Users,
   Wrench,
-  X,
 } from 'lucide-react';
 
 const benefits = [
@@ -42,16 +40,14 @@ const roles = [
 ];
 
 export default function FeaturesPage() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
   const slide = (direction: 'left' | 'right') => sliderRef.current?.scrollBy({ left: direction === 'left' ? -420 : 420, behavior: 'smooth' });
 
   return (
     <main className="min-h-screen bg-[#f8faf8] text-slate-800">
       <div className="border-b border-emerald-800 bg-[#147a5b] px-4 py-2 text-xs text-white sm:text-sm"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><span className="font-semibold">ប្រព័ន្ធអន្តេវាសិកដ្ឋានឌីជីថល KSIT</span><div className="hidden items-center gap-4 text-emerald-100 md:flex"><span className="flex items-center gap-1"><Phone className="size-3.5" /> 089 511 383 / 092 740 222</span><span className="flex items-center gap-1"><Mail className="size-3.5" /> info@ksit.edu.kh</span></div></div></div>
-      <header className="border-b border-slate-100 bg-white px-4 py-4 sm:px-6 lg:px-8"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><Link href="/" className="flex min-w-0 items-center gap-3 sm:gap-4"><Image src="/ksit-logo.png" alt="KSIT Dormitory Management System" width={80} height={80} priority className="size-14 shrink-0 object-contain sm:size-20" /><span className="min-w-0"><span className="block truncate text-base font-extrabold leading-tight text-[#147a5b] sm:text-xl md:text-2xl">ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT</span><span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span></span></Link><Link href="/login" className="hidden items-center gap-2 rounded-lg bg-[#147a5b] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#0f6047] md:flex"><LogIn className="size-4 text-emerald-200" /> ចូលប្រើប្រាស់</Link><button type="button" aria-label="បើកម៉ឺនុយ" aria-expanded={mobileOpen} onClick={() => setMobileOpen((current) => !current)} className="rounded-lg p-2 text-[#147a5b] hover:bg-emerald-50 lg:hidden">{mobileOpen ? <X className="size-7" /> : <Menu className="size-7" />}</button></div></header>
-      <nav className="sticky top-0 z-40 hidden bg-[#147a5b] text-white shadow-md lg:flex"><div className="mx-auto flex w-full max-w-7xl items-center justify-between"><div className="flex items-center"><Link href="/" className="px-4 py-3 text-sm font-bold hover:bg-[#0f6047] xl:px-5">ទំព័រដើម</Link><Link href="/about" className="px-4 py-3 text-sm font-bold hover:bg-[#0f6047] xl:px-5">អំពីវិទ្យាស្ថាន</Link><a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="px-4 py-3 text-sm font-bold hover:bg-[#0f6047] xl:px-5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a><div className="group relative"><button type="button" aria-haspopup="true" className="flex items-center gap-1 px-4 py-3 text-sm font-bold hover:bg-[#0f6047] xl:px-5">អំពីប្រព័ន្ធ <ChevronDown className="size-4 text-emerald-200" /></button><div className="invisible absolute left-0 top-full w-80 border border-slate-200 bg-white py-2 text-slate-800 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"><Link href="/docs" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📖 ឯកសារណែនាំប្រព័ន្ធ</span><span className="mt-0.5 block text-xs text-slate-500">System Documentation</span></Link><Link href="/features" className="block bg-emerald-50 px-4 py-3 text-[#147a5b]"><span className="font-bold">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</span><span className="mt-0.5 block text-xs text-slate-500">Core Features &amp; Guides</span></Link><Link href="/changelog" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📢 កំណត់ត្រាកំណែទម្រង់</span><span className="mt-0.5 block text-xs text-slate-500">Changelog &amp; Latest Updates</span></Link></div></div><a href="#contact" className="px-4 py-3 text-sm font-bold hover:bg-[#0f6047] xl:px-5">ទំនាក់ទំនង</a></div><Link href="/login" className="mr-2 inline-flex items-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm hover:bg-amber-500"><LogIn className="size-4" /> ចូលប្រើប្រាស់</Link></div></nav>
-      {mobileOpen && <nav className="border-t border-emerald-600 bg-[#147a5b] px-4 py-3 text-sm font-semibold text-white lg:hidden"><Link href="/" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំព័រដើម</Link><Link href="/about" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">អំពីវិទ្យាស្ថាន</Link><a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block border-b border-emerald-700 py-2.5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a><p className="mt-3 text-xs font-bold uppercase tracking-wider text-emerald-200">អំពីប្រព័ន្ធ</p><Link href="/docs" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📖 ឯកសារណែនាំប្រព័ន្ធ</Link><Link href="/features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5 text-amber-300">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</Link><Link href="/changelog" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📢 កំណត់ត្រាកំណែទម្រង់</Link><a href="#contact" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំនាក់ទំនង</a><Link href="/login" onClick={() => setMobileOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-950"><LogIn className="size-4" /> ចូលប្រើប្រាស់ប្រព័ន្ធ</Link></nav>}
+      <header className="border-b border-slate-100 bg-white px-4 py-4 sm:px-6 lg:px-8"><div className="mx-auto flex max-w-7xl items-center justify-between gap-4"><Link href="/" className="flex min-w-0 items-center gap-3 sm:gap-4"><Image src="/ksit-logo.png" alt="KSIT Dormitory Management System" width={80} height={80} priority className="size-14 shrink-0 object-contain sm:size-20" /><span className="min-w-0"><span className="block truncate text-base font-extrabold leading-tight text-[#147a5b] sm:text-xl md:text-2xl">ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT</span><span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span></span></Link><Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#147a5b] px-3 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#0f6047] sm:px-5"><LogIn className="size-4 text-emerald-200" /><span className="hidden sm:inline">ចូលប្រើប្រាស់</span></Link></div></header>
+      <PublicNavigation active="features" />
 
       <section className="overflow-hidden bg-[radial-gradient(circle_at_85%_20%,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0b5c2c,#147a5b_54%,#0f172a)] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-12"><div className="lg:col-span-8"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold text-amber-300"><GraduationCap className="size-4" /> អំពីប្រព័ន្ធអន្តេវាសិកដ្ឋានឌីជីថល</span><h1 className="mt-6 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl">ប្រព័ន្ធគ្រប់គ្រងអន្តេវាសិកដ្ឋាន នៃវិទ្យាស្ថានបច្ចេកវិទ្យាកំពង់ស្ពឺ</h1><p className="mt-3 text-lg font-bold text-emerald-100">KSIT Dormitory Management System</p><p className="mt-6 max-w-3xl text-sm leading-8 text-emerald-50 sm:text-base">ប្រព័ន្ធឌីជីថលកណ្ដាលសម្រាប់គ្រប់គ្រងការស្នាក់នៅ ដែលត្រូវបានរចនាឡើងសម្រាប់និស្សិត គ្រូត្រួតពិនិត្យ អ្នកគ្រប់គ្រងអន្តេវាសិកដ្ឋាន និងអ្នកគ្រប់គ្រងប្រព័ន្ធរបស់ KSIT។</p><Link href="/login" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-amber-500">ចាប់ផ្តើមចូលប្រើប្រាស់ <ChevronRight className="size-4" /></Link></div><div className="hidden lg:col-span-4 lg:block"><div className="rounded-3xl border border-white/15 bg-white/10 p-7 backdrop-blur-sm"><Users className="size-10 text-amber-300" /><p className="mt-6 text-sm font-bold text-white">គ្រប់តួនាទីនៅក្នុងប្រព័ន្ធតែមួយ</p><p className="mt-2 text-sm leading-6 text-emerald-100">សម្របសម្រួលពីការដាក់ពាក្យ ដល់ការចាត់បន្ទប់ ការបង់ប្រាក់ វត្តមាន និងការជួសជុល។</p></div></div></div></section>
 
