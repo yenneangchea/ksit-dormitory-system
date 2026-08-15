@@ -272,7 +272,7 @@ async function listApplications(req, res, next) {
     const supabase = getSupabase();
     let query = supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed, parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason, applied_at, reviewed_at, reviewed_by, users(id, full_name_latin, full_name_khmer, gender, email, academic_profiles(student_id_card, major, academic_year, class_section))')
+      .select('id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed, parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason, applied_at, reviewed_at, reviewed_by, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, gender, email, academic_profiles(student_id_card, major, academic_year, class_section))')
       .order('applied_at', { ascending: false });
     if (req.query.status) query = query.eq('status', req.query.status);
     if (req.user.role === 'student') {
@@ -342,7 +342,7 @@ async function autoAssignApplication(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, gender, academic_profiles(major, academic_year))')
+      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, gender, academic_profiles(major, academic_year))')
       .eq('id', req.params.applicationId)
       .single();
     if (applicationError || !application) throw fail('Application not found.', 404);
@@ -439,7 +439,7 @@ async function getAssignmentBoard(req, res, next) {
         .order('room_number'),
       supabase
         .from('room_applications')
-        .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
+        .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
         .eq('status', 'approved')
         .order('applied_at'),
     ]);
@@ -467,7 +467,7 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
+      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
       .eq('id', applicationId)
       .single();
     if (applicationError || !application) throw fail('Room application not found.', 404);

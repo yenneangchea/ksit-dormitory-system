@@ -100,6 +100,7 @@ test('role middleware rejects a Student from privileged Admin and Manager API ro
 test('manual room moves expose an authorized assignment board and reject invalid placements server-side', () => {
   const controller = fs.readFileSync(path.join(backend, 'controllers', 'domain.controller.js'), 'utf8');
   assert.match(controller, /async function getAssignmentBoard/);
+  assert.match(controller, /users!room_applications_user_id_fkey\(id, full_name_latin/);
   assert.match(controller, /unassigned_students: pendingStudents/);
   assert.match(controller, /async function manuallyMoveRoomAssignment/);
   assert.match(controller, /Only approved or currently assigned applications may be manually placed/);
