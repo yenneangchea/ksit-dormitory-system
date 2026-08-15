@@ -73,6 +73,16 @@ async function getActiveAssignments(roomId) {
   return data || [];
 }
 
+function profileFromUser(user) {
+  const profiles = user?.academic_profiles;
+  return Array.isArray(profiles) ? profiles[0] || null : profiles || null;
+}
+
+function applicationWithProfile(application, userOverride) {
+  const user = userOverride || application?.users || null;
+  return { ...application, users: user, academic_profiles: profileFromUser(user) };
+}
+
 async function getConfiguredUtilityRates(supabase) {
   const { data, error } = await supabase
     .from('site_settings')
@@ -262,7 +272,7 @@ async function listApplications(req, res, next) {
     const supabase = getSupabase();
     let query = supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed, parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason, applied_at, reviewed_at, reviewed_by, users(id, full_name_latin, full_name_khmer, gender, email), academic_profiles(student_id_card, major, academic_year, class_section)')
+      .select('id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed, parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason, applied_at, reviewed_at, reviewed_by, users(id, full_name_latin, full_name_khmer, gender, email, academic_profiles(student_id_card, major, academic_year, class_section))')
       .order('applied_at', { ascending: false });
     if (req.query.status) query = query.eq('status', req.query.status);
     if (req.user.role === 'student') {
@@ -272,7 +282,7 @@ async function listApplications(req, res, next) {
     }
     const { data, error } = await query;
     if (error) throw error;
-    res.json(publicPayload(data || []));
+    res.json(publicPayload((data || []).map((application) => applicationWithProfile(application))));
   } catch (error) {
     next(error);
   }
@@ -332,14 +342,14 @@ async function autoAssignApplication(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, gender), academic_profiles(major, academic_year)')
+      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, gender, academic_profiles(major, academic_year))')
       .eq('id', req.params.applicationId)
       .single();
     if (applicationError || !application) throw fail('Application not found.', 404);
     if (application.status !== 'approved') throw fail('Only approved applications can be auto-assigned.');
 
     const student = application.users;
-    const profile = Array.isArray(application.academic_profiles) ? application.academic_profiles[0] : application.academic_profiles;
+    const profile = profileFromUser(student);
     if (!student || !profile) throw fail('The application is missing a student profile required for room assignment.');
 
     const { data: existingAssignment, error: existingError } = await supabase
@@ -425,11 +435,11 @@ async function getAssignmentBoard(req, res, next) {
     const [{ data: rooms, error: roomsError }, { data: applications, error: applicationsError }] = await Promise.all([
       supabase
         .from('rooms')
-        .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name), room_assignments(id, application_id, student_id, bed_number, academic_year, is_active, assigned_at, users(id, full_name_latin, full_name_khmer, email, gender), room_applications(id, status, academic_year_applied, academic_profiles(major, academic_year)))')
+        .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name), room_assignments(id, application_id, student_id, bed_number, academic_year, is_active, assigned_at, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year)), room_applications(id, status, academic_year_applied))')
         .order('room_number'),
       supabase
         .from('room_applications')
-        .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender), academic_profiles(major, academic_year)')
+        .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
         .eq('status', 'approved')
         .order('applied_at'),
     ]);
@@ -437,10 +447,10 @@ async function getAssignmentBoard(req, res, next) {
 
     const roomRows = (rooms || []).map((room) => ({
       ...room,
-      residents: (room.room_assignments || []).filter((assignment) => assignment?.is_active && assignment.users).sort((a, b) => a.bed_number - b.bed_number),
+      residents: (room.room_assignments || []).filter((assignment) => assignment?.is_active && assignment.users).sort((a, b) => a.bed_number - b.bed_number).map((assignment) => ({ ...assignment, room_applications: assignment.room_applications ? applicationWithProfile(assignment.room_applications, assignment.users) : null })),
     }));
     const assignedApplicationIds = new Set(roomRows.flatMap((room) => room.residents.map((resident) => resident.application_id)));
-    const pendingStudents = (applications || []).filter((application) => !assignedApplicationIds.has(application.id));
+    const pendingStudents = (applications || []).map((application) => applicationWithProfile(application)).filter((application) => !assignedApplicationIds.has(application.id));
 
     res.json(publicPayload({ rooms: roomRows, unassigned_students: pendingStudents }));
   } catch (error) {
@@ -457,14 +467,14 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender), academic_profiles(major, academic_year)')
+      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
       .eq('id', applicationId)
       .single();
     if (applicationError || !application) throw fail('Room application not found.', 404);
     if (!['approved', 'assigned'].includes(application.status)) throw fail('Only approved or currently assigned applications may be manually placed.', 409);
 
     const student = application.users;
-    const profile = Array.isArray(application.academic_profiles) ? application.academic_profiles[0] : application.academic_profiles;
+    const profile = profileFromUser(student);
     if (!student || !profile) throw fail('The student profile is incomplete and cannot be assigned.', 409);
 
     const [{ data: targetRoom, error: targetRoomError }, { data: sourceAssignment, error: sourceAssignmentError }] = await Promise.all([

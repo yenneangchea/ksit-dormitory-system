@@ -70,3 +70,4 @@
 - [ ] Validate, push, deploy, and verify the manual drag-and-drop room assignment release.
 - [x] Add the shared drag-and-drop Room Matrix to the Admin Buildings & Rooms tab.
 - [x] Validate Admin and Manager access to the shared room-assignment workflow and publish the approved release.
+- [x] Fix assignment-board Supabase relation query so Admin and Manager room matrices load in production.
