@@ -89,4 +89,4 @@
 - [x] Review the shared public header and navigation component for duplicate login controls and dropdown clipping behavior.
 - [x] Remove the white-header login button and keep one prominent Login control on the green navigation bar.
 - [x] Replace the native About System disclosure with a click/touch-safe React dropdown that closes on outside interaction and link selection.
-- [ ] Add regression coverage, validate the production build, publish, and verify the public-header interaction release.
+- [x] Add regression coverage, validate the production build, publish, and verify the public-header interaction release.
