@@ -76,3 +76,8 @@
 - [x] Add structured changelog content in frontend/src/data/changelog.ts.
 - [x] Build dedicated public Documentation and Changelog routes with the supplied content and established KSIT branding.
 - [x] Add regression coverage, validate the production build, publish, and verify the public documentation release.
+- [x] Reconcile the supplied homepage and navigation specifications against the current public-page structure and protected routes.
+- [x] Remove the homepage Smart Campus Features grid and System Guide slider while preserving the requested primary sections and KSIT branding.
+- [x] Replace the desktop navigation with the requested clean horizontal menu and a single About System dropdown, while retaining the full mobile drawer.
+- [x] Add the selected About KSIT desktop navigation link and a dedicated `/about` page grounded in official institutional information.
+- [ ] Add regression coverage, validate the production build, publish, and verify the streamlined homepage release.
