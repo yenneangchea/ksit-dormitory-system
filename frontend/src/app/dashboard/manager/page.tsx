@@ -22,6 +22,8 @@ import {
   buildingsAPI,
   dashboardAPI,
   maintenanceAPI,
+  roomAssignmentsAPI,
+  type AssignmentBoard,
   type DashboardAnalytics as DashboardAnalyticsData,
   type DashboardSummary,
 } from '@/lib/api';
@@ -53,6 +55,8 @@ function ManagerDashboardContent() {
   const [analytics, setAnalytics] = useState<DashboardAnalyticsData | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [applications, setApplications] = useState<RoomApplication[]>([]);
+  const [assignmentBoard, setAssignmentBoard] = useState<AssignmentBoard | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [utilityBills, setUtilityBills] = useState<UtilityBill[]>([]);
   const [attendance, setAttendance] = useState<{ id: string; attendance_date: string; status: string; rooms?: { room_number?: string } | null; users?: { full_name_latin?: string } | null }[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([]);
@@ -74,7 +78,13 @@ function ManagerDashboardContent() {
     if (applicationsResponse.success && applicationsResponse.data) setApplications(applicationsResponse.data);
   };
 
+  const loadAssignmentBoard = useCallback(async () => {
+    const response = await roomAssignmentsAPI.board();
+    if (response.success && response.data) setAssignmentBoard(response.data);
+  }, []);
+
   const loadTabData = useCallback(async (tab: ManagerTab) => {
+    if (tab === 'buildings') await loadAssignmentBoard();
     if (tab === 'billing') {
       const response = await billingAPI.listUtility();
       if (response.success && response.data) setUtilityBills(response.data);
@@ -87,7 +97,7 @@ function ManagerDashboardContent() {
       const response = await maintenanceAPI.list();
       if (response.success && response.data) setMaintenance(response.data);
     }
-  }, []);
+  }, [loadAssignmentBoard]);
 
   useEffect(() => {
     if (!isAuthorized) return;
@@ -158,6 +168,19 @@ function ManagerDashboardContent() {
     setIsWorking(false);
     setNotice(response.success ? 'Waterfall room assignment completed.' : response.error?.message || 'No compatible room could be assigned.');
     if (response.success) await loadCoreData();
+  }
+
+  async function manuallyPlaceStudent(applicationId: string, targetRoomId: string) {
+    setIsWorking(true);
+    const response = await roomAssignmentsAPI.manualMove({ application_id: applicationId, target_room_id: targetRoomId });
+    setIsWorking(false);
+    if (!response.success) {
+      setNotice(response.error?.message || 'Unable to place the student in the selected room.');
+      return;
+    }
+    setSelectedApplicationId(null);
+    setNotice(response.message || 'Student room placement saved.');
+    await Promise.all([loadCoreData(), loadAssignmentBoard()]);
   }
 
   async function createBill(formData: FormData) {
@@ -236,7 +259,7 @@ function ManagerDashboardContent() {
         </div>{analytics && <DashboardAnalytics data={analytics} />}</>}
 
         <div className={activeTab === 'dashboard' ? 'hidden' : 'mt-8'}>
-          {activeTab === 'buildings' && <BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} />}
+          {activeTab === 'buildings' && <><BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} /><RoomAssignmentBoard board={assignmentBoard} selectedApplicationId={selectedApplicationId} isWorking={isWorking} onSelect={setSelectedApplicationId} onMove={manuallyPlaceStudent} /></>}
           {activeTab === 'applications' && <ApplicationsPanel applications={applications} isWorking={isWorking} onReview={reviewApplication} onAutoAssign={autoAssign} />}
           {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}
           {activeTab === 'billing' && <BillingPanel bills={utilityBills} onCreate={() => setShowBillForm(true)} />}
@@ -261,6 +284,48 @@ function MetricCard({ label, value, description, icon, className }: { label: str
 
 function BuildingsPanel({ buildings, totalRooms, onAdd }: { buildings: Building[]; totalRooms: number; onAdd: () => void }) {
   return <section className="ksit-card overflow-hidden"><div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-lg font-bold tracking-[-0.02em]">Building & room inventory</h2><p className="mt-1 text-sm text-[#68736c]">Managed structures, capacities, and floor allocations</p></div><button onClick={onAdd} className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-[#0b5c2c] px-3 text-sm font-semibold text-white hover:bg-[#084a23]"><Plus className="size-4" />Add building</button></div>{buildings.length === 0 ? <div className="border-t border-[#edf0ed] px-6 py-6 text-sm text-[#68736c]">—</div> : <div className="border-t border-[#edf0ed]"><div className="grid grid-cols-[1fr_auto] gap-3 bg-[#fafcf9] px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[#748078]"><span>Building</span><span>Rooms</span></div>{buildings.map((building) => { const rooms = (building as Building & { rooms?: { capacity: number; occupied_count: number; room_number: string }[] }).rooms || []; return <div key={building.id} className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-[#edf0ed] px-6 py-4"><div><p className="font-semibold text-[#223128]">{building.code} · {building.name}</p><p className="mt-1 text-xs text-[#68736c]">{building.total_floors} floors · {building.gender_restriction} residence</p></div><div className="text-right"><p className="font-semibold text-[#223128]">{rooms.length} rooms</p><p className="mt-1 text-xs text-[#68736c]">{rooms.reduce((sum, room) => sum + room.occupied_count, 0)} / {rooms.reduce((sum, room) => sum + room.capacity, 0)} beds</p></div></div>; })}<div className="border-t border-[#edf0ed] bg-[#fafcf9] px-6 py-3 text-xs text-[#68736c]">{buildings.length} buildings · {totalRooms} rooms in inventory</div></div>}</section>;
+}
+
+function firstProfile(value: { major?: string; academic_year?: number } | { major?: string; academic_year?: number }[] | null | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function firstApplication<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function RoomAssignmentBoard({ board, selectedApplicationId, isWorking, onSelect, onMove }: { board: AssignmentBoard | null; selectedApplicationId: string | null; isWorking: boolean; onSelect: (applicationId: string | null) => void; onMove: (applicationId: string, targetRoomId: string) => Promise<void> }) {
+  const [draggedApplicationId, setDraggedApplicationId] = useState<string | null>(null);
+  const allStudents = useMemo(() => {
+    if (!board) return [];
+    return [
+      ...board.unassigned_students,
+      ...board.rooms.flatMap((room) => room.residents.map((resident) => firstApplication(resident.room_applications)).filter(Boolean)),
+    ];
+  }, [board]);
+  const selectedStudent = allStudents.find((student) => student?.id === (draggedApplicationId || selectedApplicationId));
+
+  if (!board) return <section className="ksit-card mt-6 p-6"><p className="text-sm text-[#68736c]">Loading the live assignment board…</p></section>;
+
+  const labelFor = (student: AssignmentBoard['unassigned_students'][number]) => student.users?.full_name_latin || student.users?.full_name_khmer || student.users?.email || 'Student';
+  const canPlace = (room: AssignmentBoard['rooms'][number]) => Boolean(selectedStudent && room.status !== 'maintenance' && room.residents.length < room.capacity && room.gender === selectedStudent.users?.gender);
+  const placeSelected = async (roomId: string) => {
+    const applicationId = draggedApplicationId || selectedApplicationId;
+    if (!applicationId) return;
+    await onMove(applicationId, roomId);
+    setDraggedApplicationId(null);
+  };
+
+  return <section className="mt-6 space-y-5"><div className="flex flex-col gap-3 rounded-2xl border border-[#d5e6d7] bg-[#f3faf4] p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-bold text-[#193925]">Manual room placement</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-[#55705d]">Drag an approved student to an available compatible room. You can also select a student, then use “Place here” for touch devices. Moving a resident between room cards transfers the active assignment.</p></div><span className="inline-flex w-fit rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#1c6b37]">{board.unassigned_students.length} awaiting placement</span></div>
+    <div className="ksit-card overflow-hidden"><div className="border-b border-[#edf0ed] p-5"><h3 className="font-bold">Approved students without a room</h3><p className="mt-1 text-sm text-[#68736c]">Drag from this pool into a room, or select one for tap-to-place.</p></div><div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">{board.unassigned_students.length === 0 ? <p className="col-span-full px-2 py-3 text-sm text-[#68736c]">All approved students currently have active room assignments.</p> : board.unassigned_students.map((student) => <StudentMoveCard key={student.id} student={student} selected={selectedApplicationId === student.id} onDragStart={() => setDraggedApplicationId(student.id)} onDragEnd={() => setDraggedApplicationId(null)} onSelect={() => onSelect(selectedApplicationId === student.id ? null : student.id)} />)}</div></div>
+    <div className="grid gap-4 xl:grid-cols-2">{board.rooms.map((room) => { const compatible = canPlace(room); const isFull = room.residents.length >= room.capacity; return <article key={room.id} onDragOver={(event) => { if (compatible) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); if (compatible) void placeSelected(room.id); }} className={`rounded-2xl border bg-white p-5 ${compatible ? 'border-[#54a56a] ring-2 ring-[#d6f1db]' : room.status === 'maintenance' ? 'border-[#f0d8d2] bg-[#fffaf8]' : 'border-[#dfe5df]'}`}><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#5d7765]">{room.buildings?.code || 'Residence'} · Floor {room.floor_number}</p><h3 className="mt-1 text-xl font-extrabold text-[#20342a]">Room {room.room_number}</h3><p className="mt-1 text-sm text-[#68736c]">{room.gender} · {room.residents.length} / {room.capacity} beds · {room.status}</p></div><button disabled={isWorking || !compatible} onClick={() => void placeSelected(room.id)} className="min-h-11 rounded-lg bg-[#0b5c2c] px-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-[#c9d4ca]">{selectedStudent ? compatible ? 'Place here' : isFull ? 'Room full' : 'Not compatible' : 'Select student'}</button></div><div className="mt-4 min-h-20 space-y-2 rounded-xl border border-dashed border-[#cbdacc] bg-[#fbfdfb] p-3">{room.residents.length === 0 ? <p className="py-2 text-sm text-[#78867c]">Drop an approved compatible student here.</p> : room.residents.map((resident) => { const student = firstApplication(resident.room_applications); if (!student) return null; return <div key={resident.id} draggable={!isWorking} onDragStart={() => setDraggedApplicationId(student.id)} onDragEnd={() => setDraggedApplicationId(null)} className={`flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 ${selectedApplicationId === student.id ? 'border-[#0b5c2c] bg-[#eaf6ec]' : 'border-[#e0e8e1] bg-white'}`}><button type="button" onClick={() => onSelect(selectedApplicationId === student.id ? null : student.id)} className="min-h-9 min-w-0 flex-1 text-left text-sm font-semibold text-[#27372d]"><span className="mr-2 text-xs font-bold text-[#0b5c2c]">Bed {resident.bed_number}</span>{labelFor(student)}</button><span className="text-[11px] text-[#708076]">Move</span></div>; })}</div></article>; })}</div>
+  </section>;
+}
+
+function StudentMoveCard({ student, selected, onDragStart, onDragEnd, onSelect }: { student: AssignmentBoard['unassigned_students'][number]; selected: boolean; onDragStart: () => void; onDragEnd: () => void; onSelect: () => void }) {
+  const profile = firstProfile(student.academic_profiles);
+  const name = student.users?.full_name_latin || student.users?.full_name_khmer || student.users?.email || 'Student';
+  return <div draggable onDragStart={onDragStart} onDragEnd={onDragEnd} className={`rounded-xl border p-3 ${selected ? 'border-[#0b5c2c] bg-[#eaf6ec]' : 'border-[#e1e8e1] bg-white'}`}><button type="button" onClick={onSelect} className="min-h-11 w-full text-left"><p className="font-semibold text-[#26372d]">{name}</p><p className="mt-1 text-xs text-[#68736c]">{student.users?.gender || '—'} · {profile?.major || 'Major pending'} · Year {profile?.academic_year || '—'}</p></button><p className="mt-2 text-[11px] font-semibold text-[#498158]">Drag or select to place</p></div>;
 }
 
 function ApplicationsPanel({ applications, isWorking, onReview, onAutoAssign }: { applications: RoomApplication[]; isWorking: boolean; onReview: (id: string, status: 'approved' | 'rejected') => Promise<void>; onAutoAssign: (id: string) => Promise<void> }) {

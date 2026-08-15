@@ -7,7 +7,8 @@ import { Building2, Megaphone, Pencil, Plus, QrCode, ShieldCheck, Trash2, UsersR
 import { PortalShell } from '@/components/portal-shell';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
-import { buildingsAPI, dashboardAPI, roomsAPI, type DashboardAnalytics as DashboardAnalyticsData, type DashboardSummary, usersAPI } from '@/lib/api';
+import { RoomAssignmentBoard } from '@/components/room-assignment-board';
+import { buildingsAPI, dashboardAPI, roomAssignmentsAPI, roomsAPI, type AssignmentBoard, type DashboardAnalytics as DashboardAnalyticsData, type DashboardSummary, usersAPI } from '@/lib/api';
 import type { Building, Room, User, UserRole } from '@/types';
 
 type BuildingWithRooms = Building & { rooms?: Room[] };
@@ -40,6 +41,8 @@ function AdminDashboardContent() {
   const [analytics, setAnalytics] = useState<DashboardAnalyticsData | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [buildings, setBuildings] = useState<BuildingWithRooms[]>([]);
+  const [assignmentBoard, setAssignmentBoard] = useState<AssignmentBoard | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [isWorking, setIsWorking] = useState(false);
   const [modal, setModal] = useState<ModalState>(null);
@@ -63,11 +66,16 @@ function AdminDashboardContent() {
     if (announcementsResponse.success && announcementsResponse.data) setAnnouncementManagement(announcementsResponse.data);
   }
 
+  async function loadAssignmentBoard() {
+    const response = await roomAssignmentsAPI.board();
+    if (response.success && response.data) setAssignmentBoard(response.data);
+  }
+
   useEffect(() => {
     if (!isAuthorized) return;
-    const timer = window.setTimeout(() => void load(), 0);
+    const timer = window.setTimeout(() => { void load(); if (activeTab === 'residence') void loadAssignmentBoard(); }, 0);
     return () => window.clearTimeout(timer);
-  }, [isAuthorized]);
+  }, [activeTab, isAuthorized]);
 
   async function runAction(action: () => Promise<{ success: boolean; message?: string; error?: { message: string } }>, successMessage: string) {
     setIsWorking(true);
@@ -132,6 +140,19 @@ function AdminDashboardContent() {
     await runAction(() => roomsAPI.create(payload), 'Room created with a new Magic QR code.');
   }
 
+  async function manuallyPlaceStudent(applicationId: string, targetRoomId: string) {
+    setIsWorking(true);
+    const response = await roomAssignmentsAPI.manualMove({ application_id: applicationId, target_room_id: targetRoomId });
+    setIsWorking(false);
+    if (!response.success) {
+      setNotice(response.error?.message || 'Unable to place the student in the selected room.');
+      return;
+    }
+    setSelectedApplicationId(null);
+    setNotice(response.message || 'Student room placement saved.');
+    await Promise.all([load(), loadAssignmentBoard()]);
+  }
+
   async function saveAnnouncementSettings(formData: FormData) {
     const deadlineInput = String(formData.get('deadline_at') || '');
     await runAction(() => announcementRequest('/api/announcements/settings', { method: 'PUT', body: JSON.stringify({
@@ -179,7 +200,7 @@ function AdminDashboardContent() {
         {notice && <div role="status" className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
         {activeTab === 'dashboard' && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Kpi icon={<UsersRound />} label="Registered users" value={users.length} note="Active role accounts" /><Kpi icon={<Building2 />} label="Buildings" value={summary.buildings} note={`${summary.rooms_total} configured rooms`} /><Kpi icon={<ShieldCheck />} label="Pending review" value={summary.pending_applications} note="Residence applications" /><Kpi icon={<Wrench />} label="Open work orders" value={summary.pending_maintenance} note="Manager action queue" /></div>{analytics && <DashboardAnalytics data={analytics} />}</>}
         {activeTab === 'users' && <UserManagementPanel users={filteredUsers} search={userSearch} onSearch={setUserSearch} onAdd={() => setModal({ type: 'user' })} onEdit={(user) => setModal({ type: 'user', user })} onDelete={(user) => { if (window.confirm(`Delete ${user.full_name_latin}? This cannot be undone.`)) void runAction(() => usersAPI.remove(user.id), 'User deleted.'); }} />}
-        {activeTab === 'residence' && <ResidenceConfigurationPanel buildings={buildings} onAddBuilding={() => setModal({ type: 'building' })} onAddRoom={() => setModal({ type: 'room' })} onEditBuilding={(building) => setModal({ type: 'building', building })} onEditRoom={(room) => setModal({ type: 'room', room })} onDeleteBuilding={(building) => { if (window.confirm(`Delete ${building.name}? Rooms must be removed first.`)) void runAction(() => buildingsAPI.remove(building.id), 'Building deleted.'); }} onDeleteRoom={(room) => { if (window.confirm(`Delete room ${room.room_number}?`)) void runAction(() => roomsAPI.remove(room.id), 'Room deleted.'); }} />}
+        {activeTab === 'residence' && <><ResidenceConfigurationPanel buildings={buildings} onAddBuilding={() => setModal({ type: 'building' })} onAddRoom={() => setModal({ type: 'room' })} onEditBuilding={(building) => setModal({ type: 'building', building })} onEditRoom={(room) => setModal({ type: 'room', room })} onDeleteBuilding={(building) => { if (window.confirm(`Delete ${building.name}? Rooms must be removed first.`)) void runAction(() => buildingsAPI.remove(building.id), 'Building deleted.'); }} onDeleteRoom={(room) => { if (window.confirm(`Delete room ${room.room_number}?`)) void runAction(() => roomsAPI.remove(room.id), 'Room deleted.'); }} /><RoomAssignmentBoard board={assignmentBoard} selectedApplicationId={selectedApplicationId} isWorking={isWorking} onSelect={setSelectedApplicationId} onMove={manuallyPlaceStudent} /></>}
         {activeTab === 'cms' && <AnnouncementManagementPanel management={announcementManagement} isWorking={isWorking} onSaveSettings={saveAnnouncementSettings} onCreate={() => setNewsModal('new')} onEdit={(post) => setNewsModal(post)} onToggle={(post) => void toggleNewsVisibility(post)} onDelete={(post) => void deleteNews(post)} />}
         {activeTab === 'settings' && <SystemSettingsPanel settings={announcementManagement.settings.system_settings} isWorking={isWorking} onSave={saveSystemSettings} />}
       </section>

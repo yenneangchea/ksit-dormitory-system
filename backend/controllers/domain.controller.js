@@ -419,6 +419,151 @@ async function autoAssignApplication(req, res, next) {
   }
 }
 
+async function getAssignmentBoard(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const [{ data: rooms, error: roomsError }, { data: applications, error: applicationsError }] = await Promise.all([
+      supabase
+        .from('rooms')
+        .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name), room_assignments(id, application_id, student_id, bed_number, academic_year, is_active, assigned_at, users(id, full_name_latin, full_name_khmer, email, gender), room_applications(id, status, academic_year_applied, academic_profiles(major, academic_year)))')
+        .order('room_number'),
+      supabase
+        .from('room_applications')
+        .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender), academic_profiles(major, academic_year)')
+        .eq('status', 'approved')
+        .order('applied_at'),
+    ]);
+    if (roomsError || applicationsError) throw roomsError || applicationsError;
+
+    const roomRows = (rooms || []).map((room) => ({
+      ...room,
+      residents: (room.room_assignments || []).filter((assignment) => assignment?.is_active && assignment.users).sort((a, b) => a.bed_number - b.bed_number),
+    }));
+    const assignedApplicationIds = new Set(roomRows.flatMap((room) => room.residents.map((resident) => resident.application_id)));
+    const pendingStudents = (applications || []).filter((application) => !assignedApplicationIds.has(application.id));
+
+    res.json(publicPayload({ rooms: roomRows, unassigned_students: pendingStudents }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function manuallyMoveRoomAssignment(req, res, next) {
+  try {
+    const applicationId = String(req.body?.application_id || '').trim();
+    const targetRoomId = String(req.body?.target_room_id || '').trim();
+    if (!applicationId || !targetRoomId) throw fail('An application and target room are required.');
+
+    const supabase = getSupabase();
+    const { data: application, error: applicationError } = await supabase
+      .from('room_applications')
+      .select('id, user_id, academic_year_applied, status, users(id, full_name_latin, full_name_khmer, email, gender), academic_profiles(major, academic_year)')
+      .eq('id', applicationId)
+      .single();
+    if (applicationError || !application) throw fail('Room application not found.', 404);
+    if (!['approved', 'assigned'].includes(application.status)) throw fail('Only approved or currently assigned applications may be manually placed.', 409);
+
+    const student = application.users;
+    const profile = Array.isArray(application.academic_profiles) ? application.academic_profiles[0] : application.academic_profiles;
+    if (!student || !profile) throw fail('The student profile is incomplete and cannot be assigned.', 409);
+
+    const [{ data: targetRoom, error: targetRoomError }, { data: sourceAssignment, error: sourceAssignmentError }] = await Promise.all([
+      supabase
+        .from('rooms')
+        .select('id, room_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name)')
+        .eq('id', targetRoomId)
+        .single(),
+      supabase
+        .from('room_assignments')
+        .select('id, room_id, bed_number, academic_year')
+        .eq('application_id', application.id)
+        .eq('is_active', true)
+        .maybeSingle(),
+    ]);
+    if (targetRoomError || !targetRoom) throw fail('Target room not found.', 404);
+    if (sourceAssignmentError) throw sourceAssignmentError;
+    if (sourceAssignment?.room_id === targetRoom.id) throw fail('This student is already assigned to the selected room.', 409);
+    if (targetRoom.status === 'maintenance') throw fail('Students cannot be placed in a room under maintenance.', 409);
+    if (targetRoom.gender !== student.gender) throw fail('The selected room is not compatible with the student gender.', 409);
+
+    const { data: targetAssignments, error: targetAssignmentsError } = await supabase
+      .from('room_assignments')
+      .select('bed_number')
+      .eq('room_id', targetRoom.id)
+      .eq('academic_year', application.academic_year_applied)
+      .eq('is_active', true);
+    if (targetAssignmentsError) throw targetAssignmentsError;
+    const usedBeds = new Set((targetAssignments || []).map((assignment) => assignment.bed_number));
+    const bedNumber = Array.from({ length: targetRoom.capacity }, (_, index) => index + 1).find((bed) => !usedBeds.has(bed));
+    if (!bedNumber) throw fail('The target room is already at full capacity.', 409);
+
+    const targetCount = (targetAssignments || []).length;
+    const nextTargetCount = targetCount + 1;
+    const targetPatch = {
+      occupied_count: nextTargetCount,
+      status: nextTargetCount >= targetRoom.capacity ? 'full' : 'available',
+      ...(targetRoom.assigned_major ? {} : { assigned_major: profile.major, assigned_year: profile.academic_year }),
+    };
+    const { data: updatedTargetRoom, error: targetUpdateError } = await supabase
+      .from('rooms')
+      .update(targetPatch)
+      .eq('id', targetRoom.id)
+      .eq('occupied_count', Number(targetRoom.occupied_count || 0))
+      .select('id, room_number, capacity, occupied_count, status, buildings(code, name)')
+      .maybeSingle();
+    if (targetUpdateError) throw targetUpdateError;
+    if (!updatedTargetRoom) throw fail('The target room changed while the move was being prepared. Refresh and try again.', 409);
+
+    let assignment;
+    if (sourceAssignment) {
+      const { data, error } = await supabase
+        .from('room_assignments')
+        .update({ room_id: targetRoom.id, bed_number: bedNumber, academic_year: application.academic_year_applied })
+        .eq('id', sourceAssignment.id)
+        .eq('is_active', true)
+        .select()
+        .single();
+      if (error) {
+        await supabase.from('rooms').update({ occupied_count: targetRoom.occupied_count, status: targetRoom.status }).eq('id', targetRoom.id);
+        throw error;
+      }
+      assignment = data;
+
+      const { data: sourceRoom, error: sourceRoomError } = await supabase
+        .from('rooms')
+        .select('id, capacity, occupied_count, status')
+        .eq('id', sourceAssignment.room_id)
+        .single();
+      if (sourceRoomError || !sourceRoom) throw sourceRoomError || fail('Source room no longer exists.', 409);
+      const nextSourceCount = Math.max(0, Number(sourceRoom.occupied_count || 0) - 1);
+      const { error: sourceUpdateError } = await supabase
+        .from('rooms')
+        .update({ occupied_count: nextSourceCount, status: 'available' })
+        .eq('id', sourceRoom.id)
+        .eq('occupied_count', Number(sourceRoom.occupied_count || 0));
+      if (sourceUpdateError) throw sourceUpdateError;
+    } else {
+      const { data, error } = await supabase
+        .from('room_assignments')
+        .insert({ application_id: application.id, student_id: application.user_id, room_id: targetRoom.id, bed_number: bedNumber, academic_year: application.academic_year_applied, is_active: true })
+        .select()
+        .single();
+      if (error) {
+        await supabase.from('rooms').update({ occupied_count: targetRoom.occupied_count, status: targetRoom.status }).eq('id', targetRoom.id);
+        throw error;
+      }
+      assignment = data;
+    }
+
+    const { error: applicationUpdateError } = await supabase.from('room_applications').update({ status: 'assigned' }).eq('id', application.id);
+    if (applicationUpdateError) throw applicationUpdateError;
+
+    res.json(publicPayload({ assignment, student, room: updatedTargetRoom, move_type: sourceAssignment ? 'transfer' : 'assignment' }, sourceAssignment ? 'Student moved to the selected room.' : 'Student assigned to the selected room.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function listUtilityBills(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -1027,6 +1172,8 @@ module.exports = {
   createApplication,
   reviewApplication,
   autoAssignApplication,
+  getAssignmentBoard,
+  manuallyMoveRoomAssignment,
   listUtilityBills,
   createUtilityBill,
   getMyResidence,

@@ -3,6 +3,7 @@ import type {
   Building,
   MaintenanceRequest,
   Room,
+  RoomAssignment,
   RoomApplication,
   StudentBill,
   User,
@@ -40,6 +41,30 @@ export interface DashboardAnalytics {
   attendance: Record<string, number>;
   attendance_days: { date: string; present?: number; absent?: number; leave?: number }[];
   billing: Record<string, number> & { total_khr: number };
+}
+
+export interface AssignmentBoardStudent {
+  id: string;
+  user_id: string;
+  academic_year_applied: string;
+  status: 'approved' | 'assigned';
+  users?: Pick<User, 'id' | 'full_name_latin' | 'full_name_khmer' | 'email' | 'gender'> | null;
+  academic_profiles?: { major?: string; academic_year?: number } | { major?: string; academic_year?: number }[] | null;
+}
+
+export interface AssignmentBoardResident extends Pick<RoomAssignment, 'id' | 'application_id' | 'student_id' | 'bed_number' | 'academic_year' | 'assigned_at'> {
+  users?: Pick<User, 'id' | 'full_name_latin' | 'full_name_khmer' | 'email' | 'gender'> | null;
+  room_applications?: AssignmentBoardStudent | AssignmentBoardStudent[] | null;
+}
+
+export interface AssignmentBoardRoom extends Room {
+  buildings?: { code?: string; name?: string } | null;
+  residents: AssignmentBoardResident[];
+}
+
+export interface AssignmentBoard {
+  rooms: AssignmentBoardRoom[];
+  unassigned_students: AssignmentBoardStudent[];
 }
 
 function getSessionToken() {
@@ -125,6 +150,11 @@ export const applicationsAPI = {
   submit: (payload: Record<string, unknown>) => fetchAPI<RoomApplication>('/api/applications', { method: 'POST', body: JSON.stringify(payload) }),
   review: (applicationId: string, payload: { status: 'under_review' | 'approved' | 'rejected'; rejection_reason?: string }) => fetchAPI<RoomApplication>(`/api/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoAssign: (applicationId: string) => fetchAPI(`/api/applications/${applicationId}/auto-assign`, { method: 'POST' }),
+};
+
+export const roomAssignmentsAPI = {
+  board: () => fetchAPI<AssignmentBoard>('/api/room-assignment-board'),
+  manualMove: (payload: { application_id: string; target_room_id: string }) => fetchAPI('/api/room-assignments/manual-move', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export const billingAPI = {

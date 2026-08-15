@@ -33,7 +33,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(admin, /const activeTab: AdminTab/);
   assert.match(admin, /activeTab === 'dashboard' &&/);
   assert.match(admin, /activeTab === 'users' && <UserManagementPanel/);
-  assert.match(admin, /activeTab === 'residence' && <ResidenceConfigurationPanel/);
+  assert.match(admin, /activeTab === 'residence' && <><ResidenceConfigurationPanel/);
   assert.match(admin, /activeTab === 'cms' && <AnnouncementManagementPanel/);
   assert.match(admin, /activeTab === 'settings' && <SystemSettingsPanel/);
   assert.match(admin, /aria-label="Search users"/);
@@ -44,7 +44,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(manager, /requested === 'utilities'\) return 'billing'/);
   assert.match(manager, /activeTab === 'dashboard' &&/);
   assert.match(manager, /activeTab === 'applications' && <ApplicationsPanel/);
-  assert.match(manager, /activeTab === 'buildings' && <BuildingsPanel/);
+  assert.match(manager, /activeTab === 'buildings' && <><BuildingsPanel/);
   assert.match(manager, /activeTab === 'billing' && <BillingPanel/);
   assert.match(manager, /activeTab === 'maintenance' && <MaintenancePanel/);
 
@@ -93,6 +93,41 @@ test('role middleware rejects a Student from privileged Admin and Manager API ro
   assert.match(routes, /router\.get\('\/users', requireRole\('admin'\)/);
   assert.match(routes, /router\.post\('\/magic-qr\/resolve', requireRole\('admin', 'manager', 'teacher'\)/);
   assert.match(routes, /router\.route\('\/utility-bills'\)\s*\.get\(requireRole\('admin', 'manager'\)/);
+  assert.match(routes, /router\.get\('\/room-assignment-board', requireRole\('admin', 'manager'\)/);
+  assert.match(routes, /router\.post\('\/room-assignments\/manual-move', requireRole\('admin', 'manager'\)/);
+});
+
+test('manual room moves expose an authorized assignment board and reject invalid placements server-side', () => {
+  const controller = fs.readFileSync(path.join(backend, 'controllers', 'domain.controller.js'), 'utf8');
+  assert.match(controller, /async function getAssignmentBoard/);
+  assert.match(controller, /unassigned_students: pendingStudents/);
+  assert.match(controller, /async function manuallyMoveRoomAssignment/);
+  assert.match(controller, /Only approved or currently assigned applications may be manually placed/);
+  assert.match(controller, /Students cannot be placed in a room under maintenance/);
+  assert.match(controller, /selected room is not compatible with the student gender/);
+  assert.match(controller, /target room is already at full capacity/);
+  assert.match(controller, /eq\('occupied_count', Number\(targetRoom\.occupied_count \|\| 0\)\)/);
+  assert.match(controller, /move_type: sourceAssignment \? 'transfer' : 'assignment'/);
+});
+
+test('Manager room matrix supports drag-and-drop and tap-to-place without bypassing the protected API', () => {
+  const manager = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'manager', 'page.tsx'), 'utf8');
+  const admin = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'admin', 'page.tsx'), 'utf8');
+  const sharedBoard = fs.readFileSync(path.join(frontend, 'components', 'room-assignment-board.tsx'), 'utf8');
+  const api = fs.readFileSync(path.join(frontend, 'lib', 'api.ts'), 'utf8');
+  assert.match(manager, /roomAssignmentsAPI\.board\(\)/);
+  assert.match(manager, /roomAssignmentsAPI\.manualMove/);
+  assert.match(manager, /function RoomAssignmentBoard/);
+  assert.match(manager, /draggable/);
+  assert.match(manager, /onDrop=\{\(event\)/);
+  assert.match(manager, /Place here/);
+  assert.match(manager, /Drag or select to place/);
+  assert.match(admin, /import \{ RoomAssignmentBoard \}/);
+  assert.match(admin, /<RoomAssignmentBoard board=\{assignmentBoard\}/);
+  assert.match(admin, /roomAssignmentsAPI\.manualMove/);
+  assert.match(sharedBoard, /Drag or select to place/);
+  assert.match(sharedBoard, /onDrop=\{\(event\)/);
+  assert.match(api, /manualMove: \(payload: \{ application_id: string; target_room_id: string \}\)/);
 });
 
 test('requireRole returns 403 when a Student token is used for an Admin-only action', () => {

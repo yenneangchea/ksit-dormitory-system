@@ -41,6 +41,8 @@ router.route('/applications')
   .post(requireRole('student'), domain.createApplication);
 router.patch('/applications/:applicationId/review', requireRole('admin', 'manager'), domain.reviewApplication);
 router.post('/applications/:applicationId/auto-assign', requireRole('admin', 'manager'), domain.autoAssignApplication);
+router.get('/room-assignment-board', requireRole('admin', 'manager'), domain.getAssignmentBoard);
+router.post('/room-assignments/manual-move', requireRole('admin', 'manager'), domain.manuallyMoveRoomAssignment);
 
 router.route('/utility-bills')
   .get(requireRole('admin', 'manager'), domain.listUtilityBills)
