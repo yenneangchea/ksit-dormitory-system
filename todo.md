@@ -75,4 +75,4 @@
 - [x] Add the public Khmer “អំពីប្រព័ន្ធ” dropdown navigation with links to Documentation, Features, and Changelog.
 - [x] Add structured changelog content in frontend/src/data/changelog.ts.
 - [x] Build dedicated public Documentation and Changelog routes with the supplied content and established KSIT branding.
-- [ ] Add regression coverage, validate the production build, publish, and verify the public documentation release.
+- [x] Add regression coverage, validate the production build, publish, and verify the public documentation release.
