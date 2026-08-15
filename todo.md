@@ -67,7 +67,7 @@
 - [x] Add Manager drag-and-drop transfer between rooms with clear capacity and assignment feedback.
 - [x] Enforce authorized server-side validation for manual room assignment and transfers, including capacity checks.
 - [x] Add regression tests for manual room moves, capacity rejection, and role protection.
-- [ ] Validate, push, deploy, and verify the manual drag-and-drop room assignment release.
+- [x] Validate, push, deploy, and verify the manual drag-and-drop room assignment release.
 - [x] Add the shared drag-and-drop Room Matrix to the Admin Buildings & Rooms tab.
 - [x] Validate Admin and Manager access to the shared room-assignment workflow and publish the approved release.
 - [x] Fix assignment-board Supabase relation query so Admin and Manager room matrices load in production.
