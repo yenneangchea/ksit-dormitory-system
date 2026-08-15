@@ -6,6 +6,12 @@ import { applicationsAPI } from '@/lib/api';
 import type { ApplicationEducation, ApplicationEmergencyContact, ApplicationSibling, RoomApplication } from '@/types';
 
 type FormState = Record<string, string | boolean>;
+type FormSnapshot = {
+  form: FormState;
+  siblings: ApplicationSibling[];
+  education: ApplicationEducation[];
+  contacts: ApplicationEmergencyContact[];
+};
 
 const formSections = [
   { id: 1, title: '១. ពាក្យសុំចូលស្នាក់នៅ' },
@@ -86,19 +92,26 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const preservedDraftStage = useRef<number | null>(null);
+  const pendingFormSnapshot = useRef<FormSnapshot | null>(null);
+
+  function preserveCurrentForm() {
+    pendingFormSnapshot.current = { form, siblings, education, contacts };
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const latest = applications[0] || null;
       const derivedStage = stageFor(latest);
       const savedStage = preservedDraftStage.current;
+      const snapshot = pendingFormSnapshot.current;
       setApplication(latest);
       setStage(savedStage && derivedStage < savedStage ? savedStage : derivedStage);
       if (!savedStage || derivedStage >= savedStage) preservedDraftStage.current = null;
-      setForm(initialForm(latest));
-      setSiblings(initialSiblings(latest));
-      setEducation(initialEducation(latest));
-      setContacts(initialContacts(latest));
+      setForm(snapshot?.form || initialForm(latest));
+      setSiblings(snapshot?.siblings || initialSiblings(latest));
+      setEducation(snapshot?.education || initialEducation(latest));
+      setContacts(snapshot?.contacts || initialContacts(latest));
+      pendingFormSnapshot.current = null;
     }, 0);
     return () => window.clearTimeout(timer);
   }, [applications]);
@@ -113,6 +126,7 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
     setBusy(false);
     if (!response.success || !response.data) { setNotice(response.error?.message || 'Unable to save the application draft.'); return; }
     preservedDraftStage.current = nextStage;
+    preserveCurrentForm();
     setApplication(response.data);
     setStage(nextStage);
     setNotice('ទិន្នន័យទម្រង់ត្រូវបានរក្សាទុកដោយសុវត្ថិភាព។');
@@ -127,6 +141,7 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
     const response = await applicationsAPI.uploadReference(application.id, type, file);
     setBusy(false);
     if (!response.success || !response.data) { setNotice(response.error?.message || 'Unable to upload the document.'); return; }
+    preserveCurrentForm();
     setApplication(response.data);
     setNotice('ឯកសារយោងត្រូវបានផ្ទុកឡើងដោយសុវត្ថិភាព។');
     await onUpdated();

@@ -102,3 +102,5 @@
 - [ ] Verify generated PDF, private reference files, signed-document submission, and Manager approval state in the live workflow.
 - [x] Fix the Student application wizard so a successful draft save remains on the document-upload stage instead of resetting to the form stage after the parent data refresh.
 - [x] Add regression coverage for the post-save Student wizard stage transition and validate the repair before resuming the controlled live simulation.
+- [x] Preserve completed Student form values and acknowledgements across parent refreshes triggered by reference-document uploads, so PDF generation remains possible in the same live session.
+- [x] Add regression coverage for form-state preservation after document uploads and validate the repair before resuming the live submission and approval simulation.

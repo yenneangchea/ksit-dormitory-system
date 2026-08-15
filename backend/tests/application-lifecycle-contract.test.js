@@ -76,3 +76,13 @@ test('student draft save preserves the reference-document stage across its paren
   assert.match(wizard, /setStage\(savedStage && derivedStage < savedStage \? savedStage : derivedStage\)/);
   assert.match(wizard, /preservedDraftStage\.current = nextStage/);
 });
+
+test('student document uploads preserve the completed form values needed for PDF generation', () => {
+  const wizard = fs.readFileSync(path.join(frontend, 'components', 'student-application-wizard.tsx'), 'utf8');
+  assert.match(wizard, /type FormSnapshot =/);
+  assert.match(wizard, /const pendingFormSnapshot = useRef<FormSnapshot \| null>\(null\)/);
+  assert.match(wizard, /function preserveCurrentForm\(\)/);
+  assert.match(wizard, /const snapshot = pendingFormSnapshot\.current/);
+  assert.match(wizard, /setForm\(snapshot\?\.form \|\| initialForm\(latest\)\)/);
+  assert.match(wizard, /preserveCurrentForm\(\);\n    setApplication\(response\.data\);/);
+});
