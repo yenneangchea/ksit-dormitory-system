@@ -13,6 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
+import { ManagerApplicationReview } from '@/components/manager-application-review';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import {
@@ -260,7 +261,7 @@ function ManagerDashboardContent() {
 
         <div className={activeTab === 'dashboard' ? 'hidden' : 'mt-8'}>
           {activeTab === 'buildings' && <><BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} /><RoomAssignmentBoard board={assignmentBoard} selectedApplicationId={selectedApplicationId} isWorking={isWorking} onSelect={setSelectedApplicationId} onMove={manuallyPlaceStudent} /></>}
-          {activeTab === 'applications' && <ApplicationsPanel applications={applications} isWorking={isWorking} onReview={reviewApplication} onAutoAssign={autoAssign} />}
+          {activeTab === 'applications' && <ManagerApplicationReview />}
           {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}
           {activeTab === 'billing' && <BillingPanel bills={utilityBills} onCreate={() => setShowBillForm(true)} />}
           {activeTab === 'maintenance' && <MaintenancePanel tickets={maintenance} isWorking={isWorking} onUpdate={updateMaintenanceStatus} />}

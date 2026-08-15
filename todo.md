@@ -90,3 +90,11 @@
 - [x] Remove the white-header login button and keep one prominent Login control on the green navigation bar.
 - [x] Replace the native About System disclosure with a click/touch-safe React dropdown that closes on outside interaction and link selection.
 - [x] Add regression coverage, validate the production build, publish, and verify the public-header interaction release.
+- [x] Inspect the official four-section Khmer dormitory application template and map every required field to the existing KSIT domain model.
+- [x] Design secure lifecycle states, submission transitions, manager decisions, document access, and pre-filled PDF mappings.
+- [x] Apply an idempotent Supabase migration for extended student/application fields and private reference-document storage.
+- [x] Implement protected backend APIs for drafts, form submission, secure uploads, pre-filled PDF retrieval, manager lists, and manager decisions.
+- [x] Build the responsive student five-stage application wizard with dynamic family/education entries, document uploads, PDF access, signed-document submission, and live status feedback.
+- [x] Build the manager review experience with status filters, protected document previews, correction/rejection notes, approval, and room-assignment handoff.
+- [x] Add lifecycle, authorization, upload-validation, and PDF/document regression coverage.
+- [x] Validate local flows, run the production build, and prepare the lifecycle release for production publication.

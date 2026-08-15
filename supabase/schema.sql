@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE user_role AS ENUM ('admin', 'manager', 'teacher', 'student');
 CREATE TYPE gender_type AS ENUM ('male', 'female');
 CREATE TYPE building_gender_type AS ENUM ('male', 'female', 'mixed');
-CREATE TYPE application_status AS ENUM ('draft', 'submitted', 'under_review', 'approved', 'rejected', 'assigned');
+CREATE TYPE application_status AS ENUM ('draft', 'form_completed', 'pending_signed_doc', 'under_review', 'approved', 'rejected', 'correction_needed', 'assigned', 'submitted');
 CREATE TYPE room_status AS ENUM ('available', 'full', 'maintenance');
 CREATE TYPE bill_status AS ENUM ('unpaid', 'paid', 'overdue');
 CREATE TYPE attendance_status AS ENUM ('present', 'absent', 'leave');
@@ -78,6 +78,16 @@ CREATE TABLE academic_profiles (
     guarantor_relation VARCHAR(100) NOT NULL,
     guarantor_phone VARCHAR(20) NOT NULL,
     guarantor_address TEXT,
+
+    -- Extended official application form fields
+    ethnicity VARCHAR(100) DEFAULT 'ខ្មែរ',
+    nationality VARCHAR(100) DEFAULT 'កម្ពុជា',
+    marital_status VARCHAR(50) DEFAULT 'នៅលីវ',
+    spouse_name VARCHAR(255),
+    spouse_occupation VARCHAR(255),
+    siblings_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    education_history_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    emergency_contacts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,6 +147,19 @@ CREATE TABLE room_applications (
     parent_guarantee_attached BOOLEAN NOT NULL DEFAULT FALSE,
     family_book_attached BOOLEAN NOT NULL DEFAULT FALSE,
     id_card_attached BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Five-stage digital application, printable PDF, and signed-document evidence
+    prefilled_pdf_url TEXT,
+    prefilled_pdf_generated_at TIMESTAMPTZ,
+    student_photo_url TEXT,
+    national_id_doc_url TEXT,
+    family_book_doc_url TEXT,
+    signed_application_doc_url TEXT,
+    document_metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    form_data_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    manager_notes TEXT,
+    submission_step INT NOT NULL DEFAULT 1 CHECK (submission_step BETWEEN 1 AND 5),
+    submitted_for_review_at TIMESTAMPTZ,
     
     rejection_reason TEXT,
     applied_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

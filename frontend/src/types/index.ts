@@ -6,7 +6,7 @@
 export type UserRole = 'admin' | 'manager' | 'teacher' | 'student';
 export type Gender = 'male' | 'female';
 export type BuildingGenderType = 'male' | 'female' | 'mixed';
-export type ApplicationStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'assigned';
+export type ApplicationStatus = 'draft' | 'form_completed' | 'pending_signed_doc' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'correction_needed' | 'assigned';
 export type RoomStatus = 'available' | 'full' | 'maintenance';
 export type BillStatus = 'unpaid' | 'paid' | 'overdue';
 export type AttendanceStatus = 'present' | 'absent' | 'leave';
@@ -54,7 +54,39 @@ export interface AcademicProfile {
   guarantor_relation: string;
   guarantor_phone: string;
   guarantor_address?: string;
+  ethnicity?: string;
+  nationality?: string;
+  marital_status?: string;
+  spouse_name?: string;
+  spouse_occupation?: string;
+  siblings_json?: ApplicationSibling[];
+  education_history_json?: ApplicationEducation[];
+  emergency_contacts_json?: ApplicationEmergencyContact[];
   created_at: string;
+}
+
+export interface ApplicationSibling {
+  name: string;
+  gender?: string;
+  date_of_birth?: string;
+  occupation?: string;
+  address?: string;
+}
+
+export interface ApplicationEducation {
+  level: string;
+  school?: string;
+  province?: string;
+  year?: string;
+  certificate?: string;
+  grade?: string;
+}
+
+export interface ApplicationEmergencyContact {
+  name: string;
+  relation?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface Building {
@@ -93,6 +125,21 @@ export interface RoomApplication {
   family_book_attached: boolean;
   id_card_attached: boolean;
   rejection_reason?: string;
+  manager_notes?: string;
+  submission_step?: number;
+  prefilled_pdf_generated_at?: string;
+  submitted_for_review_at?: string;
+  document_metadata_json?: Record<string, { name?: string; content_type?: string; size?: number; uploaded_at?: string }>;
+  form_data_json?: Record<string, unknown>;
+  users?: User & { academic_profiles?: AcademicProfile | AcademicProfile[] | null };
+  academic_profiles?: AcademicProfile | null;
+  document_urls?: {
+    student_photo?: string | null;
+    national_id?: string | null;
+    family_book?: string | null;
+    signed_application?: string | null;
+    prefilled_pdf?: string | null;
+  };
   applied_at: string;
   reviewed_at?: string;
   reviewed_by?: string;

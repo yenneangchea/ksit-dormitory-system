@@ -43,7 +43,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(manager, /requested === 'rooms'\) return 'buildings'/);
   assert.match(manager, /requested === 'utilities'\) return 'billing'/);
   assert.match(manager, /activeTab === 'dashboard' &&/);
-  assert.match(manager, /activeTab === 'applications' && <ApplicationsPanel/);
+  assert.match(manager, /activeTab === 'applications' && <ManagerApplicationReview/);
   assert.match(manager, /activeTab === 'buildings' && <><BuildingsPanel/);
   assert.match(manager, /activeTab === 'billing' && <BillingPanel/);
   assert.match(manager, /activeTab === 'maintenance' && <MaintenancePanel/);
@@ -59,7 +59,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(student, /requestedTab === 'bills' \? 'bills'/);
   assert.match(student, /requestedTab === 'maintenance' \? 'maintenance'/);
   assert.match(student, /activeTab === 'overview' && <Overview/);
-  assert.match(student, /activeTab === 'application' && <Application/);
+  assert.match(student, /activeTab === 'application' && <StudentApplicationWizard/);
   assert.match(student, /activeTab === 'bills' && <Bills/);
   assert.match(student, /activeTab === 'maintenance' && <Maintenance/);
 });
@@ -82,9 +82,9 @@ test('mobile portal controls preserve accessible touch targets without introduci
   assert.match(teacher, /flex-1 rounded-xl border[^>]+style=\{\{ height: 44 \}\}/);
   assert.match(teacher, /min-h-11 rounded-lg px-3/);
 
-  const student = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'student', 'page.tsx'), 'utf8');
-  assert.match(student, /flex min-h-11 items-center gap-3/);
-  assert.match(student, /size-5 shrink-0 accent-\[\#0b5c2c\]/);
+  const studentWizard = fs.readFileSync(path.join(frontend, 'components', 'student-application-wizard.tsx'), 'utf8');
+  assert.match(studentWizard, /min-h-11 rounded-lg bg-\[\#0b5c2c\]/);
+  assert.match(studentWizard, /size-5 accent-\[\#0b5c2c\]/);
 });
 
 test('role middleware rejects a Student from privileged Admin and Manager API routes', () => {

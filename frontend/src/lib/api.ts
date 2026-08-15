@@ -107,6 +107,22 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, authenti
   }
 }
 
+async function uploadAPI<T>(endpoint: string, body: FormData): Promise<ApiResponse<T>> {
+  try {
+    const token = getSessionToken();
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body,
+    });
+    const data = (await response.json()) as ApiResponse<T>;
+    if (!response.ok) return { success: false, error: { message: data.error?.message || 'The file upload could not be completed.' } };
+    return data;
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'An unknown upload error occurred.' } };
+  }
+}
+
 export const authAPI = {
   login: (credentials: { identifier: string; password: string }) =>
     fetchAPI<never>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) }, false),
@@ -150,6 +166,23 @@ export const applicationsAPI = {
   submit: (payload: Record<string, unknown>) => fetchAPI<RoomApplication>('/api/applications', { method: 'POST', body: JSON.stringify(payload) }),
   review: (applicationId: string, payload: { status: 'under_review' | 'approved' | 'rejected'; rejection_reason?: string }) => fetchAPI<RoomApplication>(`/api/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoAssign: (applicationId: string) => fetchAPI(`/api/applications/${applicationId}/auto-assign`, { method: 'POST' }),
+  saveDraft: (payload: { academic_year_applied: string; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/save-draft', { method: 'POST', body: JSON.stringify(payload) }),
+  uploadReference: (applicationId: string, documentType: 'student_photo' | 'national_id' | 'family_book', file: File) => {
+    const form = new FormData();
+    form.set('file', file);
+    return uploadAPI<RoomApplication>(`/api/applications/${applicationId}/references/${documentType}`, form);
+  },
+  submitForm: (payload: { application_id: string; profile: Record<string, unknown>; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/submit-form', { method: 'POST', body: JSON.stringify(payload) }),
+  uploadSigned: (applicationId: string, file: File) => {
+    const form = new FormData();
+    form.set('application_id', applicationId);
+    form.set('file', file);
+    return uploadAPI<RoomApplication>('/api/applications/upload-signed', form);
+  },
+  mine: (academicYear?: string) => fetchAPI<RoomApplication | null>(`/api/applications/my-application${queryString({ academic_year: academicYear })}`),
+  prefilledPdf: (applicationId: string) => fetchAPI<{ url: string; expires_in_seconds: number }>(`/api/applications/${applicationId}/prefilled-pdf`),
+  managerList: (filters?: { status?: string }) => fetchAPI<RoomApplication[]>(`/api/manager/applications${queryString(filters)}`),
+  managerReview: (applicationId: string, payload: { action: 'approve' | 'request_correction' | 'reject'; manager_notes?: string }) => fetchAPI<RoomApplication>(`/api/manager/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
 };
 
 export const roomAssignmentsAPI = {
