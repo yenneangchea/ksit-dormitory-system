@@ -8,7 +8,6 @@ import {
   Award,
   BellRing,
   ChevronRight,
-  LogIn,
   Mail,
   MapPin,
   Phone,
@@ -80,7 +79,6 @@ export default function HomePage() {
               <span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span>
             </span>
           </Link>
-          <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#147a5b] px-3 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#0f6047] sm:px-5"><LogIn className="size-4 text-emerald-200" /><span className="hidden sm:inline">ចូលប្រើប្រាស់</span></Link>
         </div>
       </header>
 

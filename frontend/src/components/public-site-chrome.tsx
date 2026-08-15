@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { type ReactNode } from 'react';
-import { LogIn, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import { PublicNavigation } from '@/components/public-navigation';
 
 type PublicRoute = 'about' | 'docs' | 'features' | 'changelog';
@@ -23,7 +23,6 @@ export function PublicSiteChrome({ children, active }: { children: ReactNode; ac
             <Image src="/ksit-logo.png" alt="KSIT Dormitory Management System" width={80} height={80} priority className="size-14 shrink-0 object-contain sm:size-20" />
             <span className="min-w-0"><span className="block truncate text-base font-extrabold leading-tight text-[#147a5b] sm:text-xl md:text-2xl">ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT</span><span className="mt-0.5 block truncate text-[10px] font-bold tracking-[0.08em] text-[#147a5b] sm:text-sm">KSIT DORMITORY MANAGEMENT SYSTEM</span></span>
           </Link>
-          <Link href="/login" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#147a5b] px-3 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[#0f6047] sm:px-5"><LogIn className="size-4 text-emerald-200" /><span className="hidden sm:inline">ចូលប្រើប្រាស់</span></Link>
         </div>
       </header>
       <PublicNavigation active={active} />

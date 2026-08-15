@@ -85,3 +85,8 @@
 - [x] Remove vertical public mobile drawers and close toggles, replacing them with a permanent horizontally scrollable green menu bar beneath the logo on every viewport.
 - [x] Preserve the six requested navigation destinations and ensure the About System dropdown works without breaking mobile layout.
 - [x] Add regression coverage, validate the production build, publish, and verify the permanent public-navigation release.
+- [x] Verify the live Student role card, student sign-in redirect, Student portal workflow, and restricted-dashboard access boundary.
+- [x] Review the shared public header and navigation component for duplicate login controls and dropdown clipping behavior.
+- [x] Remove the white-header login button and keep one prominent Login control on the green navigation bar.
+- [x] Replace the native About System disclosure with a click/touch-safe React dropdown that closes on outside interaction and link selection.
+- [ ] Add regression coverage, validate the production build, publish, and verify the public-header interaction release.

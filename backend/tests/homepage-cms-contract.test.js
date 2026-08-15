@@ -64,7 +64,14 @@ test('uses the requested dormitory identity with permanent responsive public nav
   assert.match(publicNavigation, /whitespace-nowrap/);
   assert.match(publicNavigation, /scrollbar-none/);
   assert.match(publicNavigation, /font-sans/);
-  assert.match(publicNavigation, /<details/);
+  assert.match(publicNavigation, /useState\(false\)/);
+  assert.match(publicNavigation, /setAboutDropdownOpen/);
+  assert.match(publicNavigation, /about-system-menu/);
+  assert.match(publicNavigation, /touchstart/);
+  assert.doesNotMatch(publicNavigation, /<details/);
+  assert.doesNotMatch(homepage, /LogIn/);
+  assert.doesNotMatch(featuresPage, /LogIn/);
+  assert.doesNotMatch(publicChrome, /LogIn/);
   assert.doesNotMatch(homepage, /const roleWalkthrough/);
   assert.doesNotMatch(homepage, /Smart Campus Features/);
 });
