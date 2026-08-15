@@ -140,6 +140,14 @@ export interface RoomApplication {
     signed_application?: string | null;
     prefilled_pdf?: string | null;
   };
+  document_available?: {
+    student_photo?: boolean;
+    national_id?: boolean;
+    family_book?: boolean;
+    signed_application?: boolean;
+    prefilled_pdf?: boolean;
+  };
+  storage_provider?: 'google_drive' | 'supabase_storage';
   applied_at: string;
   reviewed_at?: string;
   reviewed_by?: string;

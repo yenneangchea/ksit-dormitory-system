@@ -47,6 +47,7 @@ router.post('/applications/:applicationId/references/:documentType', requireRole
 router.post('/applications/submit-form', requireRole('student'), applicationLifecycle.submitForm);
 router.post('/applications/upload-signed', requireRole('student'), applicationUpload.single('file'), applicationLifecycle.uploadSignedApplication);
 router.get('/applications/my-application', requireRole('student'), applicationLifecycle.getMyApplication);
+router.get('/applications/:applicationId/documents/:documentType', requireRole('student', 'admin', 'manager'), applicationLifecycle.streamApplicationDocument);
 router.get('/applications/:applicationId/prefilled-pdf', requireRole('student', 'admin', 'manager'), applicationLifecycle.downloadPrefilledPdf);
 router.patch('/applications/:applicationId/review', requireRole('admin', 'manager'), domain.reviewApplication);
 router.post('/applications/:applicationId/auto-assign', requireRole('admin', 'manager'), domain.autoAssignApplication);

@@ -72,6 +72,25 @@ function getSessionToken() {
   return localStorage.getItem('ksit_session_token');
 }
 
+type ApplicationDocumentType = 'student_photo' | 'national_id' | 'family_book' | 'signed_application' | 'prefilled_pdf';
+
+async function openProtectedApplicationDocument(applicationId: string, documentType: ApplicationDocumentType) {
+  const token = getSessionToken();
+  const response = await fetch(`${API_BASE_URL}/api/applications/${applicationId}/documents/${documentType}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error?.message || 'Unable to open the protected document.');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 function queryString(params?: Record<string, string | number | undefined>) {
   if (!params) return '';
   const query = new URLSearchParams();
@@ -181,6 +200,7 @@ export const applicationsAPI = {
   },
   mine: (academicYear?: string) => fetchAPI<RoomApplication | null>(`/api/applications/my-application${queryString({ academic_year: academicYear })}`),
   prefilledPdf: (applicationId: string) => fetchAPI<{ url: string; expires_in_seconds: number }>(`/api/applications/${applicationId}/prefilled-pdf`),
+  openDocument: openProtectedApplicationDocument,
   managerList: (filters?: { status?: string }) => fetchAPI<RoomApplication[]>(`/api/manager/applications${queryString(filters)}`),
   managerReview: (applicationId: string, payload: { action: 'approve' | 'request_correction' | 'reject'; manager_notes?: string }) => fetchAPI<RoomApplication>(`/api/manager/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
 };

@@ -32,7 +32,38 @@ NODE_ENV=development
 
 # JWT Secret
 JWT_SECRET=your_jwt_secret_key_here
+
+# Optional production-primary application-file storage.
+# Set BOTH values only in the backend deployment secrets. When omitted, private
+# Supabase Storage buckets remain the secure fallback.
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account", "client_email":"...", "private_key":"..."}
+GOOGLE_DRIVE_ROOT_FOLDER_ID=your_google_drive_folder_id
 ```
+
+### Google Drive Application Storage
+
+The five-stage dormitory application lifecycle uses Google Drive as its primary document store when both Drive variables are present. The backend creates a deterministic folder hierarchy under the configured root:
+
+```text
+KSIT_Dormitory_Applications_2025_2026/
+  [academic-year]/
+    [student-id]_[student-khmer-name]/
+      photo_4x6.*
+      national_id.*
+      family_book.*
+      prefilled_application_form.pdf
+      signed_thumbprinted_application.*
+```
+
+Enable the Google Drive API in the service account’s Google Cloud project, then grant that service account **Editor** access to the configured root folder. Document bytes are never stored in PostgreSQL. The database retains only Drive references and metadata, while Student, Manager, and Admin document access is streamed through authenticated API endpoints rather than public Drive URLs.
+
+Apply the additive Google Drive metadata migration after setting a secure `KSIT_SUPABASE_DATABASE_URL` locally:
+
+```bash
+node scripts/run-google-drive-storage-migration.mjs
+```
+
+For production, place `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_DRIVE_ROOT_FOLDER_ID` in the backend deployment’s encrypted environment-variable settings; never commit either value or expose it in the Next.js browser bundle.
 
 ### 3. Run the Server
 
@@ -93,7 +124,7 @@ The database schema is defined in `../system_design.md` and includes:
 
 ## Notes
 
-- Password hashing with bcrypt is not yet implemented (mock authentication)
-- JWT session management is planned for future implementation
+- Passwords are hashed with bcrypt and the API issues role-aware JWT sessions.
+- Application documents are private. Google Drive files are proxied through authenticated lifecycle endpoints; Supabase fallback files use short-lived server-issued URLs.
 - KHQR (Bakong QR) integration for student bill payments
 - Magic QR codes for room door access and attendance tracking

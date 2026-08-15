@@ -104,3 +104,14 @@
 - [x] Add regression coverage for the post-save Student wizard stage transition and validate the repair before resuming the controlled live simulation.
 - [x] Preserve completed Student form values and acknowledgements across parent refreshes triggered by reference-document uploads, so PDF generation remains possible in the same live session.
 - [x] Add regression coverage for form-state preservation after document uploads and validate the repair before resuming the live submission and approval simulation.
+- [x] Review pasted_content.txt and the official four-section application reference against the deployed lifecycle to identify any remaining gaps.
+- [x] Verify the connected Google Drive capability and define a secure server-side primary storage integration with per-student folder organization.
+- [ ] Implement the approved Google Drive storage adapter without exposing Google credentials or document URLs in browser code.
+- [ ] Reconcile the Supabase schema migration, Student wizard, and Manager review workspace with the supplied requirements, adding regression coverage for any gaps.
+- [ ] Validate the integrated lifecycle, production build, and repository release readiness before publishing the completed changes.
+- [x] Create and record the authorized Google Drive root folder for KSIT dormitory applications (`1Nv5vTSSxWwgcmoW5tlW-Uf4v1f9wmR-v`).
+- [x] Add a production Google Drive adapter driven only by server-side environment variables, with deterministic per-student folder creation and a Supabase Storage fallback.
+- [x] Persist Drive file identifiers and restricted access metadata for reference documents, generated PDFs, and signed application files through an additive migration.
+- [x] Update lifecycle document presentation and regression coverage for Drive-primary and Supabase-fallback storage modes.
+- [ ] Validate, commit, push, and verify the Google Drive storage integration release.
+- [ ] Configure GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_DRIVE_ROOT_FOLDER_ID in the Vercel backend environment after the fallback-ready release is published.

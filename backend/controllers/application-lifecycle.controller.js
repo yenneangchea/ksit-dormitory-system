@@ -1,13 +1,17 @@
 const crypto = require('crypto');
 const path = require('path');
+const { Readable } = require('stream');
 const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
+const driveStorage = require('../lib/application-storage');
 
 const APPLICATION_FIELDS = `
   id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed,
   parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason,
   applied_at, reviewed_at, reviewed_by, prefilled_pdf_url, prefilled_pdf_generated_at,
   student_photo_url, national_id_doc_url, family_book_doc_url, signed_application_doc_url,
+  google_drive_folder_id, prefilled_pdf_drive_url, student_photo_drive_url,
+  national_id_drive_url, family_book_drive_url, signed_application_drive_url,
   document_metadata_json, manager_notes, submission_step, submitted_for_review_at, form_data_json,
   users!room_applications_user_id_fkey(
     id, telegram_id, full_name_khmer, full_name_latin, gender, phone, email,
@@ -24,10 +28,11 @@ const APPLICATION_FIELDS = `
 `;
 
 const DOCUMENTS = {
-  student_photo: { bucket: 'student-references', column: 'student_photo_url', attached: 'photo_4x6_attached', allowed: /^image\/(jpeg|png)$/i, maxBytes: 5 * 1024 * 1024 },
-  national_id: { bucket: 'student-references', column: 'national_id_doc_url', attached: 'id_card_attached', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 8 * 1024 * 1024 },
-  family_book: { bucket: 'student-references', column: 'family_book_doc_url', attached: 'family_book_attached', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 8 * 1024 * 1024 },
-  signed_application: { bucket: 'signed-applications', column: 'signed_application_doc_url', attached: 'contract_signed', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 12 * 1024 * 1024 },
+  student_photo: { bucket: 'student-references', column: 'student_photo_url', driveColumn: 'student_photo_drive_url', attached: 'photo_4x6_attached', allowed: /^image\/(jpeg|png)$/i, maxBytes: 5 * 1024 * 1024 },
+  national_id: { bucket: 'student-references', column: 'national_id_doc_url', driveColumn: 'national_id_drive_url', attached: 'id_card_attached', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 8 * 1024 * 1024 },
+  family_book: { bucket: 'student-references', column: 'family_book_doc_url', driveColumn: 'family_book_drive_url', attached: 'family_book_attached', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 8 * 1024 * 1024 },
+  signed_application: { bucket: 'signed-applications', column: 'signed_application_doc_url', driveColumn: 'signed_application_drive_url', attached: 'contract_signed', allowed: /^(application\/pdf|image\/(jpeg|png))$/i, maxBytes: 12 * 1024 * 1024 },
+  prefilled_pdf: { bucket: 'generated-applications', column: 'prefilled_pdf_url', driveColumn: 'prefilled_pdf_drive_url', allowed: /^application\/pdf$/i },
 };
 
 function fail(message, statusCode = 400) {
@@ -68,6 +73,37 @@ async function createSignedUrl(supabase, bucket, objectPath) {
   return data?.signedUrl || null;
 }
 
+function hasDocument(application, type) {
+  const definition = DOCUMENTS[type];
+  return Boolean(definition && application?.[definition.column]);
+}
+
+function documentMetadata(application, type) {
+  return documentInfo(application)?.[type] || {};
+}
+
+async function storeDocument(supabase, application, type, { buffer, name, contentType }) {
+  const definition = DOCUMENTS[type];
+  if (driveStorage.isDriveConfigured()) {
+    const stored = await driveStorage.uploadApplicationFile({ application, student: application.users, type, fileName: name, contentType, buffer });
+    return { ...stored, patch: { [definition.column]: stored.reference, [definition.driveColumn]: stored.webViewLink, google_drive_folder_id: stored.folderId } };
+  }
+  const objectPath = `${application.user_id}/${application.id}/${type}/${safeFileName(name)}`;
+  const { error } = await supabase.storage.from(definition.bucket).upload(objectPath, buffer, { contentType, upsert: false });
+  if (error) throw error;
+  return { provider: 'supabase_storage', reference: objectPath, name, contentType, size: buffer.length, patch: { [definition.column]: objectPath } };
+}
+
+async function documentStream(supabase, application, type) {
+  const definition = DOCUMENTS[type];
+  const reference = application?.[definition?.column];
+  if (!definition || !reference) throw fail('Requested application document was not found.', 404);
+  if (driveStorage.isDriveReference(reference)) return driveStorage.getDriveFileStream(reference);
+  const { data, error } = await supabase.storage.from(definition.bucket).download(reference);
+  if (error) throw error;
+  return { stream: Readable.from(Buffer.from(await data.arrayBuffer())), contentType: data.type || documentMetadata(application, type).content_type || 'application/octet-stream' };
+}
+
 async function presentApplication(supabase, application) {
   if (!application) return null;
   const result = { ...application };
@@ -77,13 +113,12 @@ async function presentApplication(supabase, application) {
   delete result.signed_application_doc_url;
   delete result.prefilled_pdf_url;
   result.academic_profiles = single(application.users?.academic_profiles);
-  result.document_urls = {
-    student_photo: await createSignedUrl(supabase, DOCUMENTS.student_photo.bucket, application.student_photo_url),
-    national_id: await createSignedUrl(supabase, DOCUMENTS.national_id.bucket, application.national_id_doc_url),
-    family_book: await createSignedUrl(supabase, DOCUMENTS.family_book.bucket, application.family_book_doc_url),
-    signed_application: await createSignedUrl(supabase, DOCUMENTS.signed_application.bucket, application.signed_application_doc_url),
-    prefilled_pdf: await createSignedUrl(supabase, 'generated-applications', application.prefilled_pdf_url),
-  };
+  result.storage_provider = Object.values(DOCUMENTS).some((definition) => driveStorage.isDriveReference(application[definition.column])) ? 'google_drive' : 'supabase_storage';
+  result.document_available = Object.fromEntries(Object.keys(DOCUMENTS).map((type) => [type, hasDocument(application, type)]));
+  result.document_urls = {};
+  for (const [type, definition] of Object.entries(DOCUMENTS)) {
+    result.document_urls[type] = driveStorage.isDriveReference(application[definition.column]) ? null : await createSignedUrl(supabase, definition.bucket, application[definition.column]);
+  }
   return result;
 }
 
@@ -308,11 +343,9 @@ async function uploadReference(req, res, next) {
     const supabase = getSupabase();
     const application = await findApplication(supabase, req.params.applicationId, req.user.role === 'student' ? req.user.sub : null);
     if (!['draft', 'form_completed', 'correction_needed', 'pending_signed_doc'].includes(application.status)) throw fail('This application no longer accepts reference document uploads.', 409);
-    const objectPath = `${application.user_id}/${application.id}/${req.params.documentType}/${safeFileName(file.originalname)}`;
-    const { error: uploadError } = await supabase.storage.from(definition.bucket).upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
-    if (uploadError) throw uploadError;
-    const metadata = { ...documentInfo(application), [req.params.documentType]: { name: cleanText(file.originalname, 160), content_type: file.mimetype, size: file.size, uploaded_at: new Date().toISOString() } };
-    const patch = { [definition.column]: objectPath, [definition.attached]: true, document_metadata_json: metadata, status: 'form_completed', submission_step: 2 };
+    const stored = await storeDocument(supabase, application, req.params.documentType, { buffer: file.buffer, name: file.originalname, contentType: file.mimetype });
+    const metadata = { ...documentInfo(application), [req.params.documentType]: { name: cleanText(stored.name, 160), content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider, drive_file_id: stored.fileId || null } };
+    const patch = { ...stored.patch, [definition.attached]: true, document_metadata_json: metadata, status: 'form_completed', submission_step: 2 };
     const { data, error } = await supabase.from('room_applications').update(patch).eq('id', application.id).select(APPLICATION_FIELDS).single();
     if (error) throw error;
     res.json(payload(await presentApplication(supabase, data), 'Reference document uploaded securely.'));
@@ -336,12 +369,11 @@ async function submitForm(req, res, next) {
     const { data: withProfile, error: refreshError } = await supabase.from('room_applications').select(APPLICATION_FIELDS).eq('id', application.id).single();
     if (refreshError) throw refreshError;
     const pdfBuffer = await generateOfficialApplicationPdf(withProfile, profile);
-    const pdfPath = `${application.user_id}/${application.id}/official-application-${Date.now()}.pdf`;
-    const { error: uploadError } = await supabase.storage.from('generated-applications').upload(pdfPath, pdfBuffer, { contentType: 'application/pdf', upsert: false });
-    if (uploadError) throw uploadError;
+    const stored = await storeDocument(supabase, withProfile, 'prefilled_pdf', { buffer: pdfBuffer, name: 'prefilled_application_form.pdf', contentType: 'application/pdf' });
+    const metadata = { ...documentInfo(application), prefilled_pdf: { name: stored.name, content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider, drive_file_id: stored.fileId || null } };
     const { data, error } = await supabase
       .from('room_applications')
-      .update({ status: 'pending_signed_doc', submission_step: 3, prefilled_pdf_url: pdfPath, prefilled_pdf_generated_at: new Date().toISOString(), form_data_json: formData, manager_notes: null, rejection_reason: null })
+      .update({ ...stored.patch, status: 'pending_signed_doc', submission_step: 3, prefilled_pdf_generated_at: new Date().toISOString(), form_data_json: formData, document_metadata_json: metadata, manager_notes: null, rejection_reason: null })
       .eq('id', application.id)
       .select(APPLICATION_FIELDS)
       .single();
@@ -361,13 +393,11 @@ async function uploadSignedApplication(req, res, next) {
     const supabase = getSupabase();
     const application = await findApplication(supabase, req.body?.application_id, req.user.sub);
     if (!['pending_signed_doc', 'correction_needed'].includes(application.status)) throw fail('Generate the official PDF before uploading the signed application.', 409);
-    const objectPath = `${application.user_id}/${application.id}/signed/${safeFileName(file.originalname)}`;
-    const { error: uploadError } = await supabase.storage.from(definition.bucket).upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
-    if (uploadError) throw uploadError;
-    const metadata = { ...documentInfo(application), signed_application: { name: cleanText(file.originalname, 160), content_type: file.mimetype, size: file.size, uploaded_at: new Date().toISOString() } };
+    const stored = await storeDocument(supabase, application, 'signed_application', { buffer: file.buffer, name: file.originalname, contentType: file.mimetype });
+    const metadata = { ...documentInfo(application), signed_application: { name: cleanText(stored.name, 160), content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider, drive_file_id: stored.fileId || null } };
     const { data, error } = await supabase
       .from('room_applications')
-      .update({ signed_application_doc_url: objectPath, contract_signed: true, parent_guarantee_attached: true, status: 'under_review', submission_step: 5, submitted_for_review_at: new Date().toISOString(), manager_notes: null, rejection_reason: null, document_metadata_json: metadata })
+      .update({ ...stored.patch, contract_signed: true, parent_guarantee_attached: true, status: 'under_review', submission_step: 5, submitted_for_review_at: new Date().toISOString(), manager_notes: null, rejection_reason: null, document_metadata_json: metadata })
       .eq('id', application.id)
       .select(APPLICATION_FIELDS)
       .single();
@@ -392,8 +422,26 @@ async function downloadPrefilledPdf(req, res, next) {
     const supabase = getSupabase();
     const application = await findApplication(supabase, req.params.applicationId, req.user.role === 'student' ? req.user.sub : null);
     if (!application.prefilled_pdf_url) throw fail('The official PDF has not been generated yet.', 404);
+    if (driveStorage.isDriveReference(application.prefilled_pdf_url)) return res.json(payload({ url: `/api/applications/${application.id}/documents/prefilled_pdf`, expires_in_seconds: 0, requires_authenticated_download: true }));
     const url = await createSignedUrl(supabase, 'generated-applications', application.prefilled_pdf_url);
     res.json(payload({ url, expires_in_seconds: 900 }));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function streamApplicationDocument(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const type = req.params.documentType;
+    if (!DOCUMENTS[type]) throw fail('Unsupported application document type.', 404);
+    const application = await findApplication(supabase, req.params.applicationId, req.user.role === 'student' ? req.user.sub : null);
+    const document = await documentStream(supabase, application, type);
+    const metadata = documentMetadata(application, type);
+    const safeName = String(metadata.name || `${type}.pdf`).replace(/[\r\n"]/g, '_');
+    res.setHeader('Content-Type', document.contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
+    document.stream.on('error', next).pipe(res);
   } catch (error) {
     next(error);
   }
@@ -454,6 +502,7 @@ module.exports = {
   uploadSignedApplication,
   getMyApplication,
   downloadPrefilledPdf,
+  streamApplicationDocument,
   listManagerApplications,
   reviewManagerApplication,
   __private: { generateOfficialApplicationPdf },

@@ -163,10 +163,13 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
   async function downloadPdf() {
     if (!application) return;
     setBusy(true);
-    const response = await applicationsAPI.prefilledPdf(application.id);
-    setBusy(false);
-    if (!response.success || !response.data?.url) { setNotice(response.error?.message || 'Unable to retrieve the generated PDF.'); return; }
-    window.open(response.data.url, '_blank', 'noopener,noreferrer');
+    try {
+      await applicationsAPI.openDocument(application.id, 'prefilled_pdf');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to retrieve the generated PDF.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function uploadSigned() {
