@@ -60,3 +60,25 @@ test('provides the dedicated Khmer features guide and links homepage learning ac
   assert.match(featuresPage, /របៀបប្រើប្រាស់ប្រព័ន្ធតាមតួនាទី/);
   assert.match(featuresPage, /ចាប់ផ្តើមចូលប្រើប្រាស់ប្រព័ន្ធអន្តេវាសិកដ្ឋានថ្ងៃនេះ/);
 });
+
+test('provides public documentation and a data-driven changelog with consistent About System navigation', () => {
+  const homepage = read('frontend/src/app/page.tsx');
+  const featuresPage = read('frontend/src/app/features/page.tsx');
+  const docsPage = read('frontend/src/app/docs/page.tsx');
+  const changelogPage = read('frontend/src/app/changelog/page.tsx');
+  const changelogData = read('frontend/src/data/changelog.ts');
+
+  assert.match(homepage, /អំពីប្រព័ន្ធ/);
+  assert.match(homepage, /href="\/docs"/);
+  assert.match(homepage, /href="\/changelog"/);
+  assert.match(featuresPage, /អំពីប្រព័ន្ធ/);
+  assert.match(featuresPage, /href="\/docs"/);
+  assert.match(featuresPage, /href="\/changelog"/);
+  assert.match(changelogData, /v1\.3\.0/);
+  assert.match(changelogData, /v1\.0\.0/);
+  assert.match(changelogData, /changelogFilters/);
+  assert.match(docsPage, /ទិដ្ឋភាពទូទៅ និងបេសកកម្មប្រព័ន្ធ/);
+  assert.match(docsPage, /Next\.js 15/);
+  assert.match(changelogPage, /៥ កំណែទម្រង់ចុងក្រោយ/);
+  assert.match(changelogPage, /aria-pressed/);
+});

@@ -153,6 +153,14 @@ export default function HomePage() {
                 <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block px-4 py-2.5 hover:bg-emerald-50 hover:text-[#147a5b]">អាហារូបករណ៍ ១០០%</a>
               </div>
             </li>
+            <li className="group relative">
+              <button type="button" aria-haspopup="true" className="flex items-center gap-1 px-5 py-3 hover:bg-[#0f6047]">អំពីប្រព័ន្ធ <ChevronDown className="size-4 text-emerald-200" /></button>
+              <div className="invisible absolute left-0 top-full w-80 border border-slate-200 bg-white py-2 text-xs text-slate-800 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <Link href="/docs" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📖 ឯកសារណែនាំប្រព័ន្ធ</span><span className="mt-0.5 block text-slate-500">System Documentation</span></Link>
+                <Link href="/features" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</span><span className="mt-0.5 block text-slate-500">Core Features &amp; Guides</span></Link>
+                <Link href="/changelog" className="block px-4 py-3 hover:bg-emerald-50 hover:text-[#147a5b]"><span className="font-bold">📢 កំណត់ត្រាកំណែទម្រង់</span><span className="mt-0.5 block text-slate-500">Changelog &amp; Latest Updates</span></Link>
+              </div>
+            </li>
             <li><Link href="/features" className="block px-5 py-3 hover:bg-[#0f6047]">មុខងារប្រព័ន្ធ</Link></li>
             <li><a href="#contact" className="block px-5 py-3 hover:bg-[#0f6047]">ទំនាក់ទំនង</a></li>
           </ul>
@@ -165,6 +173,10 @@ export default function HomePage() {
             <Link href="/" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំព័រដើម</Link>
             <a href="https://ksit.edu.kh/category/scholarship/" target="_blank" rel="noreferrer" className="block border-b border-emerald-700 py-2.5">កម្មវិធីសិក្សា និងអាហារូបករណ៍</a>
             <Link href="/features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">មុខងារប្រព័ន្ធ</Link>
+            <p className="pt-2 text-xs font-bold uppercase tracking-wider text-emerald-200">អំពីប្រព័ន្ធ</p>
+            <Link href="/docs" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📖 ឯកសារណែនាំប្រព័ន្ធ</Link>
+            <Link href="/features" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">🚀 មុខងារស្នូលនៃប្រព័ន្ធ</Link>
+            <Link href="/changelog" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">📢 កំណត់ត្រាកំណែទម្រង់</Link>
             <a href="#contact" onClick={() => setMobileOpen(false)} className="block border-b border-emerald-700 py-2.5">ទំនាក់ទំនង</a>
             <Link href="/login" onClick={() => setMobileOpen(false)} className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-3 font-bold text-slate-950"><LogIn className="size-4" /> ចូលប្រើប្រាស់ប្រព័ន្ធ</Link>
           </div>

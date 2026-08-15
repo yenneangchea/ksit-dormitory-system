@@ -1,0 +1,37 @@
+'use client';
+
+import Link from 'next/link';
+import { ArrowRight, Building2, CheckCircle2, Code2, CreditCard, Database, KeyRound, QrCode, ShieldCheck, Users } from 'lucide-react';
+import { PublicSiteChrome } from '@/components/public-site-chrome';
+
+const chapters = [
+  {
+    no: '01', icon: Building2, eyebrow: 'SYSTEM OVERVIEW & MISSION', title: 'ទិដ្ឋភាពទូទៅ និងបេសកកម្មប្រព័ន្ធ',
+    description: 'KSIT Dormitory Management System គឺជាប្រព័ន្ធឌីជីថលកណ្ដាលសម្រាប់សម្របសម្រួលដំណើរការស្នាក់នៅរបស់និស្សិត ចាប់ពីការដាក់ពាក្យរហូតដល់ការថែទាំបន្ទប់។',
+    points: ['បង្កើនតម្លាភាពក្នុងការទទួលពាក្យ និងការចាត់បន្ទប់។', 'បន្ថយកិច្ចការក្រដាស និងពេលវេលាផ្ទៀងផ្ទាត់ទិន្នន័យ។', 'ផ្តល់សេវាដែលអាចតាមដានបានសម្រាប់និស្សិត និងអ្នកទទួលបន្ទុក។'],
+  },
+  {
+    no: '02', icon: Users, eyebrow: 'ROLES & PERMISSIONS', title: 'តួនាទីស្នូល ៤ និងសិទ្ធិចូលប្រើប្រាស់',
+    description: 'ប្រព័ន្ធបែងចែក workspace និងសិទ្ធិ API តាមតួនាទី ដើម្បីធានាថាអ្នកប្រើម្នាក់ៗអាចចូលបានតែភារកិច្ចរបស់ខ្លួន។',
+    points: ['Admin គ្រប់គ្រងគណនី សិទ្ធិ អគារ បន្ទប់ និងមាតិកាសាធារណៈ។', 'Manager ពិនិត្យពាក្យ ចាត់បន្ទប់ គ្រប់គ្រងម៉ែត្រ និងវិក្កយបត្រ។', 'Teacher កត់ត្រាវត្តមាន និងគ្រប់គ្រងសំណើសុំច្បាប់; Student គ្រប់គ្រងពាក្យ បន្ទប់ វិក្កយបត្រ និងសំណើជួសជុលរបស់ខ្លួន។'],
+  },
+  {
+    no: '03', icon: QrCode, eyebrow: 'SMART WORKFLOWS', title: 'ដំណើរការឆ្លាតវៃសម្រាប់អន្តេវាសិកដ្ឋាន',
+    description: 'ប្រព័ន្ធភ្ជាប់ការងារសំខាន់ៗទៅក្នុង workflow ដែលមានលក្ខខណ្ឌ និងទិន្នន័យជាក់ស្តែង។',
+    points: ['Magic QR Attendance: គ្រូស្កេន QR បន្ទប់ ដើម្បីកត់ត្រាវត្តមានតាមថ្ងៃ និងស្ថានភាព។', 'Waterfall Allocation: ចាត់បន្ទប់តាមភេទ ជំនាញ ឆ្នាំសិក្សា សមត្ថភាព និងលំដាប់បន្ទប់។', 'Dynamic KHQR Split-Billing: គណនាទឹកភ្លើងពីកុងទ័រ បែងចែកតាមអ្នកស្នាក់នៅសកម្ម និងបង្កើតលេខយោង KHQR។'],
+  },
+  {
+    no: '04', icon: ShieldCheck, eyebrow: 'ARCHITECTURE & SECURITY', title: 'ស្ថាបត្យកម្ម និងសុវត្ថិភាពប្រព័ន្ធ',
+    description: 'ការរចនាបែងចែក frontend, backend និង database ដើម្បីគាំទ្រការអភិវឌ្ឍ ការពារ និងការថែទាំប្រព័ន្ធនៅពេលក្រោយ។',
+    points: ['Next.js 15 បង្ហាញ public pages និង role dashboards ខណៈ Node.js Express គ្រប់គ្រង protected APIs។', 'Supabase PostgreSQL ផ្ទុកទិន្នន័យប្រតិបត្តិការ ហើយ RBAC middleware អនុវត្តសិទ្ធិនៅ server-side។', 'Telegram Mini App ផ្តល់ច្រកចូលស្រួល ស្របពេល token និង credentials រក្សាទុកនៅ server-side។'],
+  },
+];
+
+export default function DocumentationPage() {
+  return <PublicSiteChrome active="docs">
+    <section className="overflow-hidden bg-[radial-gradient(circle_at_83%_18%,rgba(255,255,255,0.18),transparent_28%),linear-gradient(135deg,#0b5c2c,#147a5b_56%,#0f172a)] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20"><div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-12 lg:items-center"><div className="lg:col-span-8"><span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold text-amber-300"><Code2 className="size-4" /> SYSTEM DOCUMENTATION</span><h1 className="mt-6 max-w-4xl text-4xl font-extrabold leading-tight sm:text-5xl">ឯកសារណែនាំប្រព័ន្ធអន្តេវាសិកដ្ឋាន KSIT</h1><p className="mt-3 text-lg font-bold text-emerald-100">KSIT Dormitory Management System Documentation</p><p className="mt-6 max-w-3xl text-sm leading-8 text-emerald-50 sm:text-base">ស្វែងយល់ពីគោលបំណង រចនាសម្ព័ន្ធតួនាទី ដំណើរការឆ្លាតវៃ និងគោលការណ៍សុវត្ថិភាពរបស់ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត។</p><Link href="/features" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg hover:bg-amber-500">មើលមុខងារស្នូល <ArrowRight className="size-4" /></Link></div><aside className="rounded-3xl border border-white/15 bg-white/10 p-7 backdrop-blur-sm lg:col-span-4"><Database className="size-10 text-amber-300" /><p className="mt-6 text-sm font-bold">ស្តង់ដារប្រតិបត្តិការតែមួយ</p><p className="mt-2 text-sm leading-6 text-emerald-100">ឯកសារនេះរៀបរាប់ពី workflow ដែលភ្ជាប់អង្គភាព អ្នកប្រើ និងទិន្នន័យចាំបាច់ក្នុងប្រព័ន្ធតែមួយ។</p></aside></div></section>
+    <section className="px-4 py-16 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><div className="max-w-3xl"><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-[#147a5b]">៤ ជំពូកសំខាន់</span><h2 className="mt-4 text-3xl font-extrabold text-slate-900">ចាប់ផ្តើមពីគោលបំណង រហូតដល់ការពារទិន្នន័យ</h2><p className="mt-3 text-sm leading-7 text-slate-600">មាតិកាត្រូវបានរៀបចំសម្រាប់អ្នកគ្រប់គ្រង បុគ្គលិក និងនិស្សិត ដើម្បីយល់ពីការប្រើប្រាស់ប្រព័ន្ធដូចគ្នា។</p></div><div className="mt-10 space-y-6">{chapters.map((chapter) => { const Icon = chapter.icon; return <article key={chapter.no} className="grid gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-[auto_1fr] md:p-8"><div className="flex size-14 items-center justify-center rounded-2xl bg-[#147a5b] text-lg font-black text-amber-300">{chapter.no}</div><div><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><p className="text-xs font-bold tracking-[0.16em] text-[#147a5b]">{chapter.eyebrow}</p><h3 className="mt-2 text-2xl font-extrabold text-slate-900">{chapter.title}</h3></div><Icon className="size-7 text-emerald-600" /></div><p className="mt-4 max-w-4xl text-sm leading-7 text-slate-600">{chapter.description}</p><ul className="mt-5 grid gap-3 lg:grid-cols-3">{chapter.points.map((point) => <li key={point} className="flex gap-2 rounded-xl bg-emerald-50/70 p-3 text-sm leading-6 text-slate-700"><CheckCircle2 className="mt-1 size-4 shrink-0 text-[#147a5b]" />{point}</li>)}</ul></div></article>; })}</div></div></section>
+    <section className="border-y border-emerald-100 bg-emerald-50/70 px-4 py-14 sm:px-6 lg:px-8"><div className="mx-auto grid max-w-7xl gap-5 md:grid-cols-3"><div className="rounded-2xl bg-white p-6 shadow-sm"><QrCode className="size-7 text-[#147a5b]" /><h2 className="mt-4 text-lg font-bold text-slate-900">Magic QR Attendance</h2><p className="mt-2 text-sm leading-6 text-slate-600">ប្រើលេខសម្គាល់បន្ទប់ ដើម្បីផ្ទៀងផ្ទាត់វត្តមានតាមកាលបរិច្ឆេទដោយមាន active assignment ជាមូលដ្ឋាន។</p></div><div className="rounded-2xl bg-white p-6 shadow-sm"><CreditCard className="size-7 text-[#147a5b]" /><h2 className="mt-4 text-lg font-bold text-slate-900">KHQR Utility Billing</h2><p className="mt-2 text-sm leading-6 text-slate-600">អានកុងទ័រ គណនាតម្លៃសរុប បែងចែកស្មើតាមអ្នកស្នាក់នៅសកម្ម និងផ្តល់លេខយោងបង់ប្រាក់។</p></div><div className="rounded-2xl bg-white p-6 shadow-sm"><KeyRound className="size-7 text-[#147a5b]" /><h2 className="mt-4 text-lg font-bold text-slate-900">RBAC by Design</h2><p className="mt-2 text-sm leading-6 text-slate-600">សិទ្ធិមិនពឹងផ្អែកលើ UI ប៉ុណ្ណោះទេ; backend middleware បង្ខំ role authorization សម្រាប់ API នីមួយៗ។</p></div></div></section>
+    <section className="px-4 py-16 sm:px-6 lg:px-8"><div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-5 rounded-3xl bg-[#0f6047] p-8 text-white md:flex-row md:items-center md:p-10"><div><p className="text-xs font-bold tracking-[0.16em] text-amber-300">RELEASE NOTES</p><h2 className="mt-2 text-2xl font-extrabold">តាមដានការអភិវឌ្ឍកំណែថ្មីៗ</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-100">មើលកំណត់ត្រាកំណែទម្រង់ ដើម្បីដឹងពីមុខងារថ្មី ការកែលម្អ និងការពង្រឹងសុវត្ថិភាព។</p></div><Link href="/changelog" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-bold text-slate-950 hover:bg-amber-500">មើល Changelog <ArrowRight className="size-4" /></Link></div></section>
+  </PublicSiteChrome>;
+}

@@ -71,3 +71,8 @@
 - [x] Add the shared drag-and-drop Room Matrix to the Admin Buildings & Rooms tab.
 - [x] Validate Admin and Manager access to the shared room-assignment workflow and publish the approved release.
 - [x] Fix assignment-board Supabase relation query so Admin and Manager room matrices load in production.
+- [x] Review the supplied documentation and changelog specification against the current public-site architecture.
+- [x] Add the public Khmer “អំពីប្រព័ន្ធ” dropdown navigation with links to Documentation, Features, and Changelog.
+- [x] Add structured changelog content in frontend/src/data/changelog.ts.
+- [x] Build dedicated public Documentation and Changelog routes with the supplied content and established KSIT branding.
+- [ ] Add regression coverage, validate the production build, publish, and verify the public documentation release.
