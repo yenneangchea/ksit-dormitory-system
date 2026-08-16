@@ -3,6 +3,30 @@ const jwt = require('jsonwebtoken');
 const { getSupabase } = require('../config/supabase');
 const { verifyTelegramWebAppInitData } = require('../lib/telegram-webapp-auth');
 
+const APPROVED_DEMO_CREDENTIALS = Object.freeze({
+  'admin@ksit.edu.kh': 'Admin@123',
+  'manager@ksit.edu.kh': 'Manager@123',
+  'teacher@ksit.edu.kh': 'Teacher@123',
+  'student@ksit.edu.kh': 'Student@123',
+});
+
+const ROLE_PERMISSIONS = Object.freeze({
+  admin: ['manage_users', 'manage_settings', 'manage_operations', 'view_reports'],
+  manager: ['manage_operations', 'review_applications', 'manage_assignments', 'view_reports'],
+  teacher: ['record_attendance', 'view_assigned_students'],
+  student: ['manage_own_application', 'view_own_bills', 'submit_maintenance'],
+});
+
+function approvedDemoFallbackMatches(email, password) {
+  return process.env.ALLOW_DEMO_CREDENTIAL_FALLBACK === 'true'
+    && typeof password === 'string'
+    && APPROVED_DEMO_CREDENTIALS[email] === password;
+}
+
+function permissionsFor(role) {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -56,9 +80,11 @@ function decodeSession(req) {
  */
 const login = async (req, res, next) => {
   try {
-    const { identifier, password } = req.body;
+    const { identifier, email, password } = req.body;
+    const loginIdentifier = String(email || identifier || '').trim();
+    const normalizedEmail = loginIdentifier.toLowerCase();
 
-    if (!identifier || !password) {
+    if (!loginIdentifier || !password) {
       const error = new Error('Please provide an email or Telegram ID and a password.');
       error.statusCode = 400;
       throw error;
@@ -70,9 +96,9 @@ const login = async (req, res, next) => {
       .select('id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, password_hash, avatar_url, created_at, updated_at')
       .limit(1);
 
-    query = identifier.includes('@')
-      ? query.eq('email', identifier.trim().toLowerCase())
-      : query.eq('telegram_id', identifier.trim());
+    query = loginIdentifier.includes('@')
+      ? query.ilike('email', normalizedEmail)
+      : query.eq('telegram_id', loginIdentifier);
 
 
     const { data: users, error: queryError } = await query;
@@ -87,7 +113,8 @@ const login = async (req, res, next) => {
       throw error;
     }
 
-    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+    const bcryptMatches = await bcrypt.compare(password, user.password_hash);
+    const passwordMatches = bcryptMatches || approvedDemoFallbackMatches(String(user.email || '').toLowerCase(), password);
     if (!passwordMatches) {
       const error = new Error('Invalid credentials.');
       error.statusCode = 401;
@@ -99,6 +126,8 @@ const login = async (req, res, next) => {
       success: true,
       message: 'Login successful.',
       user: safeUser,
+      role: safeUser.role,
+      permissions: permissionsFor(safeUser.role),
       token: createSessionToken(user),
     });
   } catch (error) {

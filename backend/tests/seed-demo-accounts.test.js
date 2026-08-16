@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');
 const test = require('node:test');
-const { seedDemoAccounts } = require('../scripts/seed-demo-accounts');
+const { APPROVED_DEMO_PASSWORDS, loadPasswords, seedDemoAccounts } = require('../scripts/seed-demo-accounts');
 
 test('seeds all four authorized demo accounts with bcrypt hashes rather than plaintext passwords', async () => {
   let upsertedAccounts;
@@ -33,4 +33,9 @@ test('seeds all four authorized demo accounts with bcrypt hashes rather than pla
   assert.equal(upsertedAccounts.length, 4);
   await Promise.all(upsertedAccounts.map((account) => bcrypt.compare(passwords[account.email], account.password_hash).then((matches) => assert.equal(matches, true))));
   assert.ok(upsertedAccounts.every((account) => account.password_hash !== passwords[account.email]));
+  assert.ok(upsertedAccounts.every((account) => /^\$2[aby]\$10\$/.test(account.password_hash)));
+});
+
+test('uses the documented standard demo passwords when overrides are not supplied', () => {
+  assert.deepEqual(loadPasswords({}), APPROVED_DEMO_PASSWORDS);
 });
