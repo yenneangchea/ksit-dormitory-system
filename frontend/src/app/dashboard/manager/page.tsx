@@ -65,6 +65,9 @@ function ManagerDashboardContent() {
   const [showBuildingForm, setShowBuildingForm] = useState(false);
   const [showBillForm, setShowBillForm] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
+  const [reportMonth, setReportMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [exportingReport, setExportingReport] = useState<'attendance' | 'billing' | null>(null);
+  const [driveLinks, setDriveLinks] = useState<{ attendance?: string; billing?: string }>({});
 
   const loadCoreData = async () => {
     const [summaryResponse, analyticsResponse, buildingsResponse, applicationsResponse] = await Promise.all([
@@ -221,8 +224,18 @@ function ManagerDashboardContent() {
     URL.revokeObjectURL(link.href);
   }
 
-  function exportReport(type: 'Excel' | 'PDF') {
-    setNotice(`${type} report export is prepared from the selected operational dataset.`);
+  async function exportReport(report: 'attendance' | 'billing') {
+    setExportingReport(report);
+    const response = report === 'attendance'
+      ? await attendanceAPI.exportToDrive(reportMonth)
+      : await billingAPI.exportToDrive(reportMonth);
+    setExportingReport(null);
+    if (!response.success || !response.data?.url) {
+      setNotice(response.error?.message || `Unable to export the ${report} report to Google Drive.`);
+      return;
+    }
+    setDriveLinks((current) => ({ ...current, [report]: response.data?.url || undefined }));
+    setNotice(`${report === 'attendance' ? 'Attendance' : 'Utility billing'} report exported to Google Drive.`);
   }
 
   if (isChecking) return <DashboardRoleGuardLoading />;
@@ -236,14 +249,7 @@ function ManagerDashboardContent() {
             <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">{activeTab === 'dashboard' ? 'Operations Overview' : activeTab === 'applications' ? 'Applications Review' : activeTab === 'buildings' ? 'Room Matrix & Auto-Assign' : activeTab === 'billing' ? 'Electricity & Water' : 'Work Orders'}</h1>
             <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-[15px]">{activeTab === 'dashboard' ? 'A live overview of residence operations, attendance, billing, and student services.' : 'This protected workspace displays only the section selected in the sidebar.'}</p>
           </div>
-          {activeTab === 'dashboard' && <div className="flex items-center self-start overflow-hidden rounded-xl border border-[#dce3dc] bg-white shadow-sm">
-            <select className="h-11 min-w-[164px] border-0 bg-transparent px-3 text-sm text-[#27342c] outline-none" aria-label="Report type">
-              <option>Attendance report</option>
-              <option>Billing report</option>
-            </select>
-            <button onClick={() => exportReport('Excel')} className="flex h-11 items-center gap-1 border-l border-[#dce3dc] px-3 text-xs font-medium text-[#27342c] hover:bg-[#f4f7f3]"><Download className="size-3.5" />Excel</button>
-            <button onClick={() => exportReport('PDF')} className="mr-1 flex h-11 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white hover:bg-[#084a23]"><Download className="size-3.5" />PDF</button>
-          </div>}
+          {activeTab === 'dashboard' && <div className="self-start rounded-xl border border-[#dce3dc] bg-white p-2 shadow-sm"><div className="flex flex-wrap items-center gap-2"><input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} aria-label="Report month" className="h-9 rounded-lg border border-[#dce3dc] px-2 text-xs outline-none" /><button onClick={() => void exportReport('attendance')} disabled={Boolean(exportingReport) || !reportMonth} className="flex h-9 items-center gap-1 rounded-lg border border-[#dce3dc] px-3 text-xs font-semibold text-[#27342c] disabled:opacity-50"><Download className="size-3.5" />{exportingReport === 'attendance' ? 'Exporting…' : 'Attendance to Drive'}</button><button onClick={() => void exportReport('billing')} disabled={Boolean(exportingReport) || !reportMonth} className="flex h-9 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white disabled:opacity-50"><Download className="size-3.5" />{exportingReport === 'billing' ? 'Exporting…' : 'Billing to Drive'}</button></div>{(driveLinks.attendance || driveLinks.billing) && <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-[#1a6a37]">{driveLinks.attendance && <a href={driveLinks.attendance} target="_blank" rel="noreferrer" className="underline">Open attendance archive</a>}{driveLinks.billing && <a href={driveLinks.billing} target="_blank" rel="noreferrer" className="underline">Open billing archive</a>}</div>}</div>}
         </div>
 
         {notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}

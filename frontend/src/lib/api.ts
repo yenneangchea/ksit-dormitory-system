@@ -128,20 +128,27 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, authenti
   }
 }
 
-async function uploadAPI<T>(endpoint: string, body: FormData): Promise<ApiResponse<T>> {
-  try {
+async function uploadAPI<T>(endpoint: string, body: FormData, onProgress?: (percent: number) => void): Promise<ApiResponse<T>> {
+  return new Promise((resolve) => {
     const token = getSessionToken();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      body,
-    });
-    const data = (await response.json()) as ApiResponse<T>;
-    if (!response.ok) return { success: false, error: { message: data.error?.message || 'The file upload could not be completed.' } };
-    return data;
-  } catch (error) {
-    return { success: false, error: { message: error instanceof Error ? error.message : 'An unknown upload error occurred.' } };
-  }
+    const request = new XMLHttpRequest();
+    request.open('POST', `${API_BASE_URL}${endpoint}`);
+    if (token) request.setRequestHeader('Authorization', `Bearer ${token}`);
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onerror = () => resolve({ success: false, error: { message: 'A network error interrupted the file upload.' } });
+    request.onload = () => {
+      try {
+        const data = JSON.parse(request.responseText || '{}') as ApiResponse<T>;
+        if (request.status >= 200 && request.status < 300) resolve(data);
+        else resolve({ success: false, error: { message: data.error?.message || 'The file upload could not be completed.' } });
+      } catch {
+        resolve({ success: false, error: { message: 'The file upload returned an invalid response.' } });
+      }
+    };
+    request.send(body);
+  });
 }
 
 export const authAPI = {
@@ -188,17 +195,17 @@ export const applicationsAPI = {
   review: (applicationId: string, payload: { status: 'under_review' | 'approved' | 'rejected'; rejection_reason?: string }) => fetchAPI<RoomApplication>(`/api/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoAssign: (applicationId: string) => fetchAPI(`/api/applications/${applicationId}/auto-assign`, { method: 'POST' }),
   saveDraft: (payload: { academic_year_applied: string; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/save-draft', { method: 'POST', body: JSON.stringify(payload) }),
-  uploadReference: (applicationId: string, documentType: 'student_photo' | 'national_id' | 'family_book', file: File) => {
+  uploadReference: (applicationId: string, documentType: 'student_photo' | 'national_id' | 'family_book', file: File, onProgress?: (percent: number) => void) => {
     const form = new FormData();
     form.set('file', file);
-    return uploadAPI<RoomApplication>(`/api/applications/${applicationId}/references/${documentType}`, form);
+    return uploadAPI<RoomApplication>(`/api/applications/${applicationId}/references/${documentType}`, form, onProgress);
   },
   submitForm: (payload: { application_id: string; profile: Record<string, unknown>; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/submit-form', { method: 'POST', body: JSON.stringify(payload) }),
-  uploadSigned: (applicationId: string, file: File) => {
+  uploadSigned: (applicationId: string, file: File, onProgress?: (percent: number) => void) => {
     const form = new FormData();
     form.set('application_id', applicationId);
     form.set('file', file);
-    return uploadAPI<RoomApplication>('/api/applications/upload-signed', form);
+    return uploadAPI<RoomApplication>('/api/applications/upload-signed', form, onProgress);
   },
   mine: (academicYear?: string) => fetchAPI<RoomApplication | null>(`/api/applications/my-application${queryString({ academic_year: academicYear })}`),
   prefilledPdf: (applicationId: string) => fetchAPI<{ url: string; expires_in_seconds: number }>(`/api/applications/${applicationId}/prefilled-pdf`),
@@ -213,6 +220,7 @@ export const roomAssignmentsAPI = {
 };
 
 export const billingAPI = {
+  exportToDrive: (month: string) => fetchAPI<{ month: string; records: number; url: string | null }>('/api/billing/export-drive', { method: 'POST', body: JSON.stringify({ month }) }),
   listUtility: (filters?: { roomId?: string; month?: string }) => fetchAPI<UtilityBill[]>(`/api/utility-bills${queryString(filters)}`),
   createUtility: (payload: Record<string, unknown>) => fetchAPI('/api/utility-bills', { method: 'POST', body: JSON.stringify(payload) }),
   listStudent: (filters?: { studentId?: string; status?: string }) => fetchAPI<StudentBill[]>(`/api/student-bills${queryString(filters)}`),
@@ -229,6 +237,7 @@ export const magicQrAPI = {
 };
 
 export const attendanceAPI = {
+  exportToDrive: (month: string) => fetchAPI<{ month: string; records: number; url: string | null }>('/api/attendances/export-drive', { method: 'POST', body: JSON.stringify({ month }) }),
   list: (filters?: { date?: string; roomId?: string; studentId?: string }) => fetchAPI<Attendance[]>(`/api/attendance${queryString(filters)}`),
 };
 

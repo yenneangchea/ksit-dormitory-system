@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
+const { protect } = require('../middleware/auth');
 
 /**
  * @route   POST /api/auth/login
- * @desc    Authenticate user and return user data
+ * @desc    Authenticate user and return JWT token
  * @access  Public
  */
 router.post('/login', authController.login);
@@ -25,16 +26,16 @@ router.post('/telegram', authController.loginWithTelegram);
 
 /**
  * @route   POST /api/auth/logout
- * @desc    Logout user (future implementation with sessions)
+ * @desc    Logout user (client-side token removal)
  * @access  Private
  */
-router.post('/logout', authController.logout);
+router.post('/logout', protect, authController.logout);
 
 /**
  * @route   GET /api/auth/me
  * @desc    Get current authenticated user
- * @access  Private (future implementation)
+ * @access  Private
  */
-router.get('/me', authController.getCurrentUser);
+router.get('/me', protect, authController.getCurrentUser);
 
 module.exports = router;

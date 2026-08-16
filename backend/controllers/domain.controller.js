@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { getSupabase } = require('../config/supabase');
+const { exportMonthlyAttendanceToDrive, exportMonthlyBillingToDrive } = require('../services/syncManager.service');
 
 const KHR_PER_USD = Number(process.env.KHR_PER_USD || 4100);
 const ACTIVE_ASSIGNMENT_YEAR = process.env.ACTIVE_ACADEMIC_YEAR || '2025-2026';
@@ -840,6 +841,24 @@ async function listAttendance(req, res, next) {
   }
 }
 
+async function exportAttendanceToDrive(req, res, next) {
+  try {
+    const result = await exportMonthlyAttendanceToDrive(req.body?.month);
+    res.json(publicPayload(result, `Attendance report for ${result.month} was exported to Google Drive.`));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function exportBillingToDrive(req, res, next) {
+  try {
+    const result = await exportMonthlyBillingToDrive(req.body?.month);
+    res.json(publicPayload(result, `Utility billing report for ${result.month} was exported to Google Drive.`));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function listMaintenance(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -1248,6 +1267,8 @@ module.exports = {
   resolveMagicQr,
   scanAttendance,
   listAttendance,
+  exportAttendanceToDrive,
+  exportBillingToDrive,
   listMaintenance,
   createMaintenance,
   updateMaintenance,

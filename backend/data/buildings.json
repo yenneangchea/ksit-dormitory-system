@@ -1,0 +1,29 @@
+[
+  {
+    "id": "10000000-0000-0000-0000-000000000001",
+    "code": "BLDG-M1",
+    "name": "Male Dormitory Building 1",
+    "gender_restriction": "male",
+    "total_floors": 3,
+    "description": "Main male dormitory building with 3 floors",
+    "created_at": "2026-08-11T12:11:25.691Z"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000002",
+    "code": "BLDG-F1",
+    "name": "Female Dormitory Building 1",
+    "gender_restriction": "female",
+    "total_floors": 3,
+    "description": "Main female dormitory building with 3 floors",
+    "created_at": "2026-08-11T12:11:25.691Z"
+  },
+  {
+    "id": "10000000-0000-0000-0000-000000000003",
+    "code": "BLDG-M2",
+    "name": "Male Dormitory Building 2",
+    "gender_restriction": "male",
+    "total_floors": 2,
+    "description": "Secondary male dormitory building with 2 floors",
+    "created_at": "2026-08-11T12:11:25.691Z"
+  }
+]

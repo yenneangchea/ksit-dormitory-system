@@ -22,9 +22,10 @@
   - http://localhost:3000/dashboard/student
 
 ### Environment Configuration
-- ✅ Backend `.env` file created with Supabase credentials
-- ✅ Frontend `.env.local` file created
-- ✅ API connection configured
+- ✅ Backend `.env` file configured with mock keys (`sb_...`) to fallback to local JSON database.
+- ✅ Local JSON DB Engine (`supabase-mock.js`) fully operational.
+- ✅ Data seeded automatically for users, academic_profiles, buildings, and rooms.
+- ✅ Password hashing script run successfully with bcrypt encryption.
 
 ## 🎯 How to Use Right Now
 
@@ -32,10 +33,10 @@
 Open your browser and go to: **http://localhost:3000**
 
 ### 2. Test the Login
-1. Click "Login" button
-2. Select any role (Admin, Manager, Teacher, or Student)
-3. Enter any email and password (mock authentication)
-4. You'll be redirected to the role-specific dashboard
+1. Click the "Login" button.
+2. Select any role (Admin, Manager, Teacher, or Student).
+3. Enter one of the verified credentials (e.g. `admin@ksit.edu.kh` with password `test123`).
+4. You will be authenticated and redirected to your dashboard with real stats loaded.
 
 ### 3. View Your Dashboard
 Each role has a unique dashboard:
@@ -44,19 +45,15 @@ Each role has a unique dashboard:
 - **Teacher** - Green theme, attendance tracking
 - **Student** - Blue theme, room and bills
 
-## ⚠️ What Needs to Be Done Next
+## ⚠️ Database Setup Options
 
-### Critical: Database Schema Setup
-**Status:** ⬜ NOT YET COMPLETED
+### Option A: Local Mock Database (Active)
+The backend automatically falls back to a locally stored file database (`backend/data/*.json`) when the `.env` file uses placeholder/mock keys. It supports password hashing, user authentication, and data seeding out-of-the-box.
 
-The database tables don't exist yet. You need to:
-
-1. Go to: https://supabase.com/dashboard/project/ukdpgzbzrzosbxvsxifc/editor
-2. Create a new SQL query
-3. Copy the entire schema from `system_design.md`
-4. Execute it
-
-**See `SUPABASE_SETUP.md` for detailed instructions.**
+### Option B: Remote Supabase Connection
+To switch to a live PostgreSQL backend:
+1. Update `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `backend/.env` with your active Supabase credentials.
+2. Go to your Supabase SQL Editor and execute the schema statements defined in `system_design.md`.
 
 ### After Database Setup
 
@@ -193,6 +190,6 @@ ksit-dormitory-system/
 
 **Both servers are running!** 🎉
 
-**Frontend:** http://localhost:3000  
-**Backend:** http://localhost:5000  
+**Frontend:** http://localhost:3000
+**Backend:** http://localhost:5000
 **Next Step:** Set up database schema (see SUPABASE_SETUP.md)

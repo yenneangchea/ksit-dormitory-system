@@ -66,6 +66,10 @@ router.patch('/student-bills/:studentBillId/payment', requireRole('admin', 'mana
 router.post('/magic-qr/resolve', requireRole('admin', 'manager', 'teacher'), domain.resolveMagicQr);
 router.post('/attendance/scan', requireRole('admin', 'manager', 'teacher'), domain.scanAttendance);
 router.get('/attendance', requireRole('admin', 'manager', 'teacher', 'student'), domain.listAttendance);
+router.post('/attendance/export-drive', requireRole('admin', 'manager'), domain.exportAttendanceToDrive);
+// Compatibility with the documented plural namespace.
+router.post('/attendances/export-drive', requireRole('admin', 'manager'), domain.exportAttendanceToDrive);
+router.post('/billing/export-drive', requireRole('admin', 'manager'), domain.exportBillingToDrive);
 
 router.route('/maintenance')
   .get(requireRole('student', 'admin', 'manager', 'teacher'), domain.listMaintenance)

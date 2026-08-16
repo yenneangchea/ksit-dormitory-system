@@ -3,6 +3,9 @@ node_modules/
 
 # Environment variables
 .env
+subbase.env
+*.env
+!.env.example
 
 # Logs
 logs

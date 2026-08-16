@@ -99,6 +99,16 @@ export interface Building {
   created_at: string;
 }
 
+export interface Building {
+  id: string;
+  code: string;
+  name: string;
+  gender_restriction: BuildingGenderType;
+  total_floors: number;
+  description?: string;
+  created_at: string;
+}
+
 export interface Room {
   id: string;
   building_id: string;
@@ -124,6 +134,15 @@ export interface RoomApplication {
   parent_guarantee_attached: boolean;
   family_book_attached: boolean;
   id_card_attached: boolean;
+  document_metadata_json?: Record<string, {
+    bucket: string;
+    path: string;
+    fileName: string;
+    mimeType?: string;
+    size?: number;
+    uploadedAt?: string;
+  } | null>;
+  drive_archive_url?: string;
   rejection_reason?: string;
   manager_notes?: string;
   submission_step?: number;
@@ -182,6 +201,7 @@ export interface UtilityBill {
   active_students_count: number;
   split_amount_per_student_khr: number;
   created_by?: string;
+  drive_report_url?: string;
   created_at: string;
 }
 
