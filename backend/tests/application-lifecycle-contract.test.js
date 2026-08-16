@@ -35,7 +35,7 @@ test('private upload and PDF handlers enforce owner access, file constraints, an
   const controller = fs.readFileSync(path.join(backend, 'controllers', 'application-lifecycle.controller.js'), 'utf8');
   assert.match(controller, /const DOCUMENTS =/);
   assert.match(controller, /maxBytes: 5 \* 1024 \* 1024/);
-  assert.match(controller, /maxBytes: 12 \* 1024 \* 1024/);
+  assert.doesNotMatch(controller, /maxBytes: 12 \* 1024 \* 1024/);
   assert.match(controller, /createSignedUrl\(supabase, bucket, objectPath\)/);
   assert.match(controller, /streamApplicationDocument/);
   assert.match(controller, /driveStorage\.isDriveReference/);
@@ -90,19 +90,21 @@ test('student document uploads preserve the completed form values needed for PDF
   assert.match(wizard, /preserveCurrentForm\(\);\n    setApplication\(response\.data\);/);
 });
 
-test('Google Drive storage remains server-only, persists Drive metadata, and falls back to Supabase Storage', () => {
-  const adapter = fs.readFileSync(path.join(backend, 'lib', 'application-storage.js'), 'utf8');
+test('hybrid storage keeps document uploads in Supabase and syncs approved archives through server-only Google Drive credentials', () => {
   const controller = fs.readFileSync(path.join(backend, 'controllers', 'application-lifecycle.controller.js'), 'utf8');
-  const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260815_google_drive_application_storage.sql'), 'utf8');
+  const sync = fs.readFileSync(path.join(backend, 'services', 'syncManager.service.js'), 'utf8');
+  const drive = fs.readFileSync(path.join(backend, 'services', 'googleDrive.service.js'), 'utf8');
+  const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260816_hybrid_storage.sql'), 'utf8');
   const env = fs.readFileSync(path.join(backend, '.env.example'), 'utf8');
-  assert.match(adapter, /GOOGLE_SERVICE_ACCOUNT_JSON/);
-  assert.match(adapter, /GOOGLE_DRIVE_ROOT_FOLDER_ID/);
-  assert.match(adapter, /createOrGetStudentFolder/);
-  assert.match(adapter, /uploadApplicationFile/);
-  assert.match(controller, /driveStorage\.isDriveConfigured\(\)/);
+  assert.match(controller, /student-avatars/);
+  assert.match(controller, /student-documents/);
   assert.match(controller, /provider: 'supabase_storage'/);
-  assert.match(controller, /google_drive_folder_id/);
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS google_drive_folder_id/);
-  assert.match(migration, /signed_application_drive_url/);
-  assert.match(env, /GOOGLE_SERVICE_ACCOUNT_JSON=/);
+  assert.match(controller, /archiveApprovedApplication/);
+  assert.match(sync, /archiveApprovedApplication/);
+  assert.match(sync, /exportMonthlyAttendanceToDrive/);
+  assert.match(sync, /exportMonthlyBillingToDrive/);
+  assert.match(drive, /GOOGLE_SERVICE_ACCOUNT_EMAIL/);
+  assert.match(migration, /drive_archive_url/);
+  assert.match(migration, /drive_report_url/);
+  assert.match(env, /GOOGLE_DRIVE_APPROVED_STUDENTS_FOLDER_ID=/);
 });

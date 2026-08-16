@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
-const { protect } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 /**
  * @route   POST /api/auth/login
@@ -29,13 +29,13 @@ router.post('/telegram', authController.loginWithTelegram);
  * @desc    Logout user (client-side token removal)
  * @access  Private
  */
-router.post('/logout', protect, authController.logout);
+router.post('/logout', authenticate, authController.logout);
 
 /**
  * @route   GET /api/auth/me
  * @desc    Get current authenticated user
  * @access  Private
  */
-router.get('/me', protect, authController.getCurrentUser);
+router.get('/me', authenticate, authController.getCurrentUser);
 
 module.exports = router;

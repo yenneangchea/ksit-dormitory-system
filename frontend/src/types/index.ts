@@ -135,12 +135,15 @@ export interface RoomApplication {
   family_book_attached: boolean;
   id_card_attached: boolean;
   document_metadata_json?: Record<string, {
-    bucket: string;
-    path: string;
-    fileName: string;
+    bucket?: string;
+    path?: string;
+    fileName?: string;
     mimeType?: string;
+    name?: string;
+    content_type?: string;
     size?: number;
     uploadedAt?: string;
+    uploaded_at?: string;
   } | null>;
   drive_archive_url?: string;
   rejection_reason?: string;
@@ -148,7 +151,7 @@ export interface RoomApplication {
   submission_step?: number;
   prefilled_pdf_generated_at?: string;
   submitted_for_review_at?: string;
-  document_metadata_json?: Record<string, { name?: string; content_type?: string; size?: number; uploaded_at?: string }>;
+
   form_data_json?: Record<string, unknown>;
   users?: User & { academic_profiles?: AcademicProfile | AcademicProfile[] | null };
   academic_profiles?: AcademicProfile | null;

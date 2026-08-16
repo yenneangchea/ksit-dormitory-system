@@ -151,6 +151,24 @@ async function uploadAPI<T>(endpoint: string, body: FormData, onProgress?: (perc
   });
 }
 
+export async function uploadFile(file: File, category: string): Promise<{ success: boolean; url?: string; error?: { message: string } }> {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('category', category);
+  const response = await uploadAPI<{ url?: string }>('/api/storage/upload', body);
+  return { success: response.success, url: response.data?.url, error: response.error };
+}
+
+export const storageAPI = {
+  uploadApplicationDocument: (file: File, fieldKey: string, onProgress?: (percent: number) => void) => {
+    const body = new FormData();
+    body.append('file', file);
+    body.append('document_type', fieldKey);
+    return uploadAPI<{ path?: string; url?: string }>('/api/storage/upload', body, onProgress);
+  },
+  createSignedUrl: (bucket: string, path: string) => fetchAPI<{ signedUrl: string }>('/api/storage/signed-url', { method: 'POST', body: JSON.stringify({ bucket, path }) }),
+};
+
 export const authAPI = {
   login: (credentials: { identifier: string; password: string }) =>
     fetchAPI<never>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) }, false),
@@ -183,6 +201,7 @@ export const buildingsAPI = {
 };
 
 export const roomsAPI = {
+  getByQrCode: (qrCode: string) => fetchAPI<Room>(`/api/rooms/qr/${encodeURIComponent(qrCode)}`),
   list: (filters?: { buildingId?: string; status?: string }) => fetchAPI<Room[]>(`/api/rooms${queryString(filters)}`),
   create: (payload: Partial<Room> & { building_id: string; room_number: string; gender: 'male' | 'female' }) => fetchAPI<Room>('/api/rooms', { method: 'POST', body: JSON.stringify(payload) }),
   update: (roomId: string, payload: Partial<Room> & { regenerate_magic_qr?: boolean }) => fetchAPI<Room>(`/api/rooms/${roomId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
@@ -191,6 +210,8 @@ export const roomsAPI = {
 
 export const applicationsAPI = {
   list: (filters?: { status?: string; userId?: string }) => fetchAPI<RoomApplication[]>(`/api/applications${queryString(filters)}`),
+  // Compatibility alias for the retained legacy dashboard routes.
+  getAll: (filters?: Record<string, string | number | undefined>) => fetchAPI<RoomApplication[]>(`/api/applications${queryString(filters)}`),
   submit: (payload: Record<string, unknown>) => fetchAPI<RoomApplication>('/api/applications', { method: 'POST', body: JSON.stringify(payload) }),
   review: (applicationId: string, payload: { status: 'under_review' | 'approved' | 'rejected'; rejection_reason?: string }) => fetchAPI<RoomApplication>(`/api/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoAssign: (applicationId: string) => fetchAPI(`/api/applications/${applicationId}/auto-assign`, { method: 'POST' }),
@@ -217,6 +238,29 @@ export const applicationsAPI = {
 export const roomAssignmentsAPI = {
   board: () => fetchAPI<AssignmentBoard>('/api/room-assignment-board'),
   manualMove: (payload: { application_id: string; target_room_id: string }) => fetchAPI('/api/room-assignments/manual-move', { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+// Compatibility facades keep historical dashboard URLs buildable while the
+// current role dashboards use the consolidated domain endpoints above.
+export const assignmentsAPI = {
+  getAll: (filters?: Record<string, string | number | boolean | undefined>) => fetchAPI<unknown[]>(`/api/room-assignments${queryString(filters as Record<string, string | number | undefined>)}`),
+  create: (payload: Record<string, unknown>) => fetchAPI('/api/room-assignments', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id: string, payload: Record<string, unknown>) => fetchAPI(`/api/room-assignments/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (id: string) => fetchAPI(`/api/room-assignments/${id}`, { method: 'DELETE' }),
+};
+
+export const attendancesAPI = {
+  getAll: (filters?: Record<string, string | number | undefined>) => fetchAPI<Attendance[]>(`/api/attendance${queryString(filters)}`),
+  create: (payload: Record<string, unknown>) => fetchAPI('/api/attendance/scan', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id: string, payload: Record<string, unknown>) => fetchAPI(`/api/attendance/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (id: string) => fetchAPI(`/api/attendance/${id}`, { method: 'DELETE' }),
+};
+
+export const utilityBillsAPI = {
+  getAll: (filters?: Record<string, string | number | undefined>) => fetchAPI<UtilityBill[]>(`/api/utility-bills${queryString(filters)}`),
+  create: (payload: Record<string, unknown>) => fetchAPI('/api/utility-bills', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id: string, payload: Record<string, unknown>) => fetchAPI(`/api/utility-bills/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  remove: (id: string) => fetchAPI(`/api/utility-bills/${id}`, { method: 'DELETE' }),
 };
 
 export const billingAPI = {

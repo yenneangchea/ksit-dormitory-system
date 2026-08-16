@@ -142,11 +142,16 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
     setUploadProgress(0);
     setBusy(true);
     const response = await applicationsAPI.uploadReference(application.id, type, file, setUploadProgress);
-    setBusy(false);
-    setUploadProgress(null);
-    if (!response.success || !response.data) { setNotice(response.error?.message || 'Unable to upload the document.'); return; }
+    if (!response.success || !response.data) {
+      setBusy(false);
+      setUploadProgress(null);
+      setNotice(response.error?.message || 'Unable to upload the document.');
+      return;
+    }
     preserveCurrentForm();
     setApplication(response.data);
+    setBusy(false);
+    setUploadProgress(null);
     setNotice('ឯកសារយោងត្រូវបានផ្ទុកឡើងដោយសុវត្ថិភាព។');
     await onUpdated();
   }
@@ -182,10 +187,15 @@ export function StudentApplicationWizard({ applications, onUpdated }: { applicat
     setUploadProgress(0);
     setBusy(true);
     const response = await applicationsAPI.uploadSigned(application.id, files.signed_application, setUploadProgress);
+    if (!response.success || !response.data) {
+      setBusy(false);
+      setUploadProgress(null);
+      setNotice(response.error?.message || 'Unable to submit the signed application.');
+      return;
+    }
+    setApplication(response.data);
     setBusy(false);
     setUploadProgress(null);
-    if (!response.success || !response.data) { setNotice(response.error?.message || 'Unable to submit the signed application.'); return; }
-    setApplication(response.data);
     setStage(5);
     setNotice('ឯកសារដែលបានចុះហត្ថលេខាត្រូវបានបញ្ជូនទៅអ្នកគ្រប់គ្រងសម្រាប់ពិនិត្យ។');
     await onUpdated();
