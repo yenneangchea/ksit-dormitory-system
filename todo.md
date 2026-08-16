@@ -118,3 +118,11 @@
 - [x] Add a credential-free mocked Google Drive submission simulation that verifies student-folder creation, reference upload, PDF upload, signed-document upload, and stored Drive references.
 - [x] Run the full regression suite and production frontend build after the Drive-enabled simulation is added.
 - [x] Create and present a concise Google Drive integration architecture and deployment guide slide deck.
+- [ ] Identify and confirm a non-production Vercel preview plus a separate Supabase staging target before any live integration test writes.
+- [ ] Verify staging Drive configuration, additive migration readiness, and isolated test-account availability.
+- [ ] Run and document a clearly labeled Student-to-Manager end-to-end lifecycle simulation in confirmed staging only.
+- [x] Enable the Supabase project-management connector needed to create the user-authorized isolated staging project.
+- [ ] Provision a dedicated staging Supabase project and Vercel preview deployment, then configure them with isolated lifecycle data only. Staging Supabase project `iegshgtjsnoqbgdioonr` is active; Vercel preview configuration remains pending.
+- [x] Apply the canonical, lifecycle, and Drive-metadata migrations in the isolated staging database; seed separate Student and Manager verification identities.
+- [x] Run an isolated Student-to-Manager staging lifecycle through the real Express routes, confirming draft, three reference uploads, four-page PDF generation, signed upload, Manager approval, final `approved` status, and Student denial from the Manager decision route.
+- [ ] Complete the corresponding browser-based Preview verification after a dedicated backend preview is connected to the frontend Preview via `NEXT_PUBLIC_API_URL`.
