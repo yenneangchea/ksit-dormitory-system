@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PublicNavigation } from "@/components/public-navigation";
+import { API_BASE_URL } from "@/lib/api";
 import {
   Award,
   BellRing,
@@ -39,8 +40,7 @@ export default function HomePage() {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    void fetch(`${baseUrl}/api/public/announcements`).then((response) => response.ok ? response.json() : null).then((payload) => {
+    void fetch(`${API_BASE_URL}/api/public/announcements`).then((response) => response.ok ? response.json() : null).then((payload) => {
       const settings = payload?.data?.settings;
       if (settings?.top_ticker?.text) setTicker({ text: settings.top_ticker.text, link: settings.top_ticker.link || homepageDefaults.ticker.link });
       if (settings?.registration_deadline?.title && settings.registration_deadline?.deadline_at) setDeadline({ title: settings.registration_deadline.title, badge: settings.registration_deadline.badge || "", deadline_at: settings.registration_deadline.deadline_at });

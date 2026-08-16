@@ -8,7 +8,7 @@ import { PortalShell } from '@/components/portal-shell';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import { RoomAssignmentBoard } from '@/components/room-assignment-board';
-import { buildingsAPI, dashboardAPI, roomAssignmentsAPI, roomsAPI, type AssignmentBoard, type DashboardAnalytics as DashboardAnalyticsData, type DashboardSummary, usersAPI } from '@/lib/api';
+import { API_BASE_URL, buildingsAPI, dashboardAPI, roomAssignmentsAPI, roomsAPI, type AssignmentBoard, type DashboardAnalytics as DashboardAnalyticsData, type DashboardSummary, usersAPI } from '@/lib/api';
 import type { Building, Room, User, UserRole } from '@/types';
 
 type BuildingWithRooms = Building & { rooms?: Room[] };
@@ -21,7 +21,6 @@ type AdminTab = 'dashboard' | 'users' | 'residence' | 'cms' | 'settings';
 
 const emptySummary: DashboardSummary = { buildings: 0, rooms_in_service: 0, rooms_total: 0, total_capacity: 0, occupied_beds: 0, vacant_beds: 0, occupancy_percent: 0, pending_maintenance: 0, pending_applications: 0, attendance_today: 0 };
 const roleOptions: UserRole[] = ['admin', 'manager', 'teacher', 'student'];
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 async function announcementRequest<T>(path: string, init?: RequestInit): Promise<{ success: boolean; data?: T; message?: string; error?: { message: string } }> {
   try {

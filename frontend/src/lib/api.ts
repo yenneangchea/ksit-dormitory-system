@@ -11,7 +11,9 @@ import type {
   UtilityBill,
 } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// Vercel builds may not have NEXT_PUBLIC_API_URL configured. Keep the deployed API as
+// the safe default while permitting explicit environment-specific overrides.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim() || 'https://ksit-dorm-api.vercel.app';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

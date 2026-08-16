@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, Save, Settings2 } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
+import { API_BASE_URL } from '@/lib/api';
 
 type Settings = Record<string, unknown>;
 type NewsPost = { id: string; title: string; body: string; image_url?: string | null; external_url?: string | null; is_visible: boolean; published_at: string };
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const apiUrl = API_BASE_URL;
 
 async function request(path: string, init?: RequestInit) {
   const token = window.localStorage.getItem('ksit_session_token');
