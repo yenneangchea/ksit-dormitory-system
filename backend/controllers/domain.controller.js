@@ -23,6 +23,53 @@ function publicPayload(data, message) {
   return { success: true, ...(message ? { message } : {}), data };
 }
 
+const DEFAULT_PUBLIC_ANNOUNCEMENTS = Object.freeze({
+  ticker: {
+    text: '👉 ដំណឹងអាហារូបករណ៍ ២០០កន្លែង ឆ្នាំសិក្សា២០២៥-២០២៦',
+    link: 'https://ksit.edu.kh/category/scholarship/',
+  },
+  deadline: {
+    title: '📢 សេចក្តីជូនដំណឹងសំខាន់៖ ការទទួលពាក្យសុំស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត ឆ្នាំសិក្សា ២០២៦-២០២៧ នឹងត្រូវផុតកំណត់នៅថ្ងៃទី ៣១ ខែសីហា ឆ្នាំ២០២៦ វេលាម៉ោង ១៧:០០ ជាកំហិត!',
+    date: '2026-08-31',
+    time: '17:00:00',
+    action_link: '/login',
+  },
+});
+
+function buildPublicAnnouncements(settings = {}, newsPosts = []) {
+  const configuredTicker = settings.top_ticker && typeof settings.top_ticker === 'object' ? settings.top_ticker : {};
+  const configuredDeadline = settings.registration_deadline && typeof settings.registration_deadline === 'object' ? settings.registration_deadline : {};
+  const ticker = {
+    text: typeof configuredTicker.text === 'string' && configuredTicker.text.trim() ? configuredTicker.text.trim() : DEFAULT_PUBLIC_ANNOUNCEMENTS.ticker.text,
+    link: typeof configuredTicker.link === 'string' && configuredTicker.link.trim() ? configuredTicker.link.trim() : DEFAULT_PUBLIC_ANNOUNCEMENTS.ticker.link,
+  };
+  const deadlineAt = typeof configuredDeadline.deadline_at === 'string' && configuredDeadline.deadline_at.trim()
+    ? configuredDeadline.deadline_at
+    : `${DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.date}T${DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.time}+07:00`;
+  const deadlineDate = deadlineAt.slice(0, 10) || DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.date;
+  const deadlineTime = deadlineAt.slice(11, 19) || DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.time;
+  const deadline = {
+    title: typeof configuredDeadline.title === 'string' && configuredDeadline.title.trim() ? configuredDeadline.title.trim() : DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.title,
+    date: deadlineDate,
+    time: deadlineTime,
+    action_link: typeof configuredDeadline.action_link === 'string' && configuredDeadline.action_link.trim() ? configuredDeadline.action_link.trim() : DEFAULT_PUBLIC_ANNOUNCEMENTS.deadline.action_link,
+  };
+  const normalizedSettings = {
+    ...settings,
+    top_ticker: ticker,
+    registration_deadline: {
+      ...configuredDeadline,
+      title: deadline.title,
+      deadline_at: deadlineAt,
+    },
+  };
+  const normalizedPosts = Array.isArray(newsPosts) ? newsPosts : [];
+
+  // `settings` and `news_posts` preserve the current homepage and CMS contract;
+  // `ticker`, `deadline`, and `posts` provide a stable public fallback contract.
+  return { ticker, deadline, posts: normalizedPosts, settings: normalizedSettings, news_posts: normalizedPosts };
+}
+
 const USER_FIELDS = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
 const VALID_ROLES = ['admin', 'manager', 'teacher', 'student'];
 const VALID_GENDERS = ['male', 'female'];
@@ -976,7 +1023,7 @@ async function updateUserRole(req, res, next) {
   }
 }
 
-async function getPublicAnnouncements(req, res, next) {
+async function getPublicAnnouncements(_req, res) {
   try {
     const supabase = getSupabase();
     const [settingsResponse, newsResponse] = await Promise.all([
@@ -985,9 +1032,14 @@ async function getPublicAnnouncements(req, res, next) {
     ]);
     if (settingsResponse.error || newsResponse.error) throw settingsResponse.error || newsResponse.error;
     const settings = Object.fromEntries((settingsResponse.data || []).map((item) => [item.setting_key, item.setting_value]));
-    res.json(publicPayload({ settings, news_posts: newsResponse.data || [] }));
+    res.status(200).json(publicPayload(buildPublicAnnouncements(settings, newsResponse.data || [])));
   } catch (error) {
-    next(error);
+    // Public homepage content must remain available while a database migration,
+    // schema-cache refresh, or temporary CMS failure is being resolved.
+    console.warn('[public-announcements] Serving institutional fallback content.', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    res.status(200).json(publicPayload(buildPublicAnnouncements()));
   }
 }
 
@@ -1064,6 +1116,7 @@ async function createNewsPost(req, res, next) {
       image_url: String(image_url || '').trim() || null,
       external_url: String(external_url || '').trim() || null,
       is_visible: Boolean(is_visible),
+      visibility: Boolean(is_visible) ? 'public' : 'private',
       published_at: published_at || new Date().toISOString(),
       created_by: req.user.sub,
     }).select().single();
@@ -1085,7 +1138,10 @@ async function updateNewsPost(req, res, next) {
     if (body !== undefined) patch.body = String(body || '').trim();
     if (image_url !== undefined) patch.image_url = String(image_url || '').trim() || null;
     if (external_url !== undefined) patch.external_url = String(external_url || '').trim() || null;
-    if (is_visible !== undefined) patch.is_visible = Boolean(is_visible);
+    if (is_visible !== undefined) {
+      patch.is_visible = Boolean(is_visible);
+      patch.visibility = patch.is_visible ? 'public' : 'private';
+    }
     if (published_at !== undefined) patch.published_at = published_at;
     const supabase = getSupabase();
     const { data, error } = await supabase.from('news_posts').update(patch).eq('id', req.params.newsPostId).select().single();
