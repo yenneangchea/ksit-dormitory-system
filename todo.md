@@ -177,4 +177,4 @@
 - [x] Add protected academic student filtering, enrollment statistics, and role-aware dataset APIs for Admin, Manager, and Teacher.
 - [x] Add Excel and printable PDF academic distribution exports for authorized Admin, Manager, and Teacher users.
 - [x] Build the Academic & Majors dashboard tab with filters, statistics, exports, and Admin-only catalog CRUD controls.
-- [ ] Add regression tests, production build checks, deployment verification, and GitHub handoff for the multi-role academic analytics release.
+- [x] Add regression tests, production build checks, deployment verification, and GitHub handoff for the multi-role academic analytics release.
