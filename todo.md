@@ -178,4 +178,4 @@
 - [x] Add Excel and printable PDF academic distribution exports for authorized Admin, Manager, and Teacher users.
 - [x] Build the Academic & Majors dashboard tab with filters, statistics, exports, and Admin-only catalog CRUD controls.
 - [x] Add regression tests, production build checks, deployment verification, and GitHub handoff for the multi-role academic analytics release.
-- [ ] Remove the duplicate Academic Programs & Majors management section from Admin System Settings while preserving the dedicated Academic & Majors workspace.
+- [x] Remove the duplicate Academic Programs & Majors management section from Admin System Settings while preserving the dedicated Academic & Majors workspace.
