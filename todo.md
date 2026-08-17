@@ -143,3 +143,8 @@
 - [x] Consolidate the Express API into the connected Ksit-dorm Vercel project under `/api/*` and configure it for the production Supabase database.
 - [x] Verify same-domain Super Admin login and the redirect to `/dashboard/admin` after the production deployment.
 - [x] Resolve the nullable dashboard search-parameter TypeScript regression blocking the current production build.
+- [x] Update room capacity to 8 beds per room for M_NEW and F_NEW buildings.
+- [x] Preserve legacy dorms (A, B, C, D) at 4 beds per room.
+- [x] Verify system totals (6 buildings, 68 rooms, 464 beds).
+- [x] Update Admin and Manager dashboards and drag-and-drop room matrix to display 8 bed slots for M_NEW and F_NEW.
+- [x] Commit, push to GitHub, and deploy to Vercel.
