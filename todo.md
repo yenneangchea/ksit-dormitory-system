@@ -183,4 +183,4 @@
 - [x] Apply quota-aware electricity and water subsidies before room-level utility costs are split among active residents.
 - [x] Persist transparent utility usage, subsidy, chargeable-usage, and room-split details for invoices and KHQR amounts.
 - [x] Display the complete subsidy-aware utility breakdown in Manager and Student billing workspaces.
-- [ ] Add regression coverage, validate the production build, commit, push, deploy, and verify the Smart Utility Subsidies release.
+- [x] Add regression coverage, validate the production build, commit, push, deploy, and verify the Smart Utility Subsidies release.
