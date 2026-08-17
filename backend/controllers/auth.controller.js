@@ -49,6 +49,15 @@ function decodeSession(req) {
   }
 }
 
+function requirePassword(value, label = 'Password') {
+  if (typeof value !== 'string' || value.length < 8) {
+    const error = new Error(`${label} must be at least 8 characters.`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return value;
+}
+
 /**
  * @desc Sign in with a registered email address or Telegram ID.
  * @route POST /api/auth/login
@@ -276,11 +285,101 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc Change the authenticated user's password after confirming their current password.
+ * @route POST /api/auth/change-password
+ * @access Private
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const session = decodeSession(req);
+    const { current_password, new_password, confirm_password } = req.body || {};
+    requirePassword(current_password, 'Current password');
+    requirePassword(new_password, 'New password');
+    if (new_password !== confirm_password) {
+      const error = new Error('The new password and confirmation do not match.');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (current_password === new_password) {
+      const error = new Error('Choose a new password that is different from the current password.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const supabase = getSupabase();
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, password_hash')
+      .eq('id', session.sub)
+      .maybeSingle();
+    if (userError) throw userError;
+    if (!user?.password_hash || !(await bcrypt.compare(current_password, user.password_hash))) {
+      const error = new Error('The current password is incorrect.');
+      error.statusCode = 401;
+      throw error;
+    }
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ password_hash: await bcrypt.hash(new_password, 12), updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (updateError) throw updateError;
+    res.json({ success: true, message: 'Password changed successfully. Keep it private and sign in again on other devices.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Create a non-enumerating password-reset request for administrator review.
+ * @route POST /api/auth/request-password-reset
+ * @access Public
+ */
+const requestPasswordReset = async (req, res, next) => {
+  try {
+    const identifier = String(req.body?.identifier || '').trim();
+    const reason = String(req.body?.reason || '').trim().slice(0, 1000) || null;
+    if (!identifier) {
+      const error = new Error('Enter your registered email address or phone number.');
+      error.statusCode = 400;
+      throw error;
+    }
+    const supabase = getSupabase();
+    const normalizedEmail = identifier.toLowerCase();
+    const { data: matches, error: lookupError } = await supabase
+      .from('users')
+      .select('id, email')
+      .or(`email.eq.${normalizedEmail},phone.eq.${identifier}`)
+      .limit(1);
+    if (lookupError) throw lookupError;
+    const user = matches?.[0];
+    if (user) {
+      const { data: pending, error: pendingError } = await supabase
+        .from('password_reset_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .limit(1);
+      if (pendingError) throw pendingError;
+      if (!pending?.length) {
+        const { error: createError } = await supabase.from('password_reset_requests').insert({ user_id: user.id, email: user.email, reason });
+        if (createError) throw createError;
+      }
+    }
+    // Keep this response identical when the identity does not exist to prevent account enumeration.
+    res.status(202).json({ success: true, message: 'If the account is registered, a password reset request has been sent to the dormitory administrator.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   registerWithTelegram,
   loginWithTelegram,
   logout,
   getCurrentUser,
+  changePassword,
+  requestPasswordReset,
   decodeSession,
 };

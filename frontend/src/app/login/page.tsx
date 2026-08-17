@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserPlus, UserRoundCheck } from "lucide-react";
+import { KeyRound, LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserPlus, UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,13 +24,6 @@ const dashboardByRole: Record<UserRole, string> = {
   student: "/dashboard/student",
 };
 
-const demoAccounts: Array<{ label: string; email: string; role: UserRole }> = [
-  { label: "Admin", email: "admin@ksit.edu.kh", role: "admin" },
-  { label: "Manager", email: "manager@ksit.edu.kh", role: "manager" },
-  { label: "Teacher", email: "teacher@ksit.edu.kh", role: "teacher" },
-  { label: "Student", email: "student@ksit.edu.kh", role: "student" },
-];
-
 export default function LoginPage() {
   return <Suspense fallback={<main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-[#0b5c2c]">Loading KSIT Dormitory login…</main>}><LoginForm /></Suspense>;
 }
@@ -47,6 +40,11 @@ function LoginForm() {
   const [telegramRegistration, setTelegramRegistration] = useState({ full_name_khmer: "", full_name_latin: "", email: "", phone: "", gender: "male" as "male" | "female", password: "", confirmPassword: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [resetReason, setResetReason] = useState("");
+  const [resetNotice, setResetNotice] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
   const registrationNotice = registrationCompleted ? "Registration completed. Enter the password you just created to sign in as a Student." : "";
 
   useEffect(() => {
@@ -129,11 +127,24 @@ function LoginForm() {
     }
   }
 
-  function selectDemoAccount(account: (typeof demoAccounts)[number]) {
-    setMode("email");
-    setEmail(account.email);
-    setPassword("");
-    setError(`Demo ${account.label} selected. Enter the authorized password to sign in.`);
+  async function submitPasswordResetRequest(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!resetIdentifier.trim()) {
+      setResetNotice("Enter your registered email address or phone number.");
+      return;
+    }
+    setIsResetting(true);
+    setResetNotice("");
+    try {
+      const response = await authAPI.requestPasswordReset({ identifier: resetIdentifier.trim(), reason: resetReason.trim() || undefined });
+      setResetNotice(response.success ? response.message || "Your request has been sent." : response.error?.message || "Unable to submit the reset request.");
+      if (response.success) {
+        setResetIdentifier("");
+        setResetReason("");
+      }
+    } finally {
+      setIsResetting(false);
+    }
   }
 
   return (
@@ -166,6 +177,7 @@ function LoginForm() {
                 <div className="space-y-2"><Label htmlFor="email" className="text-[#39473f]">Email address</Label><div className="relative"><Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#718077]" aria-hidden="true" /><Input id="email" type="email" autoComplete="email" placeholder="name@ksit.edu.kh" value={email} onChange={(event) => { setEmail(event.target.value); if (error) setError(""); }} disabled={isLoading} required className="h-11 border-[#dce3dc] pl-10 focus-visible:ring-[#0b5c2c]" /></div></div>
                 <div className="space-y-2"><Label htmlFor="password" className="text-[#39473f]">Password</Label><Input id="password" type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={(event) => { setPassword(event.target.value); if (error) setError(""); }} disabled={isLoading} required className="h-11 border-[#dce3dc] focus-visible:ring-[#0b5c2c]" /></div>
                 <Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Signing in securely…</> : "Login with Email"}</Button>
+                <button type="button" onClick={() => { setResetOpen(true); setResetNotice(""); }} className="mx-auto flex min-h-11 items-center gap-2 text-sm font-bold text-[#0b5c2c] hover:underline"><KeyRound className="size-4" /> Forgot Password? / ភ្លេចពាក្យសម្ងាត់? ស្នើសុំប្តូរ</button>
               </form>
             ) : (
               <div className="mt-5 space-y-4" aria-busy={isLoading}>
@@ -178,8 +190,8 @@ function LoginForm() {
               </div>
             )}
 
-            <div className="mt-6 border-t border-[#edf0ed] pt-5"><p className="text-center text-xs font-bold uppercase tracking-wide text-[#68736c]">Demo account quick fill</p><div className="mt-3 grid grid-cols-2 gap-2">{demoAccounts.map((account) => <button key={account.role} type="button" onClick={() => selectDemoAccount(account)} disabled={isLoading} className="rounded-lg border border-[#dce3dc] bg-white px-3 py-2 text-left text-xs font-semibold text-[#39473f] transition hover:border-[#87af91] hover:bg-[#f5faf6]"><span className="block text-[#0b5c2c]">{account.label}</span><span className="mt-0.5 block truncate text-[#68736c]">{account.email}</span></button>)}</div><p className="mt-3 text-center text-xs leading-5 text-[#68736c]">For security, these shortcuts fill the approved demo email only; enter the authorized password to complete sign-in.</p></div>
             <p className="mt-5 text-center text-xs leading-5 text-[#68736c]">Need help accessing your account? Contact the dormitory system administrator.</p>
+            {resetOpen && <div className="mt-5 rounded-xl border border-[#dce3dc] bg-[#f7faf7] p-4" role="dialog" aria-modal="true" aria-label="Request password reset"><div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-[#223128]">Request Password Reset</h2><p className="mt-1 text-xs leading-5 text-[#68736c]">ភ្លេចពាក្យសម្ងាត់? ផ្ញើសំណើទៅអ្នកគ្រប់គ្រងប្រព័ន្ធ។</p></div><button type="button" onClick={() => setResetOpen(false)} className="min-h-11 px-2 text-xs font-bold text-[#68736c] hover:text-[#0b5c2c]">Close</button></div><form onSubmit={submitPasswordResetRequest} className="mt-4 space-y-3"><div className="space-y-2"><Label htmlFor="reset-identifier">Registered email or phone</Label><Input id="reset-identifier" value={resetIdentifier} onChange={(event) => setResetIdentifier(event.target.value)} placeholder="name@example.com or 012345678" required disabled={isResetting} /></div><div className="space-y-2"><Label htmlFor="reset-reason">Reason (optional)</Label><textarea id="reset-reason" value={resetReason} onChange={(event) => setResetReason(event.target.value)} disabled={isResetting} className="min-h-20 w-full rounded-lg border border-[#dce3dc] bg-white px-3 py-2 text-sm outline-none focus:border-[#0b5c2c]" placeholder="Briefly describe your request" /></div>{resetNotice && <p role="status" className="rounded-lg bg-white px-3 py-2 text-xs leading-5 text-[#31513d]">{resetNotice}</p>}<Button type="submit" className="h-11 w-full bg-[#0b5c2c] hover:bg-[#084a23]" disabled={isResetting}>{isResetting ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Sending request…</> : "Send reset request"}</Button></form></div>}
           </CardContent>
         </Card>
       </section>

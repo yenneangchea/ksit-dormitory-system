@@ -11,7 +11,7 @@ import type {
   UtilityBill,
 } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || '').trim() || 'https://ksit-dorm-api.vercel.app';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -41,6 +41,17 @@ export interface DashboardAnalytics {
   attendance: Record<string, number>;
   attendance_days: { date: string; present?: number; absent?: number; leave?: number }[];
   billing: Record<string, number> & { total_khr: number };
+}
+
+export interface PasswordResetRequest {
+  id: string;
+  user_id: string;
+  email: string;
+  reason: string | null;
+  status: 'pending' | 'resolved' | 'rejected';
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 export interface AssignmentBoardStudent {
@@ -151,6 +162,8 @@ export const authAPI = {
     fetchAPI<never>('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) }, false),
   logout: () => fetchAPI<never>('/api/auth/logout', { method: 'POST' }),
   getCurrentUser: () => fetchAPI<never>('/api/auth/me'),
+  changePassword: (payload: { current_password: string; new_password: string; confirm_password: string }) => fetchAPI<never>('/api/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),
+  requestPasswordReset: (payload: { identifier: string; reason?: string }) => fetchAPI<never>('/api/auth/request-password-reset', { method: 'POST', body: JSON.stringify(payload) }, false),
 };
 
 export const dashboardAPI = {
@@ -164,6 +177,9 @@ export const usersAPI = {
   update: (userId: string, payload: Partial<Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'>> & { password?: string }) => fetchAPI<User>(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   remove: (userId: string) => fetchAPI<{ id: string }>(`/api/users/${userId}`, { method: 'DELETE' }),
   updateRole: (userId: string, role: UserRole) => fetchAPI<User>(`/api/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  resetPassword: (userId: string, password: string) => fetchAPI<User>(`/api/admin/users/${userId}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) }),
+  listPasswordResetRequests: (status: 'pending' | 'resolved' | 'rejected' | 'all' = 'pending') => fetchAPI<PasswordResetRequest[]>(`/api/admin/password-reset-requests${queryString({ status })}`),
+  resolvePasswordResetRequest: (requestId: string, payload: { action: 'resolve' | 'reject'; password?: string }) => fetchAPI<PasswordResetRequest>(`/api/admin/password-reset-requests/${requestId}/resolve`, { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export const buildingsAPI = {

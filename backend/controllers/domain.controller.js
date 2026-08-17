@@ -26,6 +26,7 @@ function publicPayload(data, message) {
 const USER_FIELDS = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
 const VALID_ROLES = ['admin', 'manager', 'teacher', 'student'];
 const VALID_GENDERS = ['male', 'female'];
+const RESET_REQUEST_FIELDS = 'id, user_id, email, reason, status, created_at, resolved_at, resolved_by';
 
 async function ensureAdminContinuity(supabase, targetUser, requestedRole) {
   if (!targetUser || targetUser.role !== 'admin' || requestedRole === 'admin') return;
@@ -976,6 +977,77 @@ async function updateUserRole(req, res, next) {
   }
 }
 
+async function resetUserPassword(req, res, next) {
+  try {
+    const password = req.body?.password;
+    if (typeof password !== 'string' || password.length < 8) throw fail('The new password must be at least 8 characters.');
+    const supabase = getSupabase();
+    const { data: targetUser, error: targetError } = await supabase.from('users').select('id').eq('id', req.params.userId).maybeSingle();
+    if (targetError) throw targetError;
+    if (!targetUser) throw fail('User not found.', 404);
+    const { data, error } = await supabase
+      .from('users')
+      .update({ password_hash: await bcrypt.hash(password, 12), updated_at: new Date().toISOString() })
+      .eq('id', targetUser.id)
+      .select(USER_FIELDS)
+      .single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'Password reset successfully. Share the temporary password only through a secure channel.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function listPasswordResetRequests(req, res, next) {
+  try {
+    const status = req.query.status || 'pending';
+    if (!['pending', 'resolved', 'rejected', 'all'].includes(status)) throw fail('Invalid password-reset request status.');
+    const supabase = getSupabase();
+    let query = supabase.from('password_reset_requests').select(RESET_REQUEST_FIELDS).order('created_at', { ascending: false }).limit(100);
+    if (status !== 'all') query = query.eq('status', status);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(publicPayload(data || []));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function resolvePasswordResetRequest(req, res, next) {
+  try {
+    const action = req.body?.action;
+    const password = req.body?.password;
+    if (!['resolve', 'reject'].includes(action)) throw fail('Choose resolve or reject for this request.');
+    if (action === 'resolve' && (typeof password !== 'string' || password.length < 8)) throw fail('A new password of at least 8 characters is required to resolve this request.');
+    const supabase = getSupabase();
+    const { data: request, error: requestError } = await supabase
+      .from('password_reset_requests')
+      .select(RESET_REQUEST_FIELDS)
+      .eq('id', req.params.requestId)
+      .maybeSingle();
+    if (requestError) throw requestError;
+    if (!request) throw fail('Password reset request not found.', 404);
+    if (request.status !== 'pending') throw fail('This password reset request has already been processed.', 409);
+    if (action === 'resolve') {
+      const { error: passwordError } = await supabase
+        .from('users')
+        .update({ password_hash: await bcrypt.hash(password, 12), updated_at: new Date().toISOString() })
+        .eq('id', request.user_id);
+      if (passwordError) throw passwordError;
+    }
+    const { data, error } = await supabase
+      .from('password_reset_requests')
+      .update({ status: action === 'resolve' ? 'resolved' : 'rejected', resolved_at: new Date().toISOString(), resolved_by: req.user.sub })
+      .eq('id', request.id)
+      .select(RESET_REQUEST_FIELDS)
+      .single();
+    if (error) throw error;
+    res.json(publicPayload(data, action === 'resolve' ? 'Password reset request resolved.' : 'Password reset request rejected.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getPublicAnnouncements(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -1200,6 +1272,9 @@ module.exports = {
   updateUser,
   deleteUser,
   updateUserRole,
+  resetUserPassword,
+  listPasswordResetRequests,
+  resolvePasswordResetRequest,
   getPublicAnnouncements,
   getAnnouncementManagement,
   updateAnnouncementSettings,

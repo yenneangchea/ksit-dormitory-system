@@ -18,6 +18,9 @@ router.post('/users', requireRole('admin'), domain.createUser);
 router.patch('/users/:userId', requireRole('admin'), domain.updateUser);
 router.delete('/users/:userId', requireRole('admin'), domain.deleteUser);
 router.patch('/users/:userId/role', requireRole('admin'), domain.updateUserRole);
+router.post('/admin/users/:userId/reset-password', requireRole('admin'), domain.resetUserPassword);
+router.get('/admin/password-reset-requests', requireRole('admin'), domain.listPasswordResetRequests);
+router.post('/admin/password-reset-requests/:requestId/resolve', requireRole('admin'), domain.resolvePasswordResetRequest);
 
 router.get('/announcements', requireRole('admin'), domain.getAnnouncementManagement);
 router.put('/announcements/settings', requireRole('admin'), domain.updateAnnouncementSettings);

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
+const { authenticate } = require('../middleware/auth');
 
 /**
  * @route   POST /api/auth/login
@@ -36,5 +37,7 @@ router.post('/logout', authController.logout);
  * @access  Private (future implementation)
  */
 router.get('/me', authController.getCurrentUser);
+router.post('/change-password', authenticate, authController.changePassword);
+router.post('/request-password-reset', authController.requestPasswordReset);
 
 module.exports = router;
