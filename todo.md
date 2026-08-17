@@ -164,11 +164,11 @@
 - [x] Build the Admin System Settings academic programs and majors management UI with create, edit, status, and deletion controls.
 - [x] Bind Student application, Admin user creation, and Login registration level/year/major fields to the public majors API with cascading filters.
 - [x] Update waterfall auto-allocation ordering to include academic level, configured major, and year level after gender.
-- [ ] Add regression tests, run production checks, commit, push, deploy, and verify the Academic Majors Management release.
+- [x] Add regression tests, run production checks, commit, push, deploy, and verify the Academic Majors Management release.
 
 - [x] Add Academic Majors table search by Khmer/English name and level filter.
 - [x] Add Academic Majors active/inactive status filter and clear-results behavior.
 - [x] Add Admin CSV/XLS/XLSX bulk import with row validation, duplicate protection, and progress/error feedback.
 - [x] Add protected academic-major audit-history API and Admin history view with administrator, action, before/after, and timestamp details.
 - [x] Mirror bulk-import and audit support into the Vercel-served frontend server copy.
-- [ ] Run regression tests and production build, then commit, push, deploy, and verify the extension.
+- [x] Run regression tests and production build, then commit, push, deploy, and verify the extension.
