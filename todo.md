@@ -148,3 +148,8 @@
 - [x] Verify system totals (6 buildings, 68 rooms, 464 beds).
 - [x] Update Admin and Manager dashboards and drag-and-drop room matrix to display 8 bed slots for M_NEW and F_NEW.
 - [x] Commit, push to GitHub, and deploy to Vercel.
+- [x] Add `is_locked` boolean column to rooms table and support custom capacity overrides.
+- [x] Implement backend validation in room assignment and auto-allocation to reject requests to locked rooms (`400 Bad Request`).
+- [x] Update Admin and Manager room matrix UIs to include room lock toggles (🔒) and custom capacity editing.
+- [x] Seed exact 68-room layout (A: A101-A104; B: B101-B104; C: C101-C106; D: D101-D106; M_NEW: M101-M104, M201-M210, M301-M310; F_NEW: F101-F104, F201-F210, F301-F310) totaling 464 beds.
+- [x] Commit, push to GitHub, and deploy to Vercel.
