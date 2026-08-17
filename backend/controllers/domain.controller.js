@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const XLSX = require('xlsx');
 const { getSupabase } = require('../config/supabase');
 const { exportMonthlyAttendanceToDrive, exportMonthlyBillingToDrive } = require('../services/syncManager.service');
 
@@ -76,6 +77,7 @@ const VALID_ROLES = ['admin', 'manager', 'teacher', 'student'];
 const VALID_GENDERS = ['male', 'female'];
 const RESET_REQUEST_FIELDS = 'id, user_id, email, reason, status, created_at, resolved_at, resolved_by';
 const ACADEMIC_MAJOR_FIELDS = 'id, academic_level, name_khmer, name_english, available_year_levels, is_active, created_at, updated_at';
+const ACADEMIC_MAJOR_AUDIT_FIELDS = 'id, major_id, admin_user_id, action, source, before_data, after_data, created_at';
 
 async function ensureAdminContinuity(supabase, targetUser, requestedRole) {
   if (!targetUser || targetUser.role !== 'admin' || requestedRole === 'admin') return;
@@ -173,6 +175,90 @@ function normalizeMajorInput(input, { partial = false } = {}) {
   if (!partial || input.available_year_levels !== undefined) patch.available_year_levels = normalizeYearLevels(input.available_year_levels);
   if (!partial || input.is_active !== undefined) patch.is_active = normalizeBoolean(input.is_active, 'Major active status');
   return patch;
+}
+
+function majorAuditSnapshot(major) {
+  if (!major) return null;
+  return {
+    id: major.id,
+    academic_level: major.academic_level,
+    name_khmer: major.name_khmer,
+    name_english: major.name_english,
+    available_year_levels: Array.isArray(major.available_year_levels) ? major.available_year_levels : [],
+    is_active: Boolean(major.is_active),
+  };
+}
+
+async function recordMajorAudit(supabase, { majorId = null, adminUserId, action, source = 'admin_ui', beforeData = null, afterData = null }) {
+  const { error } = await supabase.from('academic_major_audit_logs').insert({
+    major_id: majorId,
+    admin_user_id: adminUserId,
+    action,
+    source,
+    before_data: majorAuditSnapshot(beforeData),
+    after_data: majorAuditSnapshot(afterData),
+  });
+  if (error) throw error;
+}
+
+function importValue(row, keys) {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') return row[key];
+  }
+  return undefined;
+}
+
+function parseImportYears(value) {
+  if (Array.isArray(value)) return value;
+  const text = String(value ?? '').trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (_error) {
+    // Fall back to the human-friendly CSV/Excel formats below.
+  }
+  return text.split(/[;,|]/).flatMap((part) => part.match(/[1-4]/g) || []).map(Number);
+}
+
+function parseImportBoolean(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return true;
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'active', 'សកម្ម'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'inactive', 'អសកម្ម'].includes(normalized)) return false;
+  throw fail('Active status must be true/false, 1/0, yes/no, active/inactive, or Khmer equivalent.');
+}
+
+function normalizeImportedRow(row, rowNumber) {
+  try {
+    return normalizeMajorInput({
+      academic_level: importValue(row, ['academic_level', 'level', 'academicLevel', 'កម្រិតសិក្សា']),
+      name_khmer: importValue(row, ['name_khmer', 'major_khmer', 'majorKhmer', 'ជំនាញខ្មែរ']),
+      name_english: importValue(row, ['name_english', 'major_english', 'majorEnglish', 'ជំនាញអង់គ្លេស']),
+      available_year_levels: parseImportYears(importValue(row, ['available_year_levels', 'year_levels', 'years', 'availableYears', 'ឆ្នាំសិក្សា'])),
+      is_active: parseImportBoolean(importValue(row, ['is_active', 'active', 'status', 'ស្ថានភាព'])),
+    });
+  } catch (error) {
+    throw fail(`Row ${rowNumber}: ${error.message}`);
+  }
+}
+
+function parseMajorImportFile(file) {
+  if (!file?.buffer?.length) throw fail('Attach a CSV or Excel file to import.');
+  const filename = String(file.originalname || '').toLowerCase();
+  if (!/\.(csv|xlsx?|xlsm)$/.test(filename)) throw fail('Only .csv, .xlsx, .xls, or .xlsm files are supported.');
+  let workbook;
+  try {
+    workbook = XLSX.read(file.buffer, { type: 'buffer', cellDates: false, raw: false });
+  } catch (error) {
+    throw fail(`The spreadsheet could not be read: ${error.message}`);
+  }
+  const firstSheet = workbook.SheetNames[0];
+  if (!firstSheet) throw fail('The import file does not contain a worksheet.');
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '', raw: false });
+  if (!rows.length) throw fail('The import worksheet does not contain any data rows.');
+  if (rows.length > 500) throw fail('Import files are limited to 500 majors per upload.');
+  return rows.map((row, index) => normalizeImportedRow(row, index + 2));
 }
 
 async function resolveConfiguredMajor(supabase, { academic_level, academic_major_id, academic_year }, { activeOnly = true } = {}) {
@@ -1226,11 +1312,20 @@ async function resolvePasswordResetRequest(req, res, next) {
 async function listAdminMajors(req, res, next) {
   try {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    let query = supabase
       .from('academic_majors')
       .select(ACADEMIC_MAJOR_FIELDS)
       .order('academic_level')
       .order('name_khmer');
+    const search = String(req.query.search || '').trim();
+    const safeSearch = search.replace(/[,%()]/g, ' ').slice(0, 100).trim();
+    const level = String(req.query.academic_level || '').trim().slice(0, 160);
+    const status = String(req.query.status || '').trim().toLowerCase();
+    if (safeSearch) query = query.or(`academic_level.ilike.%${safeSearch}%,name_khmer.ilike.%${safeSearch}%,name_english.ilike.%${safeSearch}%`);
+    if (level) query = query.eq('academic_level', level);
+    if (status === 'active') query = query.eq('is_active', true);
+    if (status === 'inactive') query = query.eq('is_active', false);
+    const { data, error } = await query;
     if (error) throw error;
     res.json(publicPayload(data || []));
   } catch (error) {
@@ -1248,6 +1343,7 @@ async function createMajor(req, res, next) {
       .select(ACADEMIC_MAJOR_FIELDS)
       .single();
     if (error) throw error;
+    await recordMajorAudit(supabase, { majorId: data.id, adminUserId: req.user.sub, action: 'create', afterData: data });
     res.status(201).json(publicPayload(data, 'Academic major created.'));
   } catch (error) {
     next(error);
@@ -1259,14 +1355,18 @@ async function updateMajor(req, res, next) {
     const payload = normalizeMajorInput(req.body || {}, { partial: true });
     if (Object.keys(payload).length === 0) throw fail('Provide at least one major field to update.');
     const supabase = getSupabase();
+    const { data: before, error: beforeError } = await supabase.from('academic_majors').select(ACADEMIC_MAJOR_FIELDS).eq('id', req.params.majorId).maybeSingle();
+    if (beforeError) throw beforeError;
+    if (!before) throw fail('Academic major not found.', 404);
     const { data, error } = await supabase
       .from('academic_majors')
       .update({ ...payload, updated_at: new Date().toISOString() })
       .eq('id', req.params.majorId)
       .select(ACADEMIC_MAJOR_FIELDS)
-      .maybeSingle();
+      .single();
     if (error) throw error;
-    if (!data) throw fail('Academic major not found.', 404);
+    const action = before.is_active !== data.is_active ? (data.is_active ? 'activate' : 'deactivate') : 'update';
+    await recordMajorAudit(supabase, { majorId: data.id, adminUserId: req.user.sub, action, beforeData: before, afterData: data });
     res.json(publicPayload(data, 'Academic major updated.'));
   } catch (error) {
     next(error);
@@ -1294,6 +1394,7 @@ async function deleteOrToggleMajor(req, res, next) {
       if ((count || 0) > 0) throw fail('This major is referenced by student academic profiles and can only be deactivated.', 409);
       const { error } = await supabase.from('academic_majors').delete().eq('id', major.id);
       if (error) throw error;
+      await recordMajorAudit(supabase, { adminUserId: req.user.sub, action: 'delete', beforeData: major });
       return res.json(publicPayload({ id: major.id, deleted: true }, 'Academic major deleted.'));
     }
 
@@ -1304,7 +1405,78 @@ async function deleteOrToggleMajor(req, res, next) {
       .select(ACADEMIC_MAJOR_FIELDS)
       .single();
     if (error) throw error;
+    await recordMajorAudit(supabase, { majorId: data.id, adminUserId: req.user.sub, action: data.is_active ? 'activate' : 'deactivate', beforeData: major, afterData: data });
     res.json(publicPayload(data, `Academic major ${data.is_active ? 'activated' : 'deactivated'}.`));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function bulkImportMajors(req, res, next) {
+  try {
+    const rows = parseMajorImportFile(req.file);
+    const mode = String(req.body?.mode || 'upsert').trim().toLowerCase();
+    if (!['create', 'upsert'].includes(mode)) throw fail('Import mode must be create or upsert.');
+    const seen = new Set();
+    for (const row of rows) {
+      const key = `${row.academic_level.toLowerCase()}|${row.name_english.toLowerCase()}`;
+      if (seen.has(key)) throw fail(`The import file contains a duplicate major: ${row.name_english}.`);
+      seen.add(key);
+    }
+
+    const supabase = getSupabase();
+    const { data: existingMajors, error: existingError } = await supabase.from('academic_majors').select(ACADEMIC_MAJOR_FIELDS);
+    if (existingError) throw existingError;
+    const existingByKey = new Map((existingMajors || []).map((major) => [`${major.academic_level.toLowerCase()}|${major.name_english.toLowerCase()}`, major]));
+    const imported = [];
+    let created = 0;
+    let updated = 0;
+    for (const row of rows) {
+      const key = `${row.academic_level.toLowerCase()}|${row.name_english.toLowerCase()}`;
+      const before = existingByKey.get(key);
+      if (before && mode === 'create') throw fail(`Major already exists: ${row.name_english} (${row.academic_level}).`);
+      if (before) {
+        const { data, error } = await supabase.from('academic_majors').update({ ...row, updated_at: new Date().toISOString() }).eq('id', before.id).select(ACADEMIC_MAJOR_FIELDS).single();
+        if (error) throw error;
+        await recordMajorAudit(supabase, { majorId: data.id, adminUserId: req.user.sub, action: 'bulk_import', source: 'bulk_import', beforeData: before, afterData: data });
+        imported.push(data);
+        updated += 1;
+      } else {
+        const { data, error } = await supabase.from('academic_majors').insert({ ...row, updated_at: new Date().toISOString() }).select(ACADEMIC_MAJOR_FIELDS).single();
+        if (error) throw error;
+        await recordMajorAudit(supabase, { majorId: data.id, adminUserId: req.user.sub, action: 'bulk_import', source: 'bulk_import', afterData: data });
+        imported.push(data);
+        created += 1;
+      }
+    }
+    res.status(201).json(publicPayload({ created, updated, total: imported.length, majors: imported }, 'Academic major import completed.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function listMajorAuditLogs(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    let query = supabase
+      .from('academic_major_audit_logs')
+      .select(ACADEMIC_MAJOR_AUDIT_FIELDS)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (req.query.majorId) query = query.eq('major_id', req.query.majorId);
+    if (req.query.action) query = query.eq('action', String(req.query.action).trim());
+    const { data: logs, error } = await query;
+    if (error) throw error;
+    const adminIds = [...new Set((logs || []).map((log) => log.admin_user_id).filter(Boolean))];
+    let admins = [];
+    if (adminIds.length) {
+      const response = await supabase.from('users').select('id, full_name_khmer, full_name_latin, email').in('id', adminIds);
+      if (response.error) throw response.error;
+      admins = response.data || [];
+    }
+    const adminMap = new Map(admins.map((admin) => [admin.id, admin]));
+    const enriched = (logs || []).map((log) => ({ ...log, admin: adminMap.get(log.admin_user_id) || null }));
+    res.json(publicPayload(enriched));
   } catch (error) {
     next(error);
   }
@@ -1574,6 +1746,8 @@ module.exports = {
   createMajor,
   updateMajor,
   deleteOrToggleMajor,
+  bulkImportMajors,
+  listMajorAuditLogs,
   getPublicMajors,
   getPublicAnnouncements,
   getAnnouncementManagement,

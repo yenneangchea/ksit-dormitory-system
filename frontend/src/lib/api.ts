@@ -58,6 +58,23 @@ export interface PasswordResetRequest {
   resolved_at: string | null;
   resolved_by: string | null;
 }
+export interface AcademicMajorAuditLog {
+  id: string;
+  major_id: string | null;
+  admin_user_id: string;
+  action: 'create' | 'update' | 'activate' | 'deactivate' | 'delete' | 'bulk_import';
+  source: 'admin_ui' | 'bulk_import' | 'system';
+  before_data: AcademicMajor | null;
+  after_data: AcademicMajor | null;
+  created_at: string;
+  admin?: Pick<User, 'id' | 'full_name_khmer' | 'full_name_latin' | 'email'> | null;
+}
+export interface AcademicMajorImportResult {
+  created: number;
+  updated: number;
+  total: number;
+  majors: AcademicMajor[];
+}
 
 export interface AssignmentBoardStudent {
   id: string;
@@ -214,10 +231,12 @@ export const usersAPI = {
 
 export const majorsAPI = {
   public: () => fetchAPI<PublicMajorsCatalog>('/api/public/majors', {}, false),
-  listAdmin: () => fetchAPI<AcademicMajor[]>('/api/admin/majors'),
+  listAdmin: (filters?: { search?: string; academic_level?: string; status?: 'active' | 'inactive' }) => fetchAPI<AcademicMajor[]>(`/api/admin/majors${queryString(filters)}`),
   create: (payload: Omit<AcademicMajor, 'id' | 'created_at' | 'updated_at'>) => fetchAPI<AcademicMajor>('/api/admin/majors', { method: 'POST', body: JSON.stringify(payload) }),
   update: (majorId: string, payload: Partial<Omit<AcademicMajor, 'id' | 'created_at' | 'updated_at'>>) => fetchAPI<AcademicMajor>(`/api/admin/majors/${majorId}`, { method: 'PUT', body: JSON.stringify(payload) }),
   removeOrToggle: (majorId: string, mode: 'deactivate' | 'delete' = 'deactivate') => fetchAPI<AcademicMajor | { id: string; deleted: boolean }>(`/api/admin/majors/${majorId}?mode=${mode}`, { method: 'DELETE' }),
+  importFile: (body: FormData, onProgress?: (percent: number) => void) => uploadAPI<AcademicMajorImportResult>('/api/admin/majors/import', body, onProgress),
+  audit: (filters?: { majorId?: string; action?: AcademicMajorAuditLog['action'] }) => fetchAPI<AcademicMajorAuditLog[]>(`/api/admin/majors/audit${queryString(filters)}`),
 };
 
 export const buildingsAPI = {

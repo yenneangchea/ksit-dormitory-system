@@ -6,6 +6,7 @@ const applicationLifecycle = require('../controllers/application-lifecycle.contr
 
 const router = express.Router();
 const applicationUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024, files: 1 } });
+const majorImportUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 router.get('/public/announcements', domain.getPublicAnnouncements);
 router.get('/public/majors', domain.getPublicMajors);
@@ -26,6 +27,8 @@ router.get('/admin/majors', requireRole('admin'), domain.listAdminMajors);
 router.post('/admin/majors', requireRole('admin'), domain.createMajor);
 router.put('/admin/majors/:majorId', requireRole('admin'), domain.updateMajor);
 router.delete('/admin/majors/:majorId', requireRole('admin'), domain.deleteOrToggleMajor);
+router.post('/admin/majors/import', requireRole('admin'), majorImportUpload.single('file'), domain.bulkImportMajors);
+router.get('/admin/majors/audit', requireRole('admin'), domain.listMajorAuditLogs);
 
 router.get('/announcements', requireRole('admin'), domain.getAnnouncementManagement);
 router.put('/announcements/settings', requireRole('admin'), domain.updateAnnouncementSettings);

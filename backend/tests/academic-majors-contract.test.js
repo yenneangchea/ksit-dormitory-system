@@ -43,12 +43,36 @@ test('dynamic major selections are validated before profile persistence and wate
 
 test('Admin, Student, and Telegram registration share the catalog-driven cascading selector', () => {
   const admin = read('frontend/src/app/dashboard/admin/page.tsx');
+  const adminMajors = read('frontend/src/components/academic-majors-manager.tsx');
   const student = read('frontend/src/components/student-application-wizard.tsx');
   const login = read('frontend/src/app/login/page.tsx');
   const selector = read('frontend/src/components/academic-program-fields.tsx');
-  assert.match(admin, /Academic Programs & Majors/);
+  assert.match(admin, /AcademicMajorsManager/);
   assert.match(admin, /majorsAPI\.listAdmin/);
+  assert.match(adminMajors, /Academic Programs & Majors/);
   assert.match(student, /AcademicProgramFields/);
   assert.match(login, /academic_major_id/);
   assert.match(selector, /majorsAPI\.public/);
+});
+
+test('bulk import and audit history are additive, validated, and Admin-only', () => {
+  const migration = read('supabase/migrations/20260817_academic_major_audit_log.sql');
+  const routes = read('backend/routes/domain.routes.js');
+  const domain = read('backend/controllers/domain.controller.js');
+  const deployedDomain = read('frontend/server/controllers/domain.controller.js');
+  const deployedRoutes = read('frontend/server/routes/domain.routes.js');
+  const admin = read('frontend/src/components/academic-majors-manager.tsx');
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.academic_major_audit_logs/);
+  assert.match(migration, /ALTER TABLE public\.academic_major_audit_logs ENABLE ROW LEVEL SECURITY/);
+  assert.match(routes, /router\.post\('\/admin\/majors\/import', requireRole\('admin'\), majorImportUpload\.single\('file'\), domain\.bulkImportMajors\)/);
+  assert.match(routes, /router\.get\('\/admin\/majors\/audit', requireRole\('admin'\), domain\.listMajorAuditLogs\)/);
+  assert.match(domain, /parseMajorImportFile/);
+  assert.match(domain, /recordMajorAudit/);
+  assert.match(domain, /academic_major_audit_logs/);
+  assert.match(domain, /req\.query\.search/);
+  assert.match(deployedDomain, /parseMajorImportFile/);
+  assert.match(deployedRoutes, /router\.post\('\/admin\/majors\/import'/);
+  assert.match(admin, /Search majors/);
+  assert.match(admin, /Choose CSV \/ Excel/);
+  assert.match(admin, /Academic-major change history/);
 });
