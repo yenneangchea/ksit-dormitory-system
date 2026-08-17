@@ -68,6 +68,16 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(student, /activeTab === 'maintenance' && <Maintenance/);
 });
 
+test('Admin System Settings does not duplicate the dedicated Academic Programs & Majors manager', () => {
+  const admin = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'admin', 'page.tsx'), 'utf8');
+  const settingsPanel = admin.slice(admin.indexOf('function SystemSettingsPanel'), admin.indexOf('function Kpi'));
+
+  assert.match(admin, /activeTab === 'academics' && <AcademicAnalyticsPanel role="admin"/);
+  assert.match(admin, /Academic Programs & Majors management is available only from the dedicated Academic & Majors workspace/);
+  assert.doesNotMatch(settingsPanel, /<AcademicMajorsManager/);
+  assert.doesNotMatch(admin, /<SystemSettingsPanel settings=\{announcementManagement\.settings\.system_settings\} majors=/);
+});
+
 test('mobile portal controls preserve accessible touch targets without introducing fixed-width overflow', () => {
   const shell = fs.readFileSync(path.join(frontend, 'components', 'portal-shell.tsx'), 'utf8');
   assert.match(shell, /size-11 items-center justify-center rounded-lg text-\[#31513d\]/);
