@@ -234,8 +234,9 @@ const exportMonthlyBillingToDrive = async (month) => {
     .from('utility_bills')
     .select(`
       id, billing_month, prev_electric_reading, curr_electric_reading,
-      prev_water_reading, curr_water_reading, total_electric_cost_khr,
-      total_water_cost_khr, trash_fee_khr, total_amount_khr,
+      electricity_used_kwh, free_electricity_kwh, subsidized_electricity_kwh, chargeable_electricity_kwh, total_electric_cost_khr,
+      prev_water_reading, curr_water_reading, water_used_m3, free_water_m3, subsidized_water_m3, chargeable_water_m3, total_water_cost_khr,
+      trash_fee_khr, total_amount_khr,
       active_students_count, split_amount_per_student_khr,
       room:rooms!utility_bills_room_id_fkey(room_number, building:buildings!rooms_building_id_fkey(code))
     `)
@@ -245,16 +246,22 @@ const exportMonthlyBillingToDrive = async (month) => {
   if (error) throw createHttpError(`Could not generate the billing report: ${error.message}`, 500);
 
   const buffer = toCsvBuffer(
-    ['Month', 'Building', 'Room', 'Electric Previous', 'Electric Current', 'Water Previous', 'Water Current', 'Electric Cost (KHR)', 'Water Cost (KHR)', 'Trash Fee (KHR)', 'Total (KHR)', 'Residents', 'Per Student (KHR)'],
+    ['Month', 'Building', 'Room', 'Electric Previous', 'Electric Current', 'Electric Used (kWh)', 'Free Electric (kWh)', 'Chargeable Electric (kWh)', 'Electric Cost (KHR)', 'Water Previous', 'Water Current', 'Water Used (m³)', 'Free Water (m³)', 'Chargeable Water (m³)', 'Water Cost (KHR)', 'Trash Fee (KHR)', 'Total (KHR)', 'Residents', 'Per Student (KHR)'],
     data.map((bill) => [
       bill.billing_month,
       bill.room?.building?.code,
       bill.room?.room_number,
       bill.prev_electric_reading,
       bill.curr_electric_reading,
+      bill.electricity_used_kwh,
+      bill.subsidized_electricity_kwh,
+      bill.chargeable_electricity_kwh,
+      bill.total_electric_cost_khr,
       bill.prev_water_reading,
       bill.curr_water_reading,
-      bill.total_electric_cost_khr,
+      bill.water_used_m3,
+      bill.subsidized_water_m3,
+      bill.chargeable_water_m3,
       bill.total_water_cost_khr,
       bill.trash_fee_khr,
       bill.total_amount_khr,

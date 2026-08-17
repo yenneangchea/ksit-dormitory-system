@@ -214,15 +214,24 @@ export interface UtilityBill {
   prev_electric_reading: number;
   curr_electric_reading: number;
   electric_rate_khr: number;
+  electricity_used_kwh: number;
+  free_electricity_kwh: number;
+  subsidized_electricity_kwh: number;
+  chargeable_electricity_kwh: number;
   prev_water_reading: number;
   curr_water_reading: number;
   water_rate_khr: number;
+  water_used_m3: number;
+  free_water_m3: number;
+  subsidized_water_m3: number;
+  chargeable_water_m3: number;
   trash_fee_khr: number;
   total_electric_cost_khr: number;
   total_water_cost_khr: number;
   total_amount_khr: number;
   active_students_count: number;
   split_amount_per_student_khr: number;
+  subsidy_applied: boolean;
   created_by?: string;
   drive_report_url?: string;
   created_at: string;
@@ -243,6 +252,7 @@ export interface StudentBill {
   transaction_ref?: string;
   paid_at?: string;
   created_at: string;
+  utility_bills?: UtilityBill | null;
 }
 
 export interface Attendance {

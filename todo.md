@@ -179,3 +179,8 @@
 - [x] Build the Academic & Majors dashboard tab with filters, statistics, exports, and Admin-only catalog CRUD controls.
 - [x] Add regression tests, production build checks, deployment verification, and GitHub handoff for the multi-role academic analytics release.
 - [x] Remove the duplicate Academic Programs & Majors management section from Admin System Settings while preserving the dedicated Academic & Majors workspace.
+- [x] Add configurable free electricity and water quotas to Admin System Settings with safe defaults.
+- [x] Apply quota-aware electricity and water subsidies before room-level utility costs are split among active residents.
+- [x] Persist transparent utility usage, subsidy, chargeable-usage, and room-split details for invoices and KHQR amounts.
+- [x] Display the complete subsidy-aware utility breakdown in Manager and Student billing workspaces.
+- [ ] Add regression coverage, validate the production build, commit, push, deploy, and verify the Smart Utility Subsidies release.

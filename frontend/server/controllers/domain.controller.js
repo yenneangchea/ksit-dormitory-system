@@ -99,6 +99,46 @@ function buildKhqrReference({ billId, studentId, amountKhr, billingMonth, roomId
   return `KSIT-KHQR|${process.env.KHQR_MERCHANT_ID || 'DEMO'}|${amountKhr.toFixed(0)}|${billingMonth}|${checksum}`;
 }
 
+function calculateUtilitySubsidy({ electricity_used_kwh, water_used_m3, electricity_rate_khr, water_rate_khr, trash_fee_khr, free_electricity_kwh, free_water_m3, active_students_count }) {
+  const electricityUsed = asNumber(electricity_used_kwh, 'Electricity usage');
+  const waterUsed = asNumber(water_used_m3, 'Water usage');
+  const electricRate = asNumber(electricity_rate_khr, 'Electricity rate');
+  const waterRate = asNumber(water_rate_khr, 'Water rate');
+  const trashFee = asNumber(trash_fee_khr, 'Trash fee');
+  const electricQuota = Math.max(0, asNumber(free_electricity_kwh, 'Free electricity quota'));
+  const waterQuota = Math.max(0, asNumber(free_water_m3, 'Free water quota'));
+  const activeStudents = asNumber(active_students_count, 'Active residents count');
+
+  if (electricityUsed < 0 || waterUsed < 0) throw fail('Current meter readings cannot be lower than previous readings.');
+  if (electricRate < 0 || waterRate < 0 || trashFee < 0) throw fail('Utility rates and fees cannot be negative.');
+  if (!Number.isInteger(activeStudents) || activeStudents < 1) throw fail('A utility bill cannot be generated until the room has active residents.', 409);
+
+  const subsidizedElectricity = Math.min(electricityUsed, electricQuota);
+  const subsidizedWater = Math.min(waterUsed, waterQuota);
+  const chargeableElectricity = Math.max(0, electricityUsed - electricQuota);
+  const chargeableWater = Math.max(0, waterUsed - waterQuota);
+  const totalElectricCost = chargeableElectricity * electricRate;
+  const totalWaterCost = chargeableWater * waterRate;
+  const totalAmount = totalElectricCost + totalWaterCost + trashFee;
+
+  return {
+    electricity_used_kwh: electricityUsed,
+    free_electricity_kwh: electricQuota,
+    subsidized_electricity_kwh: subsidizedElectricity,
+    chargeable_electricity_kwh: chargeableElectricity,
+    water_used_m3: waterUsed,
+    free_water_m3: waterQuota,
+    subsidized_water_m3: subsidizedWater,
+    chargeable_water_m3: chargeableWater,
+    total_electric_cost_khr: totalElectricCost,
+    total_water_cost_khr: totalWaterCost,
+    trash_fee_khr: trashFee,
+    total_amount_khr: totalAmount,
+    active_students_count: activeStudents,
+    split_amount_per_student_khr: Math.ceil(totalAmount / activeStudents),
+  };
+}
+
 async function getRoomByMagicQr(magicQrCode) {
   const supabase = getSupabase();
   const { data: room, error } = await supabase
@@ -306,6 +346,8 @@ async function getConfiguredUtilityRates(supabase) {
     electricity_khr_per_kwh: Number.isFinite(Number(rates.electricity_khr_per_kwh)) ? Number(rates.electricity_khr_per_kwh) : 800,
     water_khr_per_m3: Number.isFinite(Number(rates.water_khr_per_m3)) ? Number(rates.water_khr_per_m3) : 1500,
     trash_khr_per_room: Number.isFinite(Number(rates.trash_khr_per_room)) ? Number(rates.trash_khr_per_room) : 10000,
+    free_electricity_kwh: Number.isFinite(Number(rates.free_electricity_kwh)) && Number(rates.free_electricity_kwh) >= 0 ? Number(rates.free_electricity_kwh) : 50,
+    free_water_m3: Number.isFinite(Number(rates.free_water_m3)) && Number(rates.free_water_m3) >= 0 ? Number(rates.free_water_m3) : 5,
   };
 }
 
@@ -809,7 +851,7 @@ async function listUtilityBills(req, res, next) {
     const supabase = getSupabase();
     let query = supabase
       .from('utility_bills')
-      .select('id, room_id, billing_month, prev_electric_reading, curr_electric_reading, electric_rate_khr, prev_water_reading, curr_water_reading, water_rate_khr, trash_fee_khr, total_electric_cost_khr, total_water_cost_khr, total_amount_khr, active_students_count, split_amount_per_student_khr, created_at, rooms(room_number, buildings(code, name))')
+      .select('id, room_id, billing_month, prev_electric_reading, curr_electric_reading, electric_rate_khr, electricity_used_kwh, free_electricity_kwh, subsidized_electricity_kwh, chargeable_electricity_kwh, prev_water_reading, curr_water_reading, water_rate_khr, water_used_m3, free_water_m3, subsidized_water_m3, chargeable_water_m3, trash_fee_khr, total_electric_cost_khr, total_water_cost_khr, total_amount_khr, active_students_count, split_amount_per_student_khr, subsidy_applied, created_at, rooms(room_number, buildings(code, name))')
       .order('billing_month', { ascending: false });
     if (req.query.roomId) query = query.eq('room_id', req.query.roomId);
     if (req.query.month) query = query.eq('billing_month', req.query.month);
@@ -832,7 +874,6 @@ async function createUtilityBill(req, res, next) {
 
     const electricityUsed = asNumber(curr_electric_reading, 'Current electricity reading') - asNumber(prev_electric_reading, 'Previous electricity reading');
     const waterUsed = asNumber(curr_water_reading, 'Current water reading') - asNumber(prev_water_reading, 'Previous water reading');
-    if (electricityUsed < 0 || waterUsed < 0) throw fail('Current meter readings cannot be lower than previous readings.');
 
     const activeAssignments = await getActiveAssignments(room_id);
     if (activeAssignments.length === 0) throw fail('A utility bill cannot be generated until the room has active residents.', 409);
@@ -840,8 +881,17 @@ async function createUtilityBill(req, res, next) {
     const electricRate = asNumber(electric_rate_khr ?? configuredRates.electricity_khr_per_kwh, 'Electricity rate');
     const waterRate = asNumber(water_rate_khr ?? configuredRates.water_khr_per_m3, 'Water rate');
     const trashFee = asNumber(trash_fee_khr ?? configuredRates.trash_khr_per_room, 'Trash fee');
-    const totalAmount = electricityUsed * electricRate + waterUsed * waterRate + trashFee;
-    const perStudentAmount = Number((totalAmount / activeAssignments.length).toFixed(2));
+    const calculations = calculateUtilitySubsidy({
+      electricity_used_kwh: electricityUsed,
+      water_used_m3: waterUsed,
+      electricity_rate_khr: electricRate,
+      water_rate_khr: waterRate,
+      trash_fee_khr: trashFee,
+      free_electricity_kwh: configuredRates.free_electricity_kwh,
+      free_water_m3: configuredRates.free_water_m3,
+      active_students_count: activeAssignments.length,
+    });
+    const perStudentAmount = calculations.split_amount_per_student_khr;
 
     const billPayload = {
       room_id,
@@ -852,9 +902,9 @@ async function createUtilityBill(req, res, next) {
       prev_water_reading: asNumber(prev_water_reading, 'Previous water reading'),
       curr_water_reading: asNumber(curr_water_reading, 'Current water reading'),
       water_rate_khr: waterRate,
-      trash_fee_khr: trashFee,
-      active_students_count: activeAssignments.length,
+      ...calculations,
       split_amount_per_student_khr: perStudentAmount,
+      subsidy_applied: true,
       created_by: req.user.sub,
     };
 
@@ -887,7 +937,7 @@ async function createUtilityBill(req, res, next) {
     const { data: createdStudentBills, error: studentBillError } = await supabase.from('student_bills').insert(studentBills).select();
     if (studentBillError) throw studentBillError;
 
-    res.status(201).json(publicPayload({ utility_bill: utilityBill, calculations: { electricity_used: electricityUsed, water_used: waterUsed, total_amount_khr: totalAmount, split_amount_per_student_khr: perStudentAmount, active_students_count: activeAssignments.length }, student_bills: createdStudentBills }, 'Utility bill split and KHQR payment references generated.'));
+    res.status(201).json(publicPayload({ utility_bill: utilityBill, calculations, student_bills: createdStudentBills }, 'Utility bill split and KHQR payment references generated.'));
   } catch (error) {
     next(error);
   }
@@ -916,7 +966,7 @@ async function listStudentBills(req, res, next) {
     const supabase = getSupabase();
     let query = supabase
       .from('student_bills')
-      .select('id, utility_bill_id, student_id, room_id, billing_month, amount_khr, amount_usd, khqr_string, khqr_md5, bill_status, payment_method, transaction_ref, paid_at, created_at, rooms(room_number, buildings(code, name))')
+      .select('id, utility_bill_id, student_id, room_id, billing_month, amount_khr, amount_usd, khqr_string, khqr_md5, bill_status, payment_method, transaction_ref, paid_at, created_at, rooms(room_number, buildings(code, name)), utility_bills(id, prev_electric_reading, curr_electric_reading, electric_rate_khr, electricity_used_kwh, free_electricity_kwh, subsidized_electricity_kwh, chargeable_electricity_kwh, prev_water_reading, curr_water_reading, water_rate_khr, water_used_m3, free_water_m3, subsidized_water_m3, chargeable_water_m3, trash_fee_khr, total_electric_cost_khr, total_water_cost_khr, total_amount_khr, active_students_count, split_amount_per_student_khr, subsidy_applied)')
       .order('created_at', { ascending: false });
     const userId = req.user.role === 'student' ? req.user.sub : req.query.studentId || null;
     if (userId) query = query.eq('student_id', userId);
@@ -1702,11 +1752,13 @@ async function updateAnnouncementSettings(req, res, next) {
       if (!system_settings || !Array.isArray(system_settings.academic_levels) || !system_settings.utility_rates || !system_settings.housing_fee) throw fail('Academic levels, utility rates, and housing fee settings are required.');
       rows.push({ setting_key: 'system_settings', setting_value: {
         academic_levels: system_settings.academic_levels.map((item) => String(item).trim()).filter(Boolean).slice(0, 16),
-        utility_rates: {
-          electricity_khr_per_kwh: Math.max(0, Number(system_settings.utility_rates.electricity_khr_per_kwh || 0)),
-          water_khr_per_m3: Math.max(0, Number(system_settings.utility_rates.water_khr_per_m3 || 0)),
-          trash_khr_per_room: Math.max(0, Number(system_settings.utility_rates.trash_khr_per_room || 0)),
-        },
+      utility_rates: {
+        electricity_khr_per_kwh: Math.max(0, Number(system_settings.utility_rates.electricity_khr_per_kwh || 0)),
+        water_khr_per_m3: Math.max(0, Number(system_settings.utility_rates.water_khr_per_m3 || 0)),
+        trash_khr_per_room: Math.max(0, Number(system_settings.utility_rates.trash_khr_per_room || 0)),
+        free_electricity_kwh: Math.max(0, Number(system_settings.utility_rates.free_electricity_kwh ?? 50)),
+        free_water_m3: Math.max(0, Number(system_settings.utility_rates.free_water_m3 ?? 5)),
+      },
         housing_fee: { annual_khr: Math.max(0, Number(system_settings.housing_fee.annual_khr || 0)) },
         telegram: { username: String(system_settings.telegram?.username || '@KSITDorm_bot').trim() || '@KSITDorm_bot', webhook_configured: Boolean(process.env.TELEGRAM_BOT_TOKEN) },
       }, updated_at: new Date().toISOString() });
@@ -1842,6 +1894,7 @@ async function dashboardAnalytics(req, res, next) {
 }
 
 module.exports = {
+  calculateUtilitySubsidy,
   listBuildings,
   createBuilding,
   updateBuilding,
