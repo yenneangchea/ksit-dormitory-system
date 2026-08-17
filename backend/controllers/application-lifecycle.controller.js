@@ -17,7 +17,7 @@ const APPLICATION_FIELDS = `
   users!room_applications_user_id_fkey(
     id, telegram_id, full_name_khmer, full_name_latin, gender, phone, email,
     academic_profiles(
-      id, user_id, student_id_card, major, academic_year, class_section, scholarship_type,
+      id, user_id, student_id_card, academic_level, academic_major_id, major, academic_year, class_section, scholarship_type,
       date_of_birth, place_of_birth, national_id_number, current_address,
       father_name, father_age, father_occupation, father_phone, father_address,
       mother_name, mother_age, mother_occupation, mother_phone, mother_address,
@@ -56,6 +56,24 @@ function cleanText(value, max = 500) {
 
 function cleanArray(value, limit = 12) {
   return Array.isArray(value) ? value.slice(0, limit).map((entry) => entry && typeof entry === 'object' ? entry : {}) : [];
+}
+
+async function validateConfiguredAcademicSelection(supabase, profile) {
+  const academicLevel = cleanText(profile.academic_level, 160);
+  const academicMajorId = cleanText(profile.academic_major_id, 64);
+  const academicYear = Number(profile.academic_year);
+  if (!academicLevel || !academicMajorId) throw fail('Select an academic level and configured major before generating the official PDF.');
+  const { data: major, error } = await supabase
+    .from('academic_majors')
+    .select('id, academic_level, name_khmer, available_year_levels, is_active')
+    .eq('id', academicMajorId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!major) throw fail('The selected academic major is no longer active. Choose an active major before continuing.', 409);
+  if (major.academic_level !== academicLevel) throw fail('The selected major does not belong to the chosen academic level.');
+  if (!(major.available_year_levels || []).includes(academicYear)) throw fail('The selected year level is not available for the chosen major.');
+  return { ...profile, academic_level: academicLevel, academic_major_id: major.id, major: major.name_khmer };
 }
 
 function safeFileName(name) {
@@ -153,6 +171,8 @@ function compactProfile(raw = {}, existing = {}) {
   };
   return {
     student_id_card: value('student_id_card', 50),
+    academic_level: value('academic_level', 160),
+    academic_major_id: value('academic_major_id', 64),
     major: value('major', 150),
     academic_year: number('academic_year'),
     class_section: value('class_section', 50) || null,
@@ -187,7 +207,7 @@ function compactProfile(raw = {}, existing = {}) {
 }
 
 function validateCompleteProfile(profile) {
-  const required = ['student_id_card', 'major', 'academic_year', 'date_of_birth', 'place_of_birth', 'current_address', 'father_name', 'mother_name', 'guarantor_name', 'guarantor_relation', 'guarantor_phone'];
+  const required = ['student_id_card', 'academic_level', 'academic_major_id', 'major', 'academic_year', 'date_of_birth', 'place_of_birth', 'current_address', 'father_name', 'mother_name', 'guarantor_name', 'guarantor_relation', 'guarantor_phone'];
   const missing = required.filter((key) => !profile[key]);
   if (missing.length) throw fail(`Complete the required biography fields before generating the official PDF: ${missing.join(', ')}.`);
   if (!Number.isInteger(profile.academic_year) || profile.academic_year < 1 || profile.academic_year > 4) throw fail('Academic year must be a number from 1 through 4.');
@@ -367,8 +387,9 @@ async function submitForm(req, res, next) {
     if (!['draft', 'form_completed', 'correction_needed', 'pending_signed_doc'].includes(application.status)) throw fail('This application cannot be submitted at its current stage.', 409);
     if (!application.student_photo_url || !application.national_id_doc_url || !application.family_book_doc_url) throw fail('Upload the 4×6 photo, national ID, and family book before generating the PDF.', 409);
     const existingProfile = single(application.users?.academic_profiles) || {};
-    const profile = compactProfile(req.body?.profile, existingProfile);
-    validateCompleteProfile(profile);
+    const rawProfile = compactProfile(req.body?.profile, existingProfile);
+    validateCompleteProfile(rawProfile);
+    const profile = await validateConfiguredAcademicSelection(supabase, rawProfile);
     const { error: profileError } = await supabase.from('academic_profiles').upsert({ user_id: req.user.sub, ...profile }, { onConflict: 'user_id' });
     if (profileError) throw profileError;
     const formData = { ...(application.form_data_json || {}), ...(req.body?.form_data || {}), submitted_at: new Date().toISOString() };

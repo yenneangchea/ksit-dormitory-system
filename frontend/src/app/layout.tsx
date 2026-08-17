@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Geist_Mono, Kantumruy_Pro, Koulen, Moul } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 
 const kantumruyPro = Kantumruy_Pro({
@@ -38,7 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="km" className={`${kantumruyPro.variable} ${koulen.variable} ${moul.variable} ${geistMono.variable}`}>
       <body>
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <script src="https://telegram.org/js/telegram-web-app.js" defer />
         {children}
       </body>
     </html>

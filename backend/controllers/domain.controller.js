@@ -75,6 +75,7 @@ const USER_FIELDS = 'id, telegram_id, role, full_name_khmer, full_name_latin, ge
 const VALID_ROLES = ['admin', 'manager', 'teacher', 'student'];
 const VALID_GENDERS = ['male', 'female'];
 const RESET_REQUEST_FIELDS = 'id, user_id, email, reason, status, created_at, resolved_at, resolved_by';
+const ACADEMIC_MAJOR_FIELDS = 'id, academic_level, name_khmer, name_english, available_year_levels, is_active, created_at, updated_at';
 
 async function ensureAdminContinuity(supabase, targetUser, requestedRole) {
   if (!targetUser || targetUser.role !== 'admin' || requestedRole === 'admin') return;
@@ -132,6 +133,80 @@ function applicationWithProfile(application, userOverride) {
   return { ...application, users: user, academic_profiles: profileFromUser(user) };
 }
 
+function normalizeAcademicYear(value, label = 'Academic year') {
+  const year = Number(value);
+  if (!Number.isInteger(year) || year < 1 || year > 4) throw fail(`${label} must be a whole number from 1 through 4.`);
+  return year;
+}
+
+function normalizeYearLevels(value) {
+  const raw = Array.isArray(value) ? value : [];
+  const years = [...new Set(raw.map((year) => normalizeAcademicYear(year, 'Available year level')))].sort((a, b) => a - b);
+  if (years.length === 0) throw fail('Select at least one available year level.');
+  return years;
+}
+
+function normalizeBoolean(value, label = 'Status') {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw fail(`${label} must be true or false.`);
+}
+
+function normalizeMajorInput(input, { partial = false } = {}) {
+  const patch = {};
+  if (!partial || input.academic_level !== undefined) {
+    const academicLevel = String(input.academic_level || '').trim();
+    if (!academicLevel) throw fail('Academic level is required.');
+    patch.academic_level = academicLevel.slice(0, 160);
+  }
+  if (!partial || input.name_khmer !== undefined) {
+    const nameKhmer = String(input.name_khmer || '').trim();
+    if (!nameKhmer) throw fail('Major name in Khmer is required.');
+    patch.name_khmer = nameKhmer.slice(0, 255);
+  }
+  if (!partial || input.name_english !== undefined) {
+    const nameEnglish = String(input.name_english || '').trim();
+    if (!nameEnglish) throw fail('Major name in English is required.');
+    patch.name_english = nameEnglish.slice(0, 255);
+  }
+  if (!partial || input.available_year_levels !== undefined) patch.available_year_levels = normalizeYearLevels(input.available_year_levels);
+  if (!partial || input.is_active !== undefined) patch.is_active = normalizeBoolean(input.is_active, 'Major active status');
+  return patch;
+}
+
+async function resolveConfiguredMajor(supabase, { academic_level, academic_major_id, academic_year }, { activeOnly = true } = {}) {
+  const level = String(academic_level || '').trim();
+  const majorId = String(academic_major_id || '').trim();
+  const year = normalizeAcademicYear(academic_year);
+  if (!level || !majorId) throw fail('Academic level and major selection are required.');
+  let query = supabase.from('academic_majors').select(ACADEMIC_MAJOR_FIELDS).eq('id', majorId);
+  if (activeOnly) query = query.eq('is_active', true);
+  const { data: major, error } = await query.maybeSingle();
+  if (error) throw error;
+  if (!major) throw fail('The selected academic major is no longer available.', 409);
+  if (major.academic_level !== level) throw fail('The selected major does not belong to the selected academic level.');
+  if (!(major.available_year_levels || []).includes(year)) throw fail('The selected year level is not available for this academic major.');
+  return { major, academic_level: level, academic_major_id: major.id, academic_year: year };
+}
+
+async function upsertAcademicSelection(supabase, userId, selection) {
+  const resolved = await resolveConfiguredMajor(supabase, selection);
+  const { data, error } = await supabase
+    .from('academic_profiles')
+    .upsert({
+      user_id: userId,
+      academic_level: resolved.academic_level,
+      academic_major_id: resolved.academic_major_id,
+      major: resolved.major.name_khmer,
+      academic_year: resolved.academic_year,
+    }, { onConflict: 'user_id' })
+    .select('id, user_id, academic_level, academic_major_id, major, academic_year')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 async function getConfiguredUtilityRates(supabase) {
   const { data, error } = await supabase
     .from('site_settings')
@@ -152,7 +227,7 @@ async function listBuildings(req, res, next) {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('buildings')
-      .select('id, code, name, gender_restriction, total_floors, description, created_at, rooms(id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, magic_qr_code)')
+      .select('id, code, name, gender_restriction, total_floors, description, created_at, rooms(id, room_number, floor_number, capacity, occupied_count, gender, assigned_academic_level, assigned_academic_major_id, assigned_major, assigned_year, is_locked, status, magic_qr_code)')
       .order('code');
     if (error) throw error;
     res.json(publicPayload(data || []));
@@ -226,7 +301,7 @@ async function listRooms(req, res, next) {
     const supabase = getSupabase();
     let query = supabase
       .from('rooms')
-      .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, magic_qr_code, status, created_at, buildings(code, name)')
+      .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_academic_level, assigned_academic_major_id, assigned_major, assigned_year, is_locked, magic_qr_code, status, created_at, buildings(code, name)')
       .order('room_number');
     if (req.query.buildingId) query = query.eq('building_id', req.query.buildingId);
     if (req.query.status) query = query.eq('status', req.query.status);
@@ -270,7 +345,7 @@ async function createRoom(req, res, next) {
 
 async function updateRoom(req, res, next) {
   try {
-    const { building_id, room_number, floor_number, capacity, gender, assigned_major, assigned_year, status, regenerate_magic_qr } = req.body;
+    const { building_id, room_number, floor_number, capacity, gender, assigned_major, assigned_year, status, is_locked, regenerate_magic_qr } = req.body;
     const patch = {};
     if (building_id !== undefined) patch.building_id = building_id;
     if (room_number !== undefined) patch.room_number = String(room_number).trim();
@@ -290,6 +365,7 @@ async function updateRoom(req, res, next) {
       if (!['available', 'full', 'maintenance'].includes(status)) throw fail('Invalid room status.');
       patch.status = status;
     }
+    if (is_locked !== undefined) patch.is_locked = normalizeBoolean(is_locked, 'Room lock status');
     if (regenerate_magic_qr) patch.magic_qr_code = `KSIT:${crypto.randomUUID()}`;
     if (Object.keys(patch).length === 0) throw fail('Provide at least one room value to update.');
 
@@ -391,7 +467,7 @@ async function autoAssignApplication(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, gender, academic_profiles(major, academic_year))')
+      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, gender, academic_profiles(academic_level, academic_major_id, major, academic_year))')
       .eq('id', req.params.applicationId)
       .single();
     if (applicationError || !application) throw fail('Application not found.', 404);
@@ -412,16 +488,23 @@ async function autoAssignApplication(req, res, next) {
 
     const { data: rooms, error: roomsError } = await supabase
       .from('rooms')
-      .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name)')
+      .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_academic_level, assigned_academic_major_id, assigned_major, assigned_year, is_locked, status, buildings(code, name)')
       .eq('gender', student.gender)
-      .neq('status', 'maintenance');
+      .neq('status', 'maintenance')
+      .eq('is_locked', false);
     if (roomsError) throw roomsError;
 
     const candidates = (rooms || [])
       .filter((room) => room.occupied_count < room.capacity)
       .sort((a, b) => {
-        const aCohort = a.assigned_major === profile.major && a.assigned_year === profile.academic_year ? 0 : a.assigned_major ? 2 : 1;
-        const bCohort = b.assigned_major === profile.major && b.assigned_year === profile.academic_year ? 0 : b.assigned_major ? 2 : 1;
+        const cohortRank = (room) => {
+          const strictMatch = room.assigned_academic_level === profile.academic_level && room.assigned_academic_major_id === profile.academic_major_id && room.assigned_year === profile.academic_year;
+          const legacyMatch = !room.assigned_academic_level && !room.assigned_academic_major_id && room.assigned_major === profile.major && room.assigned_year === profile.academic_year;
+          if (strictMatch || legacyMatch) return 0;
+          return room.assigned_academic_level || room.assigned_academic_major_id || room.assigned_major ? 2 : 1;
+        };
+        const aCohort = cohortRank(a);
+        const bCohort = cohortRank(b);
         if (aCohort !== bCohort) return aCohort - bCohort;
         // Waterfall rule: fill a compatible partially occupied room before opening a new room.
         if (a.occupied_count !== b.occupied_count) return b.occupied_count - a.occupied_count;
@@ -464,7 +547,12 @@ async function autoAssignApplication(req, res, next) {
     const roomPatch = {
       occupied_count: nextOccupiedCount,
       status: nextOccupiedCount >= selectedRoom.capacity ? 'full' : 'available',
-      ...(selectedRoom.assigned_major ? {} : { assigned_major: profile.major, assigned_year: profile.academic_year }),
+      ...(selectedRoom.assigned_major || selectedRoom.assigned_academic_major_id ? {} : {
+        assigned_academic_level: profile.academic_level,
+        assigned_academic_major_id: profile.academic_major_id,
+        assigned_major: profile.major,
+        assigned_year: profile.academic_year,
+      }),
     };
     const { error: roomUpdateError } = await supabase.from('rooms').update(roomPatch).eq('id', selectedRoom.id);
     if (roomUpdateError) throw roomUpdateError;
@@ -472,7 +560,7 @@ async function autoAssignApplication(req, res, next) {
     const { error: applicationUpdateError } = await supabase.from('room_applications').update({ status: 'assigned' }).eq('id', application.id);
     if (applicationUpdateError) throw applicationUpdateError;
 
-    res.json(publicPayload({ assignment, room: { ...selectedRoom, ...roomPatch }, student, strategy: 'gender → major/year cohort → fill existing room → building/floor/room order' }, 'Student auto-assigned using waterfall room allocation.'));
+    res.json(publicPayload({ assignment, room: { ...selectedRoom, ...roomPatch }, student, strategy: 'gender → academic level → configured major → year level → fill existing room → building/floor/room order' }, 'Student auto-assigned using waterfall room allocation.'));
   } catch (error) {
     next(error);
   }
@@ -484,11 +572,11 @@ async function getAssignmentBoard(req, res, next) {
     const [{ data: rooms, error: roomsError }, { data: applications, error: applicationsError }] = await Promise.all([
       supabase
         .from('rooms')
-        .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name), room_assignments(id, application_id, student_id, bed_number, academic_year, is_active, assigned_at, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year)), room_applications(id, status, academic_year_applied))')
+        .select('id, building_id, room_number, floor_number, capacity, occupied_count, gender, assigned_academic_level, assigned_academic_major_id, assigned_major, assigned_year, is_locked, status, buildings(code, name), room_assignments(id, application_id, student_id, bed_number, academic_year, is_active, assigned_at, users(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(academic_level, academic_major_id, major, academic_year)), room_applications(id, status, academic_year_applied))')
         .order('room_number'),
       supabase
         .from('room_applications')
-        .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
+        .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(academic_level, academic_major_id, major, academic_year))')
         .eq('status', 'approved')
         .order('applied_at'),
     ]);
@@ -516,7 +604,7 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     const supabase = getSupabase();
     const { data: application, error: applicationError } = await supabase
       .from('room_applications')
-      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(major, academic_year))')
+      .select('id, user_id, academic_year_applied, status, users!room_applications_user_id_fkey(id, full_name_latin, full_name_khmer, email, gender, academic_profiles(academic_level, academic_major_id, major, academic_year))')
       .eq('id', applicationId)
       .single();
     if (applicationError || !application) throw fail('Room application not found.', 404);
@@ -529,7 +617,7 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     const [{ data: targetRoom, error: targetRoomError }, { data: sourceAssignment, error: sourceAssignmentError }] = await Promise.all([
       supabase
         .from('rooms')
-        .select('id, room_number, capacity, occupied_count, gender, assigned_major, assigned_year, status, buildings(code, name)')
+        .select('id, room_number, capacity, occupied_count, gender, assigned_academic_level, assigned_academic_major_id, assigned_major, assigned_year, is_locked, status, buildings(code, name)')
         .eq('id', targetRoomId)
         .single(),
       supabase
@@ -543,6 +631,7 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     if (sourceAssignmentError) throw sourceAssignmentError;
     if (sourceAssignment?.room_id === targetRoom.id) throw fail('This student is already assigned to the selected room.', 409);
     if (targetRoom.status === 'maintenance') throw fail('Students cannot be placed in a room under maintenance.', 409);
+    if (targetRoom.is_locked) throw fail('Room is locked and cannot receive additional assignments.', 400);
     if (targetRoom.gender !== student.gender) throw fail('The selected room is not compatible with the student gender.', 409);
 
     const { data: targetAssignments, error: targetAssignmentsError } = await supabase
@@ -561,7 +650,12 @@ async function manuallyMoveRoomAssignment(req, res, next) {
     const targetPatch = {
       occupied_count: nextTargetCount,
       status: nextTargetCount >= targetRoom.capacity ? 'full' : 'available',
-      ...(targetRoom.assigned_major ? {} : { assigned_major: profile.major, assigned_year: profile.academic_year }),
+      ...(targetRoom.assigned_major || targetRoom.assigned_academic_major_id ? {} : {
+        assigned_academic_level: profile.academic_level,
+        assigned_academic_major_id: profile.academic_major_id,
+        assigned_major: profile.major,
+        assigned_year: profile.academic_year,
+      }),
     };
     const { data: updatedTargetRoom, error: targetUpdateError } = await supabase
       .from('rooms')
@@ -947,12 +1041,15 @@ async function listUsers(req, res, next) {
 
 async function createUser(req, res, next) {
   try {
-    const { full_name_khmer, full_name_latin, email, phone, gender, role = 'student', password } = req.body;
+    const { full_name_khmer, full_name_latin, email, phone, gender, role = 'student', password, academic_level, academic_major_id, academic_year } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
     if (!String(full_name_khmer || '').trim() || !String(full_name_latin || '').trim() || !normalizedEmail || !String(phone || '').trim() || !VALID_GENDERS.includes(gender) || !VALID_ROLES.includes(role) || typeof password !== 'string' || password.length < 8) {
       throw fail('Khmer name, Latin name, email, phone, gender, role, and a temporary password of at least 8 characters are required.');
     }
     const supabase = getSupabase();
+    const hasAcademicSelection = academic_level !== undefined || academic_major_id !== undefined || academic_year !== undefined;
+    if (role === 'student' && !hasAcademicSelection) throw fail('Student accounts require an academic level, major, and year level.');
+    const resolvedSelection = hasAcademicSelection ? await resolveConfiguredMajor(supabase, { academic_level, academic_major_id, academic_year }) : null;
     const { data, error } = await supabase.from('users').insert({
       full_name_khmer: String(full_name_khmer).trim(),
       full_name_latin: String(full_name_latin).trim(),
@@ -963,6 +1060,16 @@ async function createUser(req, res, next) {
       password_hash: await bcrypt.hash(password, 12),
     }).select(USER_FIELDS).single();
     if (error) throw error;
+    if (resolvedSelection) {
+      const { error: profileError } = await supabase.from('academic_profiles').upsert({
+        user_id: data.id,
+        academic_level: resolvedSelection.academic_level,
+        academic_major_id: resolvedSelection.academic_major_id,
+        major: resolvedSelection.major.name_khmer,
+        academic_year: resolvedSelection.academic_year,
+      }, { onConflict: 'user_id' });
+      if (profileError) throw profileError;
+    }
     res.status(201).json(publicPayload(data, 'User account created.'));
   } catch (error) {
     next(error);
@@ -971,7 +1078,7 @@ async function createUser(req, res, next) {
 
 async function updateUser(req, res, next) {
   try {
-    const { full_name_khmer, full_name_latin, email, phone, gender, role, password } = req.body;
+    const { full_name_khmer, full_name_latin, email, phone, gender, role, password, academic_level, academic_major_id, academic_year } = req.body;
     const supabase = getSupabase();
     const { data: targetUser, error: targetError } = await supabase.from('users').select('id, role').eq('id', req.params.userId).maybeSingle();
     if (targetError) throw targetError;
@@ -993,6 +1100,8 @@ async function updateUser(req, res, next) {
     }
     const { data, error } = await supabase.from('users').update(patch).eq('id', targetUser.id).select(USER_FIELDS).single();
     if (error) throw error;
+    const hasAcademicSelection = academic_level !== undefined || academic_major_id !== undefined || academic_year !== undefined;
+    if (hasAcademicSelection) await upsertAcademicSelection(supabase, targetUser.id, { academic_level, academic_major_id, academic_year });
     res.json(publicPayload(data, 'User account updated.'));
   } catch (error) {
     next(error);
@@ -1109,6 +1218,115 @@ async function resolvePasswordResetRequest(req, res, next) {
       .single();
     if (error) throw error;
     res.json(publicPayload(data, action === 'resolve' ? 'Password reset request resolved.' : 'Password reset request rejected.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function listAdminMajors(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('academic_majors')
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .order('academic_level')
+      .order('name_khmer');
+    if (error) throw error;
+    res.json(publicPayload(data || []));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function createMajor(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const payload = normalizeMajorInput(req.body || {});
+    const { data, error } = await supabase
+      .from('academic_majors')
+      .insert({ ...payload, updated_at: new Date().toISOString() })
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .single();
+    if (error) throw error;
+    res.status(201).json(publicPayload(data, 'Academic major created.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateMajor(req, res, next) {
+  try {
+    const payload = normalizeMajorInput(req.body || {}, { partial: true });
+    if (Object.keys(payload).length === 0) throw fail('Provide at least one major field to update.');
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('academic_majors')
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq('id', req.params.majorId)
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw fail('Academic major not found.', 404);
+    res.json(publicPayload(data, 'Academic major updated.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteOrToggleMajor(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { data: major, error: majorError } = await supabase
+      .from('academic_majors')
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .eq('id', req.params.majorId)
+      .maybeSingle();
+    if (majorError) throw majorError;
+    if (!major) throw fail('Academic major not found.', 404);
+
+    const mode = String(req.query.mode || req.body?.mode || 'deactivate').trim().toLowerCase();
+    if (mode === 'delete') {
+      const { count, error: usageError } = await supabase
+        .from('academic_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('academic_major_id', major.id);
+      if (usageError) throw usageError;
+      if ((count || 0) > 0) throw fail('This major is referenced by student academic profiles and can only be deactivated.', 409);
+      const { error } = await supabase.from('academic_majors').delete().eq('id', major.id);
+      if (error) throw error;
+      return res.json(publicPayload({ id: major.id, deleted: true }, 'Academic major deleted.'));
+    }
+
+    const { data, error } = await supabase
+      .from('academic_majors')
+      .update({ is_active: !major.is_active, updated_at: new Date().toISOString() })
+      .eq('id', major.id)
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .single();
+    if (error) throw error;
+    res.json(publicPayload(data, `Academic major ${data.is_active ? 'activated' : 'deactivated'}.`));
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getPublicMajors(req, res, next) {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('academic_majors')
+      .select(ACADEMIC_MAJOR_FIELDS)
+      .eq('is_active', true)
+      .order('academic_level')
+      .order('name_khmer');
+    if (error) throw error;
+    const grouped = (data || []).reduce((groups, major) => {
+      const level = major.academic_level;
+      if (!groups[level]) groups[level] = [];
+      groups[level].push(major);
+      return groups;
+    }, {});
+    res.json(publicPayload({ majors: data || [], grouped_by_level: grouped }));
   } catch (error) {
     next(error);
   }
@@ -1352,6 +1570,11 @@ module.exports = {
   resetUserPassword,
   listPasswordResetRequests,
   resolvePasswordResetRequest,
+  listAdminMajors,
+  createMajor,
+  updateMajor,
+  deleteOrToggleMajor,
+  getPublicMajors,
   getPublicAnnouncements,
   getAnnouncementManagement,
   updateAnnouncementSettings,

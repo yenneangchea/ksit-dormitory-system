@@ -31,9 +31,11 @@ export interface User {
 export interface AcademicProfile {
   id: string;
   user_id: string;
-  student_id_card: string;
-  major: string;
-  academic_year: number;
+  student_id_card?: string;
+  academic_level?: string;
+  academic_major_id?: string | null;
+  major?: string;
+  academic_year?: number;
   class_section?: string;
   scholarship_type?: string;
   date_of_birth: string;
@@ -118,10 +120,28 @@ export interface Room {
   occupied_count: number;
   gender: Gender;
   assigned_major?: string;
+  assigned_academic_level?: string | null;
+  assigned_academic_major_id?: string | null;
   assigned_year?: number;
   magic_qr_code: string;
   status: RoomStatus;
   created_at: string;
+}
+
+export interface AcademicMajor {
+  id: string;
+  academic_level: string;
+  name_khmer: string;
+  name_english: string;
+  available_year_levels: number[];
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PublicMajorsCatalog {
+  majors: AcademicMajor[];
+  grouped_by_level: Record<string, AcademicMajor[]>;
 }
 
 export interface RoomApplication {

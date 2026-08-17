@@ -208,7 +208,7 @@ const createAssignment = async (req, res, next) => {
  *
  * Algorithm:
  * 1. Get all approved applications
- * 2. Group students by gender, major, and academic year
+ * 2. Group students by gender, academic level, configured major, and academic year
  * 3. Find available rooms matching student criteria
  * 4. Assign students to rooms prioritizing same major/year grouping
  * 5. Fill rooms to capacity before moving to next room
@@ -234,6 +234,8 @@ const autoAssignRooms = async (req, res, next) => {
           gender
         ),
         academic_profile:academic_profiles!academic_profiles_user_id_fkey(
+          academic_level,
+          academic_major_id,
           major,
           academic_year
         )
@@ -262,6 +264,7 @@ const autoAssignRooms = async (req, res, next) => {
       .from('rooms')
       .select('*')
       .neq('status', 'maintenance')
+      .eq('is_locked', false)
       .order('room_number');
 
     if (roomsError) {
@@ -323,12 +326,15 @@ const autoAssignRooms = async (req, res, next) => {
  * Helper function to process students of same gender
  */
 async function processGenderGroup(students, rooms, academic_year, assignments, failed) {
-  // Sort students by academic year and major
+  // Sort students by the configured waterfall cohort hierarchy.
   students.sort((a, b) => {
-    if (a.academic_profile.academic_year !== b.academic_profile.academic_year) {
-      return a.academic_profile.academic_year - b.academic_profile.academic_year;
+    const aProfile = Array.isArray(a.academic_profile) ? a.academic_profile[0] || {} : a.academic_profile || {};
+    const bProfile = Array.isArray(b.academic_profile) ? b.academic_profile[0] || {} : b.academic_profile || {};
+    if ((aProfile.academic_level || '') !== (bProfile.academic_level || '')) {
+      return String(aProfile.academic_level || '').localeCompare(String(bProfile.academic_level || ''));
     }
-    return a.academic_profile.major.localeCompare(b.academic_profile.major);
+    if ((aProfile.major || '') !== (bProfile.major || '')) return String(aProfile.major || '').localeCompare(String(bProfile.major || ''));
+    return Number(aProfile.academic_year || 0) - Number(bProfile.academic_year || 0);
   });
 
   // Track room occupancy
@@ -338,32 +344,37 @@ async function processGenderGroup(students, rooms, academic_year, assignments, f
   });
 
   for (const student of students) {
-    const major = student.academic_profile.major;
-    const year = student.academic_profile.academic_year;
+    const profile = Array.isArray(student.academic_profile) ? student.academic_profile[0] || {} : student.academic_profile || {};
+    const academicLevel = profile.academic_level;
+    const academicMajorId = profile.academic_major_id;
+    const major = profile.major;
+    const year = profile.academic_year;
 
     // Find best matching room (waterfall priority)
     let assignedRoom = null;
     let bedNumber = null;
 
-    // Priority 1: Room with same major AND year (not full)
+    // Priority 1: Same academic level, configured major, and year level.
     assignedRoom = rooms.find(room =>
-      room.assigned_major === major &&
+      room.assigned_academic_level === academicLevel &&
+      room.assigned_academic_major_id === academicMajorId &&
       room.assigned_year === year &&
       roomOccupancy[room.id] < room.capacity
     );
 
-    // Priority 2: Room with same major (not full)
+    // Priority 2: Same level and configured major.
     if (!assignedRoom) {
       assignedRoom = rooms.find(room =>
-        room.assigned_major === major &&
+        room.assigned_academic_level === academicLevel &&
+        room.assigned_academic_major_id === academicMajorId &&
         roomOccupancy[room.id] < room.capacity
       );
     }
 
-    // Priority 3: Room with same year (not full)
+    // Priority 3: Same academic level.
     if (!assignedRoom) {
       assignedRoom = rooms.find(room =>
-        room.assigned_year === year &&
+        room.assigned_academic_level === academicLevel &&
         roomOccupancy[room.id] < room.capacity
       );
     }
@@ -395,6 +406,8 @@ async function processGenderGroup(students, rooms, academic_year, assignments, f
       if (!assignedRoom.assigned_major) {
         assignedRoom.assigned_major = major;
       }
+      if (!assignedRoom.assigned_academic_level) assignedRoom.assigned_academic_level = academicLevel;
+      if (!assignedRoom.assigned_academic_major_id) assignedRoom.assigned_academic_major_id = academicMajorId;
       if (!assignedRoom.assigned_year) {
         assignedRoom.assigned_year = year;
       }

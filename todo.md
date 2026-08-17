@@ -153,3 +153,15 @@
 - [x] Update Admin and Manager room matrix UIs to include room lock toggles (🔒) and custom capacity editing.
 - [x] Seed exact 68-room layout (A: A101-A104; B: B101-B104; C: C101-C106; D: D101-D106; M_NEW: M101-M104, M201-M210, M301-M310; F_NEW: F101-F104, F201-F210, F301-F310) totaling 464 beds.
 - [x] Commit, push to GitHub, and deploy to Vercel.
+- [x] Test waterfall auto-allocation algorithm to ensure it correctly skips locked rooms (`is_locked = true`) and respects custom capacities.
+- [x] Verify student assignment flows and role-based access for the updated room matrix in both Admin and Manager portals.
+- [x] Generate a stakeholder presentation summarizing the updated 68-room dormitory layout and the Room Lock feature.
+- [x] Run full system diagnostic test on Vercel deployment (health, DB connectivity, auth flows).
+- [x] Export updated 68-room occupancy matrix and student assignment report as CSV (`ksit_dormitory_occupancy_assignments_report.csv`).
+- [x] Inspect the current Supabase academic fields, API routes, registration forms, and waterfall allocation grouping before adding dynamic majors management.
+- [x] Apply a non-destructive academic majors migration and seed the approved KSIT programs and majors idempotently.
+- [x] Add protected Admin majors CRUD APIs and a public active-majors endpoint grouped by academic level.
+- [x] Build the Admin System Settings academic programs and majors management UI with create, edit, status, and deletion controls.
+- [x] Bind Student application, Admin user creation, and Login registration level/year/major fields to the public majors API with cascading filters.
+- [x] Update waterfall auto-allocation ordering to include academic level, configured major, and year level after gender.
+- [ ] Add regression tests, run production checks, commit, push, deploy, and verify the Academic Majors Management release.

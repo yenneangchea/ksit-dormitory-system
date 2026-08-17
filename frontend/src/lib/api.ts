@@ -1,4 +1,5 @@
 import type {
+  AcademicMajor,
   Attendance,
   Building,
   MaintenanceRequest,
@@ -9,6 +10,7 @@ import type {
   User,
   UserRole,
   UtilityBill,
+  PublicMajorsCatalog,
 } from '@/types';
 
 // The production API is deployed as a Vercel Function in this same project.
@@ -184,7 +186,7 @@ export const storageAPI = {
 export const authAPI = {
   login: (credentials: { identifier: string; password: string }) =>
     fetchAPI<never>('/api/auth/login', { method: 'POST', body: JSON.stringify(credentials) }, false),
-  registerWithTelegram: (payload: { initData: string; full_name_khmer: string; full_name_latin: string; email: string; phone: string; gender: 'male' | 'female'; password: string }) =>
+  registerWithTelegram: (payload: { initData: string; full_name_khmer: string; full_name_latin: string; email: string; phone: string; gender: 'male' | 'female'; academic_level: string; academic_major_id: string; academic_year: number; password: string }) =>
     fetchAPI<never>('/api/auth/telegram/register', { method: 'POST', body: JSON.stringify(payload) }, false),
   loginWithTelegram: (initData: string) =>
     fetchAPI<never>('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) }, false),
@@ -201,13 +203,21 @@ export const dashboardAPI = {
 
 export const usersAPI = {
   list: (filters?: { role?: UserRole }) => fetchAPI<User[]>(`/api/users${queryString(filters)}`),
-  create: (payload: Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'> & { password: string }) => fetchAPI<User>('/api/users', { method: 'POST', body: JSON.stringify(payload) }),
-  update: (userId: string, payload: Partial<Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'>> & { password?: string }) => fetchAPI<User>(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  create: (payload: Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'> & { password: string; academic_level?: string; academic_major_id?: string; academic_year?: number }) => fetchAPI<User>('/api/users', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (userId: string, payload: Partial<Pick<User, 'full_name_khmer' | 'full_name_latin' | 'email' | 'phone' | 'gender' | 'role'>> & { password?: string; academic_level?: string; academic_major_id?: string; academic_year?: number }) => fetchAPI<User>(`/api/users/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   remove: (userId: string) => fetchAPI<{ id: string }>(`/api/users/${userId}`, { method: 'DELETE' }),
   updateRole: (userId: string, role: UserRole) => fetchAPI<User>(`/api/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   resetPassword: (userId: string, password: string) => fetchAPI<User>(`/api/admin/users/${userId}/reset-password`, { method: 'POST', body: JSON.stringify({ password }) }),
   listPasswordResetRequests: (status: 'pending' | 'resolved' | 'rejected' | 'all' = 'pending') => fetchAPI<PasswordResetRequest[]>(`/api/admin/password-reset-requests${queryString({ status })}`),
   resolvePasswordResetRequest: (requestId: string, payload: { action: 'resolve' | 'reject'; password?: string }) => fetchAPI<PasswordResetRequest>(`/api/admin/password-reset-requests/${requestId}/resolve`, { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+export const majorsAPI = {
+  public: () => fetchAPI<PublicMajorsCatalog>('/api/public/majors', {}, false),
+  listAdmin: () => fetchAPI<AcademicMajor[]>('/api/admin/majors'),
+  create: (payload: Omit<AcademicMajor, 'id' | 'created_at' | 'updated_at'>) => fetchAPI<AcademicMajor>('/api/admin/majors', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (majorId: string, payload: Partial<Omit<AcademicMajor, 'id' | 'created_at' | 'updated_at'>>) => fetchAPI<AcademicMajor>(`/api/admin/majors/${majorId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  removeOrToggle: (majorId: string, mode: 'deactivate' | 'delete' = 'deactivate') => fetchAPI<AcademicMajor | { id: string; deleted: boolean }>(`/api/admin/majors/${majorId}?mode=${mode}`, { method: 'DELETE' }),
 };
 
 export const buildingsAPI = {

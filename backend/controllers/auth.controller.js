@@ -153,7 +153,7 @@ const login = async (req, res, next) => {
  */
 const registerWithTelegram = async (req, res, next) => {
   try {
-    const { initData, full_name_khmer, full_name_latin, email, phone, gender, password } = req.body;
+    const { initData, full_name_khmer, full_name_latin, email, phone, gender, academic_level, academic_major_id, academic_year, password } = req.body;
     const { telegramId, user: telegramUser } = verifyTelegramWebAppInitData(
       initData,
       process.env.TELEGRAM_BOT_TOKEN,
@@ -164,8 +164,11 @@ const registerWithTelegram = async (req, res, next) => {
     const latinName = String(full_name_latin || '').trim();
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const normalizedPhone = String(phone || '').trim();
-    if (!khmerName || !latinName || !normalizedEmail || !normalizedPhone || !['male', 'female'].includes(gender) || typeof password !== 'string' || password.length < 8) {
-      const validationError = new Error('Khmer name, Latin name, email, phone number, gender, and a password of at least 8 characters are required to register.');
+    const normalizedAcademicLevel = String(academic_level || '').trim();
+    const normalizedMajorId = String(academic_major_id || '').trim();
+    const normalizedAcademicYear = Number(academic_year);
+    if (!khmerName || !latinName || !normalizedEmail || !normalizedPhone || !['male', 'female'].includes(gender) || !normalizedAcademicLevel || !normalizedMajorId || !Number.isInteger(normalizedAcademicYear) || normalizedAcademicYear < 1 || normalizedAcademicYear > 4 || typeof password !== 'string' || password.length < 8) {
+      const validationError = new Error('Khmer name, Latin name, email, phone number, gender, academic level, major, year level, and a password of at least 8 characters are required to register.');
       validationError.statusCode = 400;
       throw validationError;
     }
@@ -199,6 +202,20 @@ const registerWithTelegram = async (req, res, next) => {
       throw conflict;
     }
 
+    const { data: selectedMajor, error: majorError } = await supabase
+      .from('academic_majors')
+      .select('id, academic_level, name_khmer, available_year_levels')
+      .eq('id', normalizedMajorId)
+      .eq('academic_level', normalizedAcademicLevel)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (majorError) throw majorError;
+    if (!selectedMajor || !(selectedMajor.available_year_levels || []).includes(normalizedAcademicYear)) {
+      const academicError = new Error('The selected academic level, major, or year level is not currently available.');
+      academicError.statusCode = 400;
+      throw academicError;
+    }
+
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({
@@ -215,6 +232,15 @@ const registerWithTelegram = async (req, res, next) => {
       .select(selectFields)
       .single();
     if (insertError) throw insertError;
+
+    const { error: profileError } = await supabase.from('academic_profiles').insert({
+      user_id: newUser.id,
+      academic_level: selectedMajor.academic_level,
+      academic_major_id: selectedMajor.id,
+      major: selectedMajor.name_khmer,
+      academic_year: normalizedAcademicYear,
+    });
+    if (profileError) throw profileError;
 
     res.status(201).json({
       success: true,

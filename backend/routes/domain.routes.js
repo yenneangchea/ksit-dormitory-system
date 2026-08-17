@@ -8,6 +8,7 @@ const router = express.Router();
 const applicationUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024, files: 1 } });
 
 router.get('/public/announcements', domain.getPublicAnnouncements);
+router.get('/public/majors', domain.getPublicMajors);
 
 router.use(authenticate);
 
@@ -21,6 +22,10 @@ router.patch('/users/:userId/role', requireRole('admin'), domain.updateUserRole)
 router.post('/admin/users/:userId/reset-password', requireRole('admin'), domain.resetUserPassword);
 router.get('/admin/password-reset-requests', requireRole('admin'), domain.listPasswordResetRequests);
 router.post('/admin/password-reset-requests/:requestId/resolve', requireRole('admin'), domain.resolvePasswordResetRequest);
+router.get('/admin/majors', requireRole('admin'), domain.listAdminMajors);
+router.post('/admin/majors', requireRole('admin'), domain.createMajor);
+router.put('/admin/majors/:majorId', requireRole('admin'), domain.updateMajor);
+router.delete('/admin/majors/:majorId', requireRole('admin'), domain.deleteOrToggleMajor);
 
 router.get('/announcements', requireRole('admin'), domain.getAnnouncementManagement);
 router.put('/announcements/settings', requireRole('admin'), domain.updateAnnouncementSettings);

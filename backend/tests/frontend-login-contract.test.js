@@ -5,10 +5,10 @@ const test = require('node:test');
 
 const frontendRoot = path.resolve(__dirname, '..', '..', 'frontend', 'src', 'app');
 
-test('root layout loads the official Telegram WebApp SDK before the login gateway hydrates', () => {
+test('root layout loads the official Telegram WebApp SDK safely for the login gateway', () => {
   const layout = fs.readFileSync(path.join(frontendRoot, 'layout.tsx'), 'utf8');
   assert.match(layout, /telegram\.org\/js\/telegram-web-app\.js/);
-  assert.match(layout, /strategy="beforeInteractive"/);
+  assert.match(layout, /defer/);
 });
 
 test('homepage keeps the registration deadline announcement and Apply Now action', () => {
@@ -25,8 +25,8 @@ test('login page exposes email and Telegram choices plus a password-reset reques
   assert.match(login, /loginWithTelegram/);
   assert.match(login, /registerWithTelegram/);
   assert.match(login, /Sign up with Telegram/);
-  assert.match(login, /searchParams\.get\("mode"\) === "telegram"/);
-  assert.match(login, /searchParams\.get\("registered"\)/);
+  assert.match(login, /searchParams\?\.get\("mode"\) === "telegram"/);
+  assert.match(login, /searchParams\?\.get\("registered"\)/);
   assert.match(login, /Registration completed\. Enter the password you just created/);
   assert.match(login, /Forgot Password\? \/ ភ្លេចពាក្យសម្ងាត់\? ស្នើសុំប្តូរ/);
   assert.match(login, /requestPasswordReset/);

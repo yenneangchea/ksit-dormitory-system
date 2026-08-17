@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authAPI, type ApiResponse } from "@/lib/api";
+import { AcademicProgramFields } from "@/components/academic-program-fields";
 import type { UserRole } from "@/types";
 
 declare global {
@@ -37,7 +38,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [telegramInitData] = useState(() => typeof window === "undefined" ? "" : window.Telegram?.WebApp?.initData || "");
   const [telegramMode, setTelegramMode] = useState<"login" | "signup">("login");
-  const [telegramRegistration, setTelegramRegistration] = useState({ full_name_khmer: "", full_name_latin: "", email: "", phone: "", gender: "male" as "male" | "female", password: "", confirmPassword: "" });
+  const [telegramRegistration, setTelegramRegistration] = useState({ full_name_khmer: "", full_name_latin: "", email: "", phone: "", gender: "male" as "male" | "female", academic_level: "", academic_major_id: "", academic_year: "", password: "", confirmPassword: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [resetOpen, setResetOpen] = useState(false);
@@ -110,6 +111,10 @@ function LoginForm() {
       setError("The two passwords do not match.");
       return;
     }
+    if (!telegramRegistration.academic_level || !telegramRegistration.academic_major_id || !telegramRegistration.academic_year) {
+      setError("Select your academic level, major, and year level before registering.");
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -120,6 +125,9 @@ function LoginForm() {
         email: telegramRegistration.email,
         phone: telegramRegistration.phone,
         gender: telegramRegistration.gender,
+        academic_level: telegramRegistration.academic_level,
+        academic_major_id: telegramRegistration.academic_major_id,
+        academic_year: Number(telegramRegistration.academic_year),
         password: telegramRegistration.password,
       }));
     } finally {
@@ -184,7 +192,7 @@ function LoginForm() {
                 <div className="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-700"><div className="flex items-center gap-2 font-bold text-sky-900"><ShieldCheck className="size-4" /> Telegram access</div><p className="mt-2">Open this page from KSITDorm in Telegram. Existing users log in directly; new users sign up once and receive the Student dashboard by default.</p></div>
                 {telegramInitData ? <>
                   <div className="grid grid-cols-2 rounded-lg border border-sky-100 bg-sky-50 p-1"><button type="button" onClick={() => setTelegramMode("login")} className={`rounded-md px-3 py-2 text-xs font-bold ${telegramMode === "login" ? "bg-white text-sky-700 shadow-sm" : "text-slate-600"}`}>Login</button><button type="button" onClick={() => setTelegramMode("signup")} className={`rounded-md px-3 py-2 text-xs font-bold ${telegramMode === "signup" ? "bg-white text-sky-700 shadow-sm" : "text-slate-600"}`}>Sign up</button></div>
-                  {telegramMode === "login" ? <Button type="button" onClick={handleTelegramLogin} className="h-11 w-full bg-[#229ED9] font-semibold hover:bg-[#1787bd]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Verifying Telegram…</> : <><MessageCircle className="mr-2 size-4" /> Login with Telegram</>}</Button> : <form onSubmit={handleTelegramRegistration} className="space-y-3"><div className="grid grid-cols-2 gap-3"><Input required placeholder="Khmer name" value={telegramRegistration.full_name_khmer} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_khmer: event.target.value })} /><Input required placeholder="Latin name" value={telegramRegistration.full_name_latin} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_latin: event.target.value })} /></div><Input required type="email" placeholder="name@ksit.edu.kh" value={telegramRegistration.email} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, email: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input required placeholder="Phone number" value={telegramRegistration.phone} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, phone: event.target.value })} /><select value={telegramRegistration.gender} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, gender: event.target.value as "male" | "female" })} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="male">Male</option><option value="female">Female</option></select></div><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Create password (8+ characters)" value={telegramRegistration.password} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, password: event.target.value })} /><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Confirm password" value={telegramRegistration.confirmPassword} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, confirmPassword: event.target.value })} /><Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Creating Student account…</> : <><UserPlus className="mr-2 size-4" /> Sign up with Telegram</>}</Button></form>}
+                  {telegramMode === "login" ? <Button type="button" onClick={handleTelegramLogin} className="h-11 w-full bg-[#229ED9] font-semibold hover:bg-[#1787bd]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Verifying Telegram…</> : <><MessageCircle className="mr-2 size-4" /> Login with Telegram</>}</Button> : <form onSubmit={handleTelegramRegistration} className="space-y-3"><div className="grid grid-cols-2 gap-3"><Input required placeholder="Khmer name" value={telegramRegistration.full_name_khmer} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_khmer: event.target.value })} /><Input required placeholder="Latin name" value={telegramRegistration.full_name_latin} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, full_name_latin: event.target.value })} /></div><Input required type="email" placeholder="name@ksit.edu.kh" value={telegramRegistration.email} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, email: event.target.value })} /><div className="grid grid-cols-2 gap-3"><Input required placeholder="Phone number" value={telegramRegistration.phone} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, phone: event.target.value })} /><select value={telegramRegistration.gender} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, gender: event.target.value as "male" | "female" })} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="male">Male</option><option value="female">Female</option></select></div><AcademicProgramFields value={{ academic_level: telegramRegistration.academic_level, academic_major_id: telegramRegistration.academic_major_id, academic_year: telegramRegistration.academic_year }} onChange={(next) => setTelegramRegistration({ ...telegramRegistration, ...next })} required /><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Create password (8+ characters)" value={telegramRegistration.password} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, password: event.target.value })} /><Input required minLength={8} type="password" autoComplete="new-password" placeholder="Confirm password" value={telegramRegistration.confirmPassword} onChange={(event) => setTelegramRegistration({ ...telegramRegistration, confirmPassword: event.target.value })} /><Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Creating Student account…</> : <><UserPlus className="mr-2 size-4" /> Sign up with Telegram</>}</Button></form>}
                 </> : <a href="https://t.me/KSITDorm_bot?start=login" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-[#dce3dc] px-4 py-2.5 text-sm font-bold text-[#0b5c2c] hover:bg-[#f5f8f5]"><UserRoundCheck className="size-4" /> Open KSITDorm_bot</a>}
                 <p className="text-center text-xs leading-5 text-[#68736c]">New Telegram accounts are Student by default. An Admin may later assign Manager, Teacher, or Admin access.</p>
               </div>

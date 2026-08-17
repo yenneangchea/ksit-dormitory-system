@@ -99,6 +99,29 @@ CREATE INDEX idx_academic_profiles_major ON academic_profiles(major);
 CREATE INDEX idx_academic_profiles_year ON academic_profiles(academic_year);
 CREATE INDEX idx_academic_profiles_student_id ON academic_profiles(student_id_card);
 
+-- Dynamic academic-program catalog. Production uses an additive migration so
+-- existing student profiles and historic allocations remain intact.
+CREATE TABLE academic_majors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    academic_level VARCHAR(160) NOT NULL,
+    name_khmer VARCHAR(255) NOT NULL,
+    name_english VARCHAR(255) NOT NULL,
+    available_year_levels INTEGER[] NOT NULL DEFAULT ARRAY[1]::INTEGER[],
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (academic_level, name_khmer),
+    CHECK (cardinality(available_year_levels) > 0),
+    CHECK (available_year_levels <@ ARRAY[1, 2, 3, 4]::INTEGER[])
+);
+
+ALTER TABLE academic_profiles
+    ADD COLUMN IF NOT EXISTS academic_level VARCHAR(160),
+    ADD COLUMN IF NOT EXISTS academic_major_id UUID REFERENCES academic_majors(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_academic_majors_level_active ON academic_majors(academic_level, is_active, name_khmer);
+CREATE INDEX idx_academic_profiles_level_major_year ON academic_profiles(academic_level, academic_major_id, academic_year);
+
 -- ------------------------------------------------------------------------------
 -- 4. BUILDINGS TABLE
 -- ------------------------------------------------------------------------------
@@ -138,6 +161,12 @@ CREATE INDEX idx_rooms_building ON rooms(building_id);
 CREATE INDEX idx_rooms_gender_status ON rooms(gender, status);
 CREATE INDEX idx_rooms_magic_qr ON rooms(magic_qr_code);
 CREATE INDEX idx_rooms_number ON rooms(room_number);
+
+ALTER TABLE rooms
+    ADD COLUMN IF NOT EXISTS assigned_academic_level VARCHAR(160),
+    ADD COLUMN IF NOT EXISTS assigned_academic_major_id UUID REFERENCES academic_majors(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_rooms_level_major_year ON rooms(gender, assigned_academic_level, assigned_academic_major_id, assigned_year);
 
 -- ------------------------------------------------------------------------------
 -- 6. ROOM APPLICATIONS TABLE
