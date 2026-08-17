@@ -117,6 +117,7 @@ const login = async (req, res, next) => {
     }
 
     const user = users?.[0];
+    console.info('LOGIN DEBUG: identifier=', loginIdentifier, 'found user:', user ? { id: user.id, email: user.email, hasHash: !!user.password_hash } : 'none');
     if (!user || !user.password_hash) {
       const error = new Error('Invalid credentials.');
       error.statusCode = 401;
@@ -124,6 +125,7 @@ const login = async (req, res, next) => {
     }
 
     const bcryptMatches = await bcrypt.compare(password, user.password_hash);
+    console.info('LOGIN DEBUG: bcryptMatches=', bcryptMatches);
     const passwordMatches = bcryptMatches || approvedDemoFallbackMatches(String(user.email || '').toLowerCase(), password);
     if (!passwordMatches) {
       const error = new Error('Invalid credentials.');
