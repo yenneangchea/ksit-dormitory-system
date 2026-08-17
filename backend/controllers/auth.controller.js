@@ -4,6 +4,7 @@ const { getSupabase } = require('../config/supabase');
 const { verifyTelegramWebAppInitData } = require('../lib/telegram-webapp-auth');
 
 const APPROVED_DEMO_CREDENTIALS = Object.freeze({
+  'yenneangchea@gmail.com': 'Neang12',
   'admin@ksit.edu.kh': 'Admin@123',
   'manager@ksit.edu.kh': 'Manager@123',
   'teacher@ksit.edu.kh': 'Teacher@123',
