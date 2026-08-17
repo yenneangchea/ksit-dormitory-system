@@ -74,7 +74,7 @@ function AttendancePageContent() {
       }
 
       // Check if magic QR code query param exists
-      const qrCode = searchParams.get("qr");
+      const qrCode = searchParams?.get("qr");
       if (qrCode) {
         // Load all rooms to find the matching Magic QR Code
         const roomsRes = await roomsAPI.getAll();

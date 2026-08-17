@@ -21,7 +21,7 @@ function TeacherDashboardContent() {
   const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notice, setNotice] = useState('');
   const [working, setWorking] = useState(false);
-  const activeTab: TeacherTab = searchParams.get('tab') === 'attendance' ? 'attendance' : searchParams.get('tab') === 'leave' ? 'leave' : 'dashboard';
+  const activeTab: TeacherTab = searchParams?.get('tab') === 'attendance' ? 'attendance' : searchParams?.get('tab') === 'leave' ? 'leave' : 'dashboard';
 
   const loadToday = useCallback(async (date = attendanceDate) => {
     const response = await attendanceAPI.list({ date });

@@ -50,7 +50,7 @@ function AdminDashboardContent() {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [newsModal, setNewsModal] = useState<NewsModal>(null);
   const [userSearch, setUserSearch] = useState('');
-  const requestedTab = searchParams.get('tab');
+  const requestedTab = searchParams?.get('tab');
   const activeTab: AdminTab = requestedTab === 'users' || requestedTab === 'residence' || requestedTab === 'cms' || requestedTab === 'settings' ? requestedTab : 'dashboard';
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();

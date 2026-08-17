@@ -40,10 +40,11 @@ test('the additive reset-request migration and admin UI expose the approved requ
 test('same-project Vercel API keeps authentication on the official KSIT domain and restricts credentialed previews', () => {
   const api = fs.readFileSync(path.join(frontendRoot, 'lib', 'api.ts'), 'utf8');
   const app = fs.readFileSync(path.resolve(backendRoot, '..', 'frontend', 'server', 'app.js'), 'utf8');
-  const vercelFunction = fs.readFileSync(path.resolve(backendRoot, '..', 'frontend', 'api', '[...path].js'), 'utf8');
+  const vercelFunction = fs.readFileSync(path.resolve(backendRoot, '..', 'frontend', 'src', 'pages', 'api', '[...path].js'), 'utf8');
   assert.match(api, /export const API_BASE_URL = ''/);
   assert.doesNotMatch(api, /ksit-dorm-api\.vercel\.app/);
-  assert.match(vercelFunction, /require\('\.\.\/server\/app'\)/);
+  assert.match(vercelFunction, /import app from '\.\.\/\.\.\/\.\.\/server\/app'/);
+  assert.match(vercelFunction, /bodyParser: false/);
   assert.match(app, /ksit-dorm\.vercel\.app/);
   assert.match(app, /ksit-dormitory-system-\[a-z0-9-\]\+\\\.vercel\\\.app/);
   assert.match(app, /app\.options\(\/\.\*\/\, cors\(corsOptions\)\)/);

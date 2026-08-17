@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 export default function QRScanEntryPage() {
   const router = useRouter();
   const params = useParams();
-  const qrCode = decodeURIComponent(params.qr_code as string);
+  const qrCode = decodeURIComponent(String(params?.qr_code || ''));
 
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -15,7 +15,7 @@ import { uploadFile } from "@/lib/api";
 function StudentMaintenanceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const qrCode = searchParams.get("qr") || "";
+  const qrCode = searchParams?.get("qr") || "";
 
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

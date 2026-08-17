@@ -24,7 +24,7 @@ interface StudentRecord {
 function QRAttendanceScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const qrCode = searchParams.get('qr') || '';
+  const qrCode = searchParams?.get('qr') || '';
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [room, setRoom] = useState<any>(null);

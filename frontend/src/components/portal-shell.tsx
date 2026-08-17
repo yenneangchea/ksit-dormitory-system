@@ -82,7 +82,7 @@ export function PortalShell({ role, children }: { role: UserRole; children: Reac
     if (response.success) window.setTimeout(() => setPasswordOpen(false), 900);
   }
 
-  const currentTab = searchParams.get('tab') || '';
+  const currentTab = searchParams?.get('tab') || '';
   const isActive = (item: NavItem) => pathname === item.href.split('?')[0] && (item.tab ? currentTab === item.tab : !currentTab);
   const profileInitial = displayName(user, role).trim().charAt(0).toUpperCase() || 'K';
 

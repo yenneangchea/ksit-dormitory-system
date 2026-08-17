@@ -142,3 +142,4 @@
 - [ ] Investigate and resolve the live Super Admin login rejection shown at `/login`, then verify the production redirect to the Admin dashboard.
 - [ ] Consolidate the Express API into the connected Ksit-dorm Vercel project under `/api/*` and configure it for the production Supabase database.
 - [ ] Verify same-domain Super Admin login and the redirect to `/dashboard/admin` after the production deployment.
+- [ ] Resolve the nullable dashboard search-parameter TypeScript regression blocking the current production build.

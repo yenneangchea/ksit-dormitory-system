@@ -22,7 +22,7 @@ function StudentDashboardContent() {
   const [residence, setResidence] = useState<ResidenceDetails | null>(null);
   const [notice, setNotice] = useState('');
   const [working, setWorking] = useState(false);
-  const requestedTab = searchParams.get('tab');
+  const requestedTab = searchParams?.get('tab');
   const activeTab: StudentTab = requestedTab === 'apply' ? 'application' : requestedTab === 'bills' ? 'bills' : requestedTab === 'maintenance' ? 'maintenance' : requestedTab === 'leave' ? 'leave' : 'overview';
 
   const load = useCallback(async () => {

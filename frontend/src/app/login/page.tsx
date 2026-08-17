@@ -31,9 +31,9 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const registrationCompleted = searchParams.get("registered") === "1";
-  const [mode, setMode] = useState<"email" | "telegram">(() => searchParams.get("mode") === "telegram" ? "telegram" : "email");
-  const [email, setEmail] = useState(() => registrationCompleted ? searchParams.get("email") || "" : "");
+  const registrationCompleted = searchParams?.get("registered") === "1";
+  const [mode, setMode] = useState<"email" | "telegram">(() => searchParams?.get("mode") === "telegram" ? "telegram" : "email");
+  const [email, setEmail] = useState(() => registrationCompleted ? searchParams?.get("email") || "" : "");
   const [password, setPassword] = useState("");
   const [telegramInitData] = useState(() => typeof window === "undefined" ? "" : window.Telegram?.WebApp?.initData || "");
   const [telegramMode, setTelegramMode] = useState<"login" | "signup">("login");

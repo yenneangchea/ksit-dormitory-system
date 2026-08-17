@@ -110,7 +110,7 @@ function ManagerDashboardContent() {
   }, [isAuthorized]);
 
   const activeTab = useMemo<ManagerTab>(() => {
-    const requested = searchParams.get('tab');
+    const requested = searchParams?.get('tab');
     if (requested === 'applications') return 'applications';
     if (requested === 'rooms') return 'buildings';
     if (requested === 'utilities') return 'billing';
