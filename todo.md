@@ -139,7 +139,7 @@
 - [x] Implement and verify password management suite (self-service password change, public reset requests, and Admin password control suite).
 - [x] Align frontend API fallback and backend CORS restrictions with Vercel production domains.
 - [x] Run comprehensive regression tests (48/48 passing) and verify production frontend and backend builds.
-- [ ] Investigate and resolve the live Super Admin login rejection shown at `/login`, then verify the production redirect to the Admin dashboard.
-- [ ] Consolidate the Express API into the connected Ksit-dorm Vercel project under `/api/*` and configure it for the production Supabase database.
-- [ ] Verify same-domain Super Admin login and the redirect to `/dashboard/admin` after the production deployment.
-- [ ] Resolve the nullable dashboard search-parameter TypeScript regression blocking the current production build.
+- [x] Investigate and resolve the live Super Admin login rejection shown at `/login`, then verify the production redirect to the Admin dashboard.
+- [x] Consolidate the Express API into the connected Ksit-dorm Vercel project under `/api/*` and configure it for the production Supabase database.
+- [x] Verify same-domain Super Admin login and the redirect to `/dashboard/admin` after the production deployment.
+- [x] Resolve the nullable dashboard search-parameter TypeScript regression blocking the current production build.
