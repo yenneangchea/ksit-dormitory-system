@@ -56,7 +56,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-app.get('/api/debug-db', async (_req, res) => {
+app.get('/health-db', async (_req, res) => {
   try {
     const { getSupabase } = require('./config/supabase');
     const supabase = getSupabase();
