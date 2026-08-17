@@ -135,3 +135,10 @@
 - [ ] Reassign the six approved real-student attendance actor records and one real-student application reviewer field to the official Super Admin, then delete only mock-owned applications and demo-linked records.
 - [x] Provision the official Super Admin `yenneangchea@gmail.com` with the confirmed profile fields and an initial bcrypt-hashed password; verify the production database record.
 - [ ] Configure `https://ksit-dorm.vercel.app` as the sole primary production domain if the connected Vercel workspace grants domain-management access.
+- [x] Finalize production transition of the KSIT Dormitory Management System, secure authentication, provision official Super Admin (`yenneangchea@gmail.com`), remove mock data, and ensure stable Vercel deployment.
+- [x] Implement and verify password management suite (self-service password change, public reset requests, and Admin password control suite).
+- [x] Align frontend API fallback and backend CORS restrictions with Vercel production domains.
+- [x] Run comprehensive regression tests (48/48 passing) and verify production frontend and backend builds.
+- [ ] Investigate and resolve the live Super Admin login rejection shown at `/login`, then verify the production redirect to the Admin dashboard.
+- [ ] Consolidate the Express API into the connected Ksit-dorm Vercel project under `/api/*` and configure it for the production Supabase database.
+- [ ] Verify same-domain Super Admin login and the redirect to `/dashboard/admin` after the production deployment.

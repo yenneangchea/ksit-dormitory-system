@@ -19,7 +19,6 @@ const allowedOrigins = new Set([
 
 function isAllowedOrigin(origin) {
   if (allowedOrigins.has(origin)) return true;
-  // Allow previews from this application only; never reflect arbitrary Vercel sites with credentials.
   return /^https:\/\/ksit-dormitory-system-[a-z0-9-]+\.vercel\.app$/i.test(origin);
 }
 
@@ -40,14 +39,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, _res, next) => {
-    console.info(`${new Date().toISOString()} ${req.method} ${req.path}`);
-    next();
-  });
-}
-
-app.get('/health', (_req, res) => {
+app.get(['/health', '/api/health'], (_req, res) => {
   res.json({
     success: true,
     message: 'KSIT Dormitory API is running.',
@@ -55,8 +47,6 @@ app.get('/health', (_req, res) => {
     environment: process.env.NODE_ENV || 'development',
   });
 });
-
-
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api', require('./routes/domain.routes'));

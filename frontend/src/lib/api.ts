@@ -11,9 +11,10 @@ import type {
   UtilityBill,
 } from '@/types';
 
-// Vercel builds may not have NEXT_PUBLIC_API_URL configured. Keep the deployed API as
-// the safe default while permitting explicit environment-specific overrides.
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim() || 'https://ksit-dorm-api.vercel.app';
+// The production API is deployed as a Vercel Function in this same project.
+// Relative requests guarantee that authentication, cookies, CORS, and deployments
+// stay on the official KSIT domain rather than an independently deployed backend.
+export const API_BASE_URL = '';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

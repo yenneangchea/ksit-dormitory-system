@@ -1,0 +1,8 @@
+{
+  "verifiedAt": "2026-08-17T04:55:09Z",
+  "frontendUrl": "https://ksit-dorm.vercel.app/login",
+  "compiledApiBaseUrl": "https://ksit-dorm-api.vercel.app",
+  "primaryDomainApiRoute": "not-found",
+  "vercelProject": "ksit-dormitory-system",
+  "conclusion": "The primary Vercel project serves the Next.js frontend only; authentication is being routed to a separate backend deployment."
+}
