@@ -32,7 +32,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   const admin = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'admin', 'page.tsx'), 'utf8');
   assert.match(admin, /const activeTab: AdminTab/);
   assert.match(admin, /activeTab === 'dashboard' &&/);
-  assert.match(admin, /activeTab === 'users' && <UserManagementPanel/);
+  assert.match(admin, /activeTab === 'users' && <>\<UserManagementPanel/);
   assert.match(admin, /activeTab === 'residence' && <><ResidenceConfigurationPanel/);
   assert.match(admin, /activeTab === 'cms' && <AnnouncementManagementPanel/);
   assert.match(admin, /activeTab === 'settings' && <SystemSettingsPanel/);

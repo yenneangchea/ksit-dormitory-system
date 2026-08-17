@@ -37,5 +37,7 @@ router.post('/logout', authenticate, authController.logout);
  * @access  Private
  */
 router.get('/me', authenticate, authController.getCurrentUser);
+router.post('/change-password', authenticate, authController.changePassword);
+router.post('/request-password-reset', authController.requestPasswordReset);
 
 module.exports = router;

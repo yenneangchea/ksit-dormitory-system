@@ -5,38 +5,36 @@ const cors = require('cors');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = new Set([
   'http://localhost:3000',
   'https://ksit-dorm.vercel.app',
   'https://ksit-dormitory-system.vercel.app',
-  ...(process.env.FRONTEND_URL || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+  ...configuredOrigins,
 ]);
 
 function isAllowedOrigin(origin) {
-  if (!origin || allowedOrigins.has(origin)) return true;
-
-  try {
-    const url = new URL(origin);
-    return url.protocol === 'https:' && url.hostname.endsWith('.vercel.app');
-  } catch {
-    return false;
-  }
+  if (allowedOrigins.has(origin)) return true;
+  // Allow previews from this application only; never reflect arbitrary Vercel sites with credentials.
+  return /^https:\/\/ksit-dormitory-system-[a-z0-9-]+\.vercel\.app$/i.test(origin);
 }
 
 const corsOptions = {
   origin(origin, callback) {
-    callback(null, isAllowedOrigin(origin));
+    if (!origin || isAllowedOrigin(origin)) return callback(null, true);
+    return callback(null, false);
   },
   credentials: true,
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86_400,
   optionsSuccessStatus: 204,
 };
 
-// Respond to browser preflight requests before API routes and use the same policy
-// for normal cross-origin requests.
 app.options(/.*/, cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));

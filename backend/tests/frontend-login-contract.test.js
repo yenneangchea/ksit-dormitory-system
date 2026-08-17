@@ -18,7 +18,7 @@ test('homepage keeps the registration deadline announcement and Apply Now action
   assert.match(page, /href="\/login"/);
 });
 
-test('login page exposes email and Telegram choices plus all four demo-account quick fills', () => {
+test('login page exposes email and Telegram choices plus a password-reset request flow without demo credentials', () => {
   const login = fs.readFileSync(path.join(frontendRoot, 'login', 'page.tsx'), 'utf8');
   assert.match(login, /Login with Email/);
   assert.match(login, /Login with Telegram/);
@@ -28,9 +28,10 @@ test('login page exposes email and Telegram choices plus all four demo-account q
   assert.match(login, /searchParams\.get\("mode"\) === "telegram"/);
   assert.match(login, /searchParams\.get\("registered"\)/);
   assert.match(login, /Registration completed\. Enter the password you just created/);
-  for (const email of ['admin@ksit.edu.kh', 'manager@ksit.edu.kh', 'teacher@ksit.edu.kh', 'student@ksit.edu.kh']) {
-    assert.match(login, new RegExp(email.replace('@', '@')));
-  }
+  assert.match(login, /Forgot Password\? \/ ភ្លេចពាក្យសម្ងាត់\? ស្នើសុំប្តូរ/);
+  assert.match(login, /requestPasswordReset/);
+  assert.doesNotMatch(login, /Demo account quick fill/);
+  assert.doesNotMatch(login, /admin@ksit\.edu\.kh/);
 });
 
 test('role-aware login maps every authorized role to its own dashboard route', () => {

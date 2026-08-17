@@ -43,6 +43,24 @@ CREATE INDEX idx_users_telegram_id ON users(telegram_id);
 CREATE INDEX idx_users_gender ON users(gender);
 
 -- ------------------------------------------------------------------------------
+-- 2A. PASSWORD RESET REQUESTS TABLE
+-- Stores user-initiated reset requests for protected Admin review and resolution.
+-- ------------------------------------------------------------------------------
+CREATE TABLE password_reset_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    reason TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'rejected')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMPTZ,
+    resolved_by UUID REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_password_reset_requests_status_created ON password_reset_requests(status, created_at DESC);
+CREATE INDEX idx_password_reset_requests_user ON password_reset_requests(user_id);
+
+-- ------------------------------------------------------------------------------
 -- 3. ACADEMIC PROFILES TABLE
 -- Stores detailed Khmer Application Document fields (Family, Birthplace, Student ID, Guarantor)
 -- ------------------------------------------------------------------------------

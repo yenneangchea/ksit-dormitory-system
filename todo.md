@@ -126,3 +126,11 @@
 - [x] Apply the canonical, lifecycle, and Drive-metadata migrations in the isolated staging database; seed separate Student and Manager verification identities.
 - [x] Run an isolated Student-to-Manager staging lifecycle through the real Express routes, confirming draft, three reference uploads, four-page PDF generation, signed upload, Manager approval, final `approved` status, and Student denial from the Manager decision route.
 - [ ] Complete the corresponding browser-based Preview verification after a dedicated backend preview is connected to the frontend Preview via `NEXT_PUBLIC_API_URL`.
+- [ ] Audit and remove only the explicitly approved demo accounts, their dependent mock records, and the login-page quick-fill controls.
+- [x] Provision the authorized official Super Admin profile with a bcrypt-hashed initial password and verify the production database record.
+- [x] Add an authenticated self-service password-change route and user-facing Profile control for every role.
+- [x] Add public password-reset requests plus a protected Admin password-reset and request-resolution workflow.
+- [ ] Add migration, authorization, and login regression coverage; validate builds; and publish the production-transition release.
+- [ ] Reassign the six approved real-student attendance actor records and one real-student application reviewer field to the official Super Admin, then delete only mock-owned applications and demo-linked records.
+- [x] Provision the official Super Admin `yenneangchea@gmail.com` with the confirmed profile fields and an initial bcrypt-hashed password; verify the production database record.
+- [ ] Configure `https://ksit-dorm.vercel.app` as the sole primary production domain if the connected Vercel workspace grants domain-management access.
