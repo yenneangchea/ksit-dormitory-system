@@ -56,6 +56,23 @@ app.get('/health', (_req, res) => {
   });
 });
 
+app.get('/api/debug-db', async (_req, res) => {
+  try {
+    const { getSupabase } = require('./config/supabase');
+    const supabase = getSupabase();
+    const { data, error, count } = await supabase.from('users').select('*', { count: 'exact' });
+    res.json({
+      success: !error,
+      error: error ? error.message : null,
+      supabaseUrlConfigured: !!process.env.SUPABASE_URL,
+      userCount: count ?? data?.length,
+      users: data?.map(u => ({ email: u.email, role: u.role }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api', require('./routes/domain.routes'));
 
