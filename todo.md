@@ -172,3 +172,9 @@
 - [x] Add protected academic-major audit-history API and Admin history view with administrator, action, before/after, and timestamp details.
 - [x] Mirror bulk-import and audit support into the Vercel-served frontend server copy.
 - [x] Run regression tests and production build, then commit, push, deploy, and verify the extension.
+- [x] Add the Academic & Majors sidebar destination for Admin, Manager, and Teacher with strict role-appropriate controls.
+- [x] Verify and reconcile the 12 official KSIT majors and their supported year levels idempotently in Supabase.
+- [x] Add protected academic student filtering, enrollment statistics, and role-aware dataset APIs for Admin, Manager, and Teacher.
+- [x] Add Excel and printable PDF academic distribution exports for authorized Admin, Manager, and Teacher users.
+- [x] Build the Academic & Majors dashboard tab with filters, statistics, exports, and Admin-only catalog CRUD controls.
+- [ ] Add regression tests, production build checks, deployment verification, and GitHub handoff for the multi-role academic analytics release.

@@ -29,6 +29,8 @@ router.put('/admin/majors/:majorId', requireRole('admin'), domain.updateMajor);
 router.delete('/admin/majors/:majorId', requireRole('admin'), domain.deleteOrToggleMajor);
 router.post('/admin/majors/import', requireRole('admin'), majorImportUpload.single('file'), domain.bulkImportMajors);
 router.get('/admin/majors/audit', requireRole('admin'), domain.listMajorAuditLogs);
+router.get('/academic-analytics', requireRole('admin', 'manager', 'teacher'), domain.getAcademicAnalytics);
+router.get('/academic-analytics/export', requireRole('admin', 'manager', 'teacher'), domain.exportAcademicAnalytics);
 
 router.get('/announcements', requireRole('admin'), domain.getAnnouncementManagement);
 router.put('/announcements/settings', requireRole('admin'), domain.updateAnnouncementSettings);

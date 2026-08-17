@@ -9,6 +9,7 @@ import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
 import { RoomAssignmentBoard } from '@/components/room-assignment-board';
 import { AcademicMajorsManager } from '@/components/academic-majors-manager';
+import { AcademicAnalyticsPanel } from '@/components/academic-analytics-panel';
 import { AcademicProgramFields, type AcademicProgramValue } from '@/components/academic-program-fields';
 import { API_BASE_URL, buildingsAPI, dashboardAPI, majorsAPI, roomAssignmentsAPI, roomsAPI, type AcademicMajorImportResult, type AssignmentBoard, type DashboardAnalytics as DashboardAnalyticsData, type DashboardSummary, type PasswordResetRequest, usersAPI } from '@/lib/api';
 import type { AcademicMajor, Building, Room, User, UserRole } from '@/types';
@@ -20,7 +21,7 @@ type SystemSettings = { academic_levels?: string[]; utility_rates?: { electricit
 type AnnouncementManagement = { settings: { top_ticker?: { text?: string; link?: string }; registration_deadline?: { title?: string; badge?: string; deadline_at?: string }; system_settings?: SystemSettings }; news_posts: NewsPost[] };
 type NewsModal = NewsPost | 'new' | null;
 type MajorModal = AcademicMajor | 'new' | null;
-type AdminTab = 'dashboard' | 'users' | 'residence' | 'cms' | 'settings';
+type AdminTab = 'dashboard' | 'users' | 'residence' | 'academics' | 'cms' | 'settings';
 
 const emptySummary: DashboardSummary = { buildings: 0, rooms_in_service: 0, rooms_total: 0, total_capacity: 0, occupied_beds: 0, vacant_beds: 0, occupancy_percent: 0, pending_maintenance: 0, pending_applications: 0, attendance_today: 0 };
 const roleOptions: UserRole[] = ['admin', 'manager', 'teacher', 'student'];
@@ -58,7 +59,7 @@ function AdminDashboardContent() {
   const [userAcademicSelection, setUserAcademicSelection] = useState<AcademicProgramValue>({ academic_level: '', academic_major_id: '', academic_year: '' });
   const [userSearch, setUserSearch] = useState('');
   const requestedTab = searchParams?.get('tab');
-  const activeTab: AdminTab = requestedTab === 'users' || requestedTab === 'residence' || requestedTab === 'cms' || requestedTab === 'settings' ? requestedTab : 'dashboard';
+  const activeTab: AdminTab = requestedTab === 'users' || requestedTab === 'residence' || requestedTab === 'academics' || requestedTab === 'cms' || requestedTab === 'settings' ? requestedTab : 'dashboard';
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
     if (!query) return users;
@@ -256,13 +257,14 @@ function AdminDashboardContent() {
     <PortalShell role="admin">
       <section className="min-h-[calc(100vh-156px)]">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">{activeTab === 'dashboard' ? 'Welcome back, Admin Portal' : activeTab === 'users' ? 'User Management' : activeTab === 'residence' ? 'Buildings & Rooms' : activeTab === 'cms' ? 'Homepage CMS & News' : 'System Settings'}</h1><p className="mt-1.5 text-sm text-[#68736c]">{activeTab === 'dashboard' ? 'Live operational metrics and authorized analytics.' : 'This protected workspace displays only the section selected in the sidebar.'}</p></div>
+          <div><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">{activeTab === 'dashboard' ? 'Welcome back, Admin Portal' : activeTab === 'users' ? 'User Management' : activeTab === 'residence' ? 'Buildings & Rooms' : activeTab === 'academics' ? 'Academic & Majors' : activeTab === 'cms' ? 'Homepage CMS & News' : 'System Settings'}</h1><p className="mt-1.5 text-sm text-[#68736c]">{activeTab === 'dashboard' ? 'Live operational metrics and authorized analytics.' : 'This protected workspace displays only the section selected in the sidebar.'}</p></div>
           <div className="flex flex-wrap gap-2">{activeTab === 'users' && <ActionButton icon={<Plus />} onClick={() => setModal({ type: 'user' })}>Add new user</ActionButton>}{activeTab === 'residence' && <><ActionButton icon={<Building2 />} tone="secondary" onClick={() => setModal({ type: 'building' })}>Add building</ActionButton><ActionButton icon={<QrCode />} tone="secondary" onClick={() => setModal({ type: 'room' })}>Add room</ActionButton></>}{activeTab === 'cms' && <Link href="/dashboard/admin/homepage-editor" className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#dce3dc] bg-white px-3 py-2 text-xs font-bold text-[#31513d] hover:bg-[#f4f8f4]">🎨 Edit Homepage</Link>}</div>
         </div>
         {notice && <div role="status" className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}
         {activeTab === 'dashboard' && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Kpi icon={<UsersRound />} label="Registered users" value={users.length} note="Active role accounts" /><Kpi icon={<Building2 />} label="Buildings" value={summary.buildings} note={`${summary.rooms_total} configured rooms`} /><Kpi icon={<ShieldCheck />} label="Pending review" value={summary.pending_applications} note="Residence applications" /><Kpi icon={<Wrench />} label="Open work orders" value={summary.pending_maintenance} note="Manager action queue" /></div>{analytics && <DashboardAnalytics data={analytics} />}</>}
         {activeTab === 'users' && <><UserManagementPanel users={filteredUsers} search={userSearch} onSearch={setUserSearch} onAdd={() => { setUserAcademicSelection({ academic_level: '', academic_major_id: '', academic_year: '' }); setModal({ type: 'user' }); }} onEdit={(user) => { setUserAcademicSelection({ academic_level: '', academic_major_id: '', academic_year: '' }); setModal({ type: 'user', user }); }} onReset={(user) => { setGeneratedPassword(''); setModal({ type: 'reset-password', user }); }} onDelete={(user) => { if (window.confirm(`Delete ${user.full_name_latin}? This cannot be undone.`)) void runAction(() => usersAPI.remove(user.id), 'User deleted.'); }} /><PasswordResetRequestsPanel requests={passwordResetRequests} onResolve={(request) => { setGeneratedPassword(''); setModal({ type: 'reset-request', request }); }} /></>}
         {activeTab === 'residence' && <><ResidenceConfigurationPanel buildings={buildings} onAddBuilding={() => setModal({ type: 'building' })} onAddRoom={() => setModal({ type: 'room' })} onEditBuilding={(building) => setModal({ type: 'building', building })} onEditRoom={(room) => setModal({ type: 'room', room })} onDeleteBuilding={(building) => { if (window.confirm(`Delete ${building.name}? Rooms must be removed first.`)) void runAction(() => buildingsAPI.remove(building.id), 'Building deleted.'); }} onDeleteRoom={(room) => { if (window.confirm(`Delete room ${room.room_number}?`)) void runAction(() => roomsAPI.remove(room.id), 'Room deleted.'); }} /><RoomAssignmentBoard board={assignmentBoard} selectedApplicationId={selectedApplicationId} isWorking={isWorking} onSelect={setSelectedApplicationId} onMove={manuallyPlaceStudent} /></>}
+        {activeTab === 'academics' && <AcademicAnalyticsPanel role="admin" adminControls={<div className="ksit-card overflow-hidden"><AcademicMajorsManager majors={majors} isWorking={isWorking} onAddMajor={() => setMajorModal('new')} onEditMajor={setMajorModal} onToggleMajor={(major) => void toggleMajor(major)} onDeleteMajor={(major) => void deleteMajor(major)} auditRefreshToken={majorAuditRefreshToken} onImportComplete={completeMajorImport} /></div>} />}
         {activeTab === 'cms' && <AnnouncementManagementPanel management={announcementManagement} isWorking={isWorking} onSaveSettings={saveAnnouncementSettings} onCreate={() => setNewsModal('new')} onEdit={(post) => setNewsModal(post)} onToggle={(post) => void toggleNewsVisibility(post)} onDelete={(post) => void deleteNews(post)} />}
         {activeTab === 'settings' && <SystemSettingsPanel settings={announcementManagement.settings.system_settings} majors={majors} isWorking={isWorking} onSave={saveSystemSettings} onAddMajor={() => setMajorModal('new')} onEditMajor={setMajorModal} onToggleMajor={(major) => void toggleMajor(major)} onDeleteMajor={(major) => void deleteMajor(major)} auditRefreshToken={majorAuditRefreshToken} onImportComplete={completeMajorImport} />}
       </section>

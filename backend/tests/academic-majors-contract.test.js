@@ -76,3 +76,35 @@ test('bulk import and audit history are additive, validated, and Admin-only', ()
   assert.match(admin, /Choose CSV \/ Excel/);
   assert.match(admin, /Academic-major change history/);
 });
+
+test('Academic & Majors analytics are visible to authorized staff with protected Excel and PDF exports', () => {
+  const routes = read('backend/routes/domain.routes.js');
+  const domain = read('backend/controllers/domain.controller.js');
+  const deployedDomain = read('frontend/server/controllers/domain.controller.js');
+  const deployedRoutes = read('frontend/server/routes/domain.routes.js');
+  const api = read('frontend/src/lib/api.ts');
+  const panel = read('frontend/src/components/academic-analytics-panel.tsx');
+  const shell = read('frontend/src/components/portal-shell.tsx');
+  const admin = read('frontend/src/app/dashboard/admin/page.tsx');
+  const manager = read('frontend/src/app/dashboard/manager/page.tsx');
+  const teacher = read('frontend/src/app/dashboard/teacher/page.tsx');
+  assert.match(routes, /router\.get\('\/academic-analytics', requireRole\('admin', 'manager', 'teacher'\), domain\.getAcademicAnalytics\)/);
+  assert.match(routes, /router\.get\('\/academic-analytics\/export', requireRole\('admin', 'manager', 'teacher'\), domain\.exportAcademicAnalytics\)/);
+  assert.match(domain, /loadAcademicAnalytics/);
+  assert.match(domain, /academicExportWorkbook/);
+  assert.match(domain, /sendAcademicPdf/);
+  assert.match(deployedDomain, /exportAcademicAnalytics/);
+  assert.match(deployedRoutes, /\/academic-analytics\/export/);
+  assert.match(api, /academicAnalyticsAPI/);
+  assert.match(api, /downloadExcel/);
+  assert.match(api, /downloadPdf/);
+  assert.match(panel, /Export Excel/);
+  assert.match(panel, /Export PDF/);
+  assert.match(panel, /Major enrollment statistics/);
+  assert.match(shell, /dashboard\/admin\?tab=academics/);
+  assert.match(shell, /dashboard\/manager\?tab=academics/);
+  assert.match(shell, /dashboard\/teacher\?tab=academics/);
+  assert.match(admin, /AcademicAnalyticsPanel role="admin"/);
+  assert.match(manager, /AcademicAnalyticsPanel role="manager"/);
+  assert.match(teacher, /AcademicAnalyticsPanel role="teacher"/);
+});

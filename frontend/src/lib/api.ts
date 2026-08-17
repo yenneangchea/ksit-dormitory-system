@@ -76,6 +76,36 @@ export interface AcademicMajorImportResult {
   majors: AcademicMajor[];
 }
 
+export interface AcademicAnalyticsStudent {
+  user_id: string;
+  full_name_khmer: string;
+  full_name_latin: string;
+  email: string;
+  gender: string;
+  academic_level: string;
+  major_id: string | null;
+  major_name_khmer: string;
+  major_name_english: string;
+  academic_year: number | null;
+  is_configured_major: boolean;
+}
+
+export interface AcademicEnrollmentSummary {
+  academic_level: string;
+  major_id: string | null;
+  major_name_khmer: string;
+  major_name_english: string;
+  total_students: number;
+  by_year: Record<1 | 2 | 3 | 4, number>;
+}
+
+export interface AcademicAnalyticsReport {
+  filters: { academic_level: string | null; major_id: string | null; academic_year: number | null };
+  students: AcademicAnalyticsStudent[];
+  summaries: AcademicEnrollmentSummary[];
+  majors: AcademicMajor[];
+}
+
 export interface AssignmentBoardStudent {
   id: string;
   user_id: string;
@@ -182,6 +212,28 @@ async function uploadAPI<T>(endpoint: string, body: FormData, onProgress?: (perc
   });
 }
 
+async function downloadAuthenticatedFile(endpoint: string, fallbackFilename: string): Promise<ApiResponse<{ filename: string }>> {
+  try {
+    const token = getSessionToken();
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      return { success: false, error: { message: body?.error?.message || 'The report could not be downloaded.' } };
+    }
+    const blob = await response.blob();
+    const filename = response.headers.get('content-disposition')?.match(/filename="?([^";]+)"?/i)?.[1] || fallbackFilename;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return { success: true, data: { filename }, message: 'Academic report downloaded.' };
+  } catch (error) {
+    return { success: false, error: { message: error instanceof Error ? error.message : 'The report could not be downloaded.' } };
+  }
+}
+
 export async function uploadFile(file: File, category: string): Promise<{ success: boolean; url?: string; error?: { message: string } }> {
   const body = new FormData();
   body.append('file', file);
@@ -237,6 +289,12 @@ export const majorsAPI = {
   removeOrToggle: (majorId: string, mode: 'deactivate' | 'delete' = 'deactivate') => fetchAPI<AcademicMajor | { id: string; deleted: boolean }>(`/api/admin/majors/${majorId}?mode=${mode}`, { method: 'DELETE' }),
   importFile: (body: FormData, onProgress?: (percent: number) => void) => uploadAPI<AcademicMajorImportResult>('/api/admin/majors/import', body, onProgress),
   audit: (filters?: { majorId?: string; action?: AcademicMajorAuditLog['action'] }) => fetchAPI<AcademicMajorAuditLog[]>(`/api/admin/majors/audit${queryString(filters)}`),
+};
+
+export const academicAnalyticsAPI = {
+  get: (filters?: { academic_level?: string; major_id?: string; academic_year?: number }) => fetchAPI<AcademicAnalyticsReport>(`/api/academic-analytics${queryString(filters)}`),
+  downloadExcel: (filters?: { academic_level?: string; major_id?: string; academic_year?: number }) => downloadAuthenticatedFile(`/api/academic-analytics/export${queryString({ ...filters, format: 'xlsx' })}`, 'ksit-academic-major-enrollment.xlsx'),
+  downloadPdf: (filters?: { academic_level?: string; major_id?: string; academic_year?: number }) => downloadAuthenticatedFile(`/api/academic-analytics/export${queryString({ ...filters, format: 'pdf' })}`, 'ksit-academic-major-enrollment.pdf'),
 };
 
 export const buildingsAPI = {

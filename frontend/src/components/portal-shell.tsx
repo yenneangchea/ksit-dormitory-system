@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, BedDouble, BellRing, Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, Home, KeyRound, LayoutDashboard, LogOut, Menu, Settings2, UsersRound, WalletCards, Wrench, X } from 'lucide-react';
+import { BarChart3, BedDouble, BellRing, Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, Home, KeyRound, LayoutDashboard, LogOut, Menu, Settings2, UsersRound, WalletCards, Wrench, X } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import { roleLabel, useDashboardLocalization, useLanguage } from '@/lib/i18n';
 import type { User, UserRole } from '@/types';
@@ -16,6 +16,7 @@ const navigation: Record<UserRole, NavItem[]> = {
     { label: 'Dashboard & Analytics', href: '/dashboard/admin', icon: BarChart3 },
     { label: 'User Management', href: '/dashboard/admin?tab=users', tab: 'users', icon: UsersRound },
     { label: 'Buildings & Rooms', href: '/dashboard/admin?tab=residence', tab: 'residence', icon: Building2 },
+    { label: 'Academic & Majors (កម្រិតសិក្សា និងជំនាញ)', href: '/dashboard/admin?tab=academics', tab: 'academics', icon: GraduationCap },
     { label: 'Homepage CMS & News', href: '/dashboard/admin?tab=cms', tab: 'cms', icon: BellRing },
     { label: 'System Settings', href: '/dashboard/admin?tab=settings', tab: 'settings', icon: Settings2 },
   ],
@@ -23,12 +24,14 @@ const navigation: Record<UserRole, NavItem[]> = {
     { label: 'Operations Overview', href: '/dashboard/manager', icon: BarChart3 },
     { label: 'Applications Review', href: '/dashboard/manager?tab=applications', tab: 'applications', icon: ClipboardCheck },
     { label: 'Room Matrix & Auto-Assign', href: '/dashboard/manager?tab=rooms', tab: 'rooms', icon: BedDouble },
+    { label: 'Academic & Majors (កម្រិតសិក្សា និងជំនាញ)', href: '/dashboard/manager?tab=academics', tab: 'academics', icon: GraduationCap },
     { label: 'Electricity & Water', href: '/dashboard/manager?tab=utilities', tab: 'utilities', icon: WalletCards },
     { label: 'Work Orders', href: '/dashboard/manager?tab=maintenance', tab: 'maintenance', icon: Wrench },
   ],
   teacher: [
     { label: 'Attendance Overview', href: '/dashboard/teacher', icon: BarChart3 },
     { label: 'Nightly Attendance Roster', href: '/dashboard/teacher?tab=attendance', tab: 'attendance', icon: ClipboardCheck },
+    { label: 'Academic & Majors (កម្រិតសិក្សា និងជំនាញ)', href: '/dashboard/teacher?tab=academics', tab: 'academics', icon: GraduationCap },
     { label: 'Leave Requests', href: '/dashboard/teacher?tab=leave', tab: 'leave', icon: FileText },
   ],
   student: [

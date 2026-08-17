@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx');
+const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
 const { exportMonthlyAttendanceToDrive, exportMonthlyBillingToDrive } = require('../services/syncManager.service');
 
@@ -1504,6 +1505,140 @@ async function getPublicMajors(req, res, next) {
   }
 }
 
+function singleRelation(value) {
+  return Array.isArray(value) ? value[0] || null : value || null;
+}
+
+function normalizeAcademicAnalyticsFilters(query = {}) {
+  const academicLevel = String(query.academic_level || '').trim().slice(0, 160);
+  const majorId = String(query.major_id || '').trim();
+  const academicYear = query.academic_year === undefined || query.academic_year === '' ? null : normalizeAcademicYear(query.academic_year, 'Year level');
+  if (majorId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(majorId)) throw fail('Major filter must be a valid identifier.');
+  return { academic_level: academicLevel || null, major_id: majorId || null, academic_year: academicYear };
+}
+
+function displayAcademicProfile(profile) {
+  const configuredMajor = singleRelation(profile.academic_majors);
+  const user = singleRelation(profile.users);
+  return {
+    user_id: profile.user_id,
+    full_name_khmer: user?.full_name_khmer || '',
+    full_name_latin: user?.full_name_latin || '',
+    email: user?.email || '',
+    gender: user?.gender || '',
+    academic_level: configuredMajor?.academic_level || profile.academic_level || 'Unspecified',
+    major_id: configuredMajor?.id || profile.academic_major_id || null,
+    major_name_khmer: configuredMajor?.name_khmer || profile.major || 'Unspecified',
+    major_name_english: configuredMajor?.name_english || profile.major || 'Unspecified',
+    academic_year: Number(profile.academic_year || 0) || null,
+    is_configured_major: Boolean(configuredMajor),
+  };
+}
+
+function summarizeAcademicStudents(students) {
+  const groups = new Map();
+  for (const student of students) {
+    const key = student.major_id || `${student.academic_level}|${student.major_name_english}`;
+    if (!groups.has(key)) groups.set(key, { academic_level: student.academic_level, major_id: student.major_id, major_name_khmer: student.major_name_khmer, major_name_english: student.major_name_english, total_students: 0, by_year: { 1: 0, 2: 0, 3: 0, 4: 0 } });
+    const group = groups.get(key);
+    group.total_students += 1;
+    if (student.academic_year && group.by_year[student.academic_year] !== undefined) group.by_year[student.academic_year] += 1;
+  }
+  return [...groups.values()].sort((left, right) => left.academic_level.localeCompare(right.academic_level) || left.major_name_english.localeCompare(right.major_name_english));
+}
+
+async function loadAcademicAnalytics(supabase, filters) {
+  const [profilesResponse, majorsResponse] = await Promise.all([
+    supabase.from('academic_profiles').select('user_id, academic_level, academic_major_id, academic_year, major, users!inner(id, role, full_name_khmer, full_name_latin, email, gender), academic_majors(id, academic_level, name_khmer, name_english, available_year_levels, is_active)').eq('users.role', 'student').order('academic_year').limit(2000),
+    supabase.from('academic_majors').select(ACADEMIC_MAJOR_FIELDS).eq('is_active', true).order('academic_level').order('name_khmer').limit(100),
+  ]);
+  if (profilesResponse.error || majorsResponse.error) throw profilesResponse.error || majorsResponse.error;
+  const students = (profilesResponse.data || []).map(displayAcademicProfile).filter((student) => {
+    if (filters.academic_level && student.academic_level !== filters.academic_level) return false;
+    if (filters.major_id && student.major_id !== filters.major_id) return false;
+    if (filters.academic_year && student.academic_year !== filters.academic_year) return false;
+    return true;
+  });
+  return { filters, students, summaries: summarizeAcademicStudents(students), majors: majorsResponse.data || [] };
+}
+
+async function getAcademicAnalytics(req, res, next) {
+  try {
+    const report = await loadAcademicAnalytics(getSupabase(), normalizeAcademicAnalyticsFilters(req.query));
+    res.json(publicPayload(report));
+  } catch (error) {
+    next(error);
+  }
+}
+
+function academicExportWorkbook(report) {
+  const workbook = XLSX.utils.book_new();
+  const students = report.students.map((student) => ({ 'Academic level': student.academic_level, 'Major (Khmer)': student.major_name_khmer, 'Major (English)': student.major_name_english, 'Year level': student.academic_year || '', 'Student name (Khmer)': student.full_name_khmer, 'Student name (Latin)': student.full_name_latin, Email: student.email, Gender: student.gender, 'Configured catalog major': student.is_configured_major ? 'Yes' : 'No' }));
+  const summaries = report.summaries.map((summary) => ({ 'Academic level': summary.academic_level, 'Major (Khmer)': summary.major_name_khmer, 'Major (English)': summary.major_name_english, 'Total students': summary.total_students, 'Year 1': summary.by_year[1], 'Year 2': summary.by_year[2], 'Year 3': summary.by_year[3], 'Year 4': summary.by_year[4] }));
+  const studentsSheet = XLSX.utils.json_to_sheet(students.length ? students : [{ Notice: 'No students match the selected academic filters.' }]);
+  const summarySheet = XLSX.utils.json_to_sheet(summaries.length ? summaries : [{ Notice: 'No enrollment summaries match the selected academic filters.' }]);
+  studentsSheet['!cols'] = [24, 28, 28, 12, 28, 28, 32, 12, 22].map((wch) => ({ wch }));
+  summarySheet['!cols'] = [24, 28, 28, 16, 12, 10, 10, 10, 10].map((wch) => ({ wch }));
+  XLSX.utils.book_append_sheet(workbook, studentsSheet, 'Students');
+  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Enrollment Summary');
+  return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+}
+
+function sendAcademicPdf(res, report) {
+  const document = new PDFDocument({ size: 'A4', margin: 42 });
+  const chunks = [];
+  document.on('data', (chunk) => chunks.push(chunk));
+  document.on('end', () => {
+    const buffer = Buffer.concat(chunks);
+    res.status(200);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="ksit-academic-major-enrollment.pdf"');
+    res.setHeader('Content-Length', buffer.length);
+    res.end(buffer);
+  });
+  document.fontSize(18).fillColor('#0B5C2C').text('KSIT Dormitory Management System');
+  document.moveDown(0.25).fontSize(13).fillColor('#18231D').text('Academic Major Enrollment Distribution');
+  document.moveDown(0.4).fontSize(9).fillColor('#526058').text(`Generated: ${new Date().toISOString().slice(0, 10)}  |  Records: ${report.students.length}`);
+  document.moveDown(1).fontSize(11).fillColor('#18231D').text('Enrollment summary by academic major');
+  document.moveDown(0.4);
+  if (!report.summaries.length) document.fontSize(10).fillColor('#526058').text('No students match the selected academic filters.');
+  for (const summary of report.summaries) {
+    const years = [1, 2, 3, 4].map((year) => `Y${year}: ${summary.by_year[year]}`).join('  |  ');
+    document.fontSize(10).fillColor('#18231D').text(`${summary.academic_level} — ${summary.major_name_english}`);
+    document.fontSize(9).fillColor('#526058').text(`Total: ${summary.total_students}  |  ${years}`);
+    document.moveDown(0.45);
+  }
+  document.moveDown(0.8).fontSize(11).fillColor('#18231D').text('Student list');
+  document.moveDown(0.35);
+  if (!report.students.length) document.fontSize(10).fillColor('#526058').text('No student records are available for the selected filters.');
+  for (const student of report.students.slice(0, 200)) {
+    if (document.y > 730) document.addPage();
+    document.fontSize(9).fillColor('#18231D').text(`${student.full_name_latin || 'Unnamed student'} — ${student.major_name_english} — Year ${student.academic_year || '—'}`);
+    document.fontSize(8).fillColor('#68736C').text(`${student.academic_level}  |  ${student.email || 'No email recorded'}`);
+    document.moveDown(0.25);
+  }
+  document.end();
+}
+
+async function exportAcademicAnalytics(req, res, next) {
+  try {
+    const format = String(req.query.format || '').trim().toLowerCase();
+    if (!['xlsx', 'pdf'].includes(format)) throw fail('Export format must be xlsx or pdf.');
+    const report = await loadAcademicAnalytics(getSupabase(), normalizeAcademicAnalyticsFilters(req.query));
+    if (format === 'xlsx') {
+      const buffer = academicExportWorkbook(report);
+      res.status(200);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="ksit-academic-major-enrollment.xlsx"');
+      res.setHeader('Content-Length', buffer.length);
+      return res.end(buffer);
+    }
+    return sendAcademicPdf(res, report);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getPublicAnnouncements(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -1749,6 +1884,8 @@ module.exports = {
   bulkImportMajors,
   listMajorAuditLogs,
   getPublicMajors,
+  getAcademicAnalytics,
+  exportAcademicAnalytics,
   getPublicAnnouncements,
   getAnnouncementManagement,
   updateAnnouncementSettings,

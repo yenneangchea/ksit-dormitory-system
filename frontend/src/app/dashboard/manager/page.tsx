@@ -13,6 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { PortalShell } from '@/components/portal-shell';
+import { AcademicAnalyticsPanel } from '@/components/academic-analytics-panel';
 import { ManagerApplicationReview } from '@/components/manager-application-review';
 import { DashboardAnalytics } from '@/components/dashboard-analytics';
 import { DashboardRoleGuardLoading, useRoleGuard } from '@/components/role-guard';
@@ -30,7 +31,7 @@ import {
 } from '@/lib/api';
 import type { Building, MaintenanceRequest, RoomApplication, UtilityBill } from '@/types';
 
-type ManagerTab = 'dashboard' | 'buildings' | 'applications' | 'rosters' | 'billing' | 'maintenance' | 'attendance';
+type ManagerTab = 'dashboard' | 'buildings' | 'applications' | 'academics' | 'rosters' | 'billing' | 'maintenance' | 'attendance';
 
 const emptySummary: DashboardSummary = {
   buildings: 0,
@@ -113,6 +114,7 @@ function ManagerDashboardContent() {
     const requested = searchParams?.get('tab');
     if (requested === 'applications') return 'applications';
     if (requested === 'rooms') return 'buildings';
+    if (requested === 'academics') return 'academics';
     if (requested === 'utilities') return 'billing';
     if (requested === 'maintenance') return 'maintenance';
     return 'dashboard';
@@ -246,7 +248,7 @@ function ManagerDashboardContent() {
       <section className="min-h-[calc(100vh-156px)]">
         <div className="mb-9 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">{activeTab === 'dashboard' ? 'Operations Overview' : activeTab === 'applications' ? 'Applications Review' : activeTab === 'buildings' ? 'Room Matrix & Auto-Assign' : activeTab === 'billing' ? 'Electricity & Water' : 'Work Orders'}</h1>
+            <h1 className="text-[28px] font-extrabold tracking-[-0.045em] text-[#18231d] sm:text-[32px]">{activeTab === 'dashboard' ? 'Operations Overview' : activeTab === 'applications' ? 'Applications Review' : activeTab === 'buildings' ? 'Room Matrix & Auto-Assign' : activeTab === 'academics' ? 'Academic & Majors' : activeTab === 'billing' ? 'Electricity & Water' : 'Work Orders'}</h1>
             <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[#68736c] sm:text-[15px]">{activeTab === 'dashboard' ? 'A live overview of residence operations, attendance, billing, and student services.' : 'This protected workspace displays only the section selected in the sidebar.'}</p>
           </div>
           {activeTab === 'dashboard' && <div className="self-start rounded-xl border border-[#dce3dc] bg-white p-2 shadow-sm"><div className="flex flex-wrap items-center gap-2"><input type="month" value={reportMonth} onChange={(event) => setReportMonth(event.target.value)} aria-label="Report month" className="min-h-11 rounded-lg border border-[#dce3dc] px-2 text-xs outline-none" /><button onClick={() => void exportReport('attendance')} disabled={Boolean(exportingReport) || !reportMonth} className="flex min-h-11 items-center gap-1 rounded-lg border border-[#dce3dc] px-3 text-xs font-semibold text-[#27342c] disabled:opacity-50"><Download className="size-3.5" />{exportingReport === 'attendance' ? 'Exporting…' : 'Attendance to Drive'}</button><button onClick={() => void exportReport('billing')} disabled={Boolean(exportingReport) || !reportMonth} className="flex min-h-11 items-center gap-1 rounded-lg bg-[#0b5c2c] px-3 text-xs font-semibold text-white disabled:opacity-50"><Download className="size-3.5" />{exportingReport === 'billing' ? 'Exporting…' : 'Billing to Drive'}</button></div>{(driveLinks.attendance || driveLinks.billing) && <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-[#1a6a37]">{driveLinks.attendance && <a href={driveLinks.attendance} target="_blank" rel="noreferrer" className="underline">Open attendance archive</a>}{driveLinks.billing && <a href={driveLinks.billing} target="_blank" rel="noreferrer" className="underline">Open billing archive</a>}</div>}</div>}
@@ -268,6 +270,7 @@ function ManagerDashboardContent() {
         <div className={activeTab === 'dashboard' ? 'hidden' : 'mt-8'}>
           {activeTab === 'buildings' && <><BuildingsPanel buildings={buildings} totalRooms={totalRooms} onAdd={() => setShowBuildingForm(true)} /><RoomAssignmentBoard board={assignmentBoard} selectedApplicationId={selectedApplicationId} isWorking={isWorking} onSelect={setSelectedApplicationId} onMove={manuallyPlaceStudent} /></>}
           {activeTab === 'applications' && <ManagerApplicationReview />}
+          {activeTab === 'academics' && <AcademicAnalyticsPanel role="manager" />}
           {activeTab === 'rosters' && <RostersPanel applications={applications} onDownload={downloadRosterCsv} />}
           {activeTab === 'billing' && <BillingPanel bills={utilityBills} onCreate={() => setShowBillForm(true)} />}
           {activeTab === 'maintenance' && <MaintenancePanel tickets={maintenance} isWorking={isWorking} onUpdate={updateMaintenanceStatus} />}

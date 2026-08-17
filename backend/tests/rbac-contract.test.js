@@ -34,6 +34,7 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   assert.match(admin, /activeTab === 'dashboard' &&/);
   assert.match(admin, /activeTab === 'users' && <>\<UserManagementPanel/);
   assert.match(admin, /activeTab === 'residence' && <><ResidenceConfigurationPanel/);
+  assert.match(admin, /activeTab === 'academics' && <AcademicAnalyticsPanel role="admin"/);
   assert.match(admin, /activeTab === 'cms' && <AnnouncementManagementPanel/);
   assert.match(admin, /activeTab === 'settings' && <SystemSettingsPanel/);
   assert.match(admin, /aria-label="Search users"/);
@@ -41,17 +42,20 @@ test('dashboard sidebar URL parameters select strict isolated views in every rol
   const manager = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'manager', 'page.tsx'), 'utf8');
   assert.match(manager, /type ManagerTab = 'dashboard'/);
   assert.match(manager, /requested === 'rooms'\) return 'buildings'/);
+  assert.match(manager, /requested === 'academics'\) return 'academics'/);
   assert.match(manager, /requested === 'utilities'\) return 'billing'/);
   assert.match(manager, /activeTab === 'dashboard' &&/);
   assert.match(manager, /activeTab === 'applications' && <ManagerApplicationReview/);
   assert.match(manager, /activeTab === 'buildings' && <><BuildingsPanel/);
+  assert.match(manager, /activeTab === 'academics' && <AcademicAnalyticsPanel role="manager"/);
   assert.match(manager, /activeTab === 'billing' && <BillingPanel/);
   assert.match(manager, /activeTab === 'maintenance' && <MaintenancePanel/);
 
   const teacher = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'teacher', 'page.tsx'), 'utf8');
-  assert.match(teacher, /type TeacherTab = 'dashboard' \| 'attendance' \| 'leave'/);
+  assert.match(teacher, /type TeacherTab = 'dashboard' \| 'attendance' \| 'academics' \| 'leave'/);
   assert.match(teacher, /activeTab === 'dashboard' &&/);
   assert.match(teacher, /activeTab === 'attendance' &&/);
+  assert.match(teacher, /activeTab === 'academics' && <AcademicAnalyticsPanel role="teacher"/);
   assert.match(teacher, /activeTab === 'leave'/);
 
   const student = fs.readFileSync(path.join(frontend, 'app', 'dashboard', 'student', 'page.tsx'), 'utf8');
