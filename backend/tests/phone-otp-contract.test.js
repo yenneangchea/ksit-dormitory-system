@@ -61,6 +61,9 @@ test('phone OTP API uses hashed single-use records, non-enumerating responses, a
   assert.match(controller, /is\('consumed_at', null\)/);
   assert.match(controller, /attempt_count: nextAttempts/);
   assert.match(controller, /sendTelegramOtp\(user\.telegram_id, code\)/);
+  assert.match(controller, /const linkedUsers = \(users \|\| \[\]\)\.filter/);
+  assert.match(controller, /if \(linkedUsers\.length !== 1\) return res\.status\(202\)\.json\(phoneOtpAcceptedResponse\(\)\)/);
+  assert.doesNotMatch(controller, /\.in\('phone', phoneLookupCandidates\(phone\)\)\s*\.limit\(1\)/);
   assert.match(controller, /phoneOtpAcceptedResponse\(\)/);
   assert.match(controller, /https:\/\/api\.telegram\.org\/bot\$\{token\}\/sendMessage/);
 });

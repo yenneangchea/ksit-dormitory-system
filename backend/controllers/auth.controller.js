@@ -427,12 +427,15 @@ const sendPhoneOtp = async (req, res, next) => {
     const { data: users, error: lookupError } = await supabase
       .from('users')
       .select('id, telegram_id')
-      .in('phone', phoneLookupCandidates(phone))
-      .limit(1);
+      .in('phone', phoneLookupCandidates(phone));
     if (lookupError) throw lookupError;
 
-    const user = users?.[0];
-    if (!user?.telegram_id) return res.status(202).json(phoneOtpAcceptedResponse());
+    // A phone number can exist on older duplicate records. Never select an
+    // arbitrary row: deliver only when exactly one matching profile has a
+    // verified Telegram link, otherwise keep the response non-enumerating.
+    const linkedUsers = (users || []).filter((candidate) => String(candidate.telegram_id || '').trim());
+    if (linkedUsers.length !== 1) return res.status(202).json(phoneOtpAcceptedResponse());
+    const user = linkedUsers[0];
 
     const resendWindowStart = new Date(Date.now() - OTP_RESEND_SECONDS * 1000).toISOString();
     const { data: recentCodes, error: recentCodeError } = await supabase
