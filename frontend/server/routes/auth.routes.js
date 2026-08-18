@@ -25,6 +25,20 @@ router.post('/telegram/register', authController.registerWithTelegram);
 router.post('/telegram', authController.loginWithTelegram);
 
 /**
+ * @route   POST /api/auth/phone/send-otp
+ * @desc    Send a six-digit sign-in code to the registered user's linked Telegram chat
+ * @access  Public
+ */
+router.post('/phone/send-otp', authController.sendPhoneOtp);
+
+/**
+ * @route   POST /api/auth/phone/verify-otp
+ * @desc    Verify a phone sign-in code and issue a role-aware JWT session
+ * @access  Public
+ */
+router.post('/phone/verify-otp', authController.verifyPhoneOtp);
+
+/**
  * @route   POST /api/auth/logout
  * @desc    Logout user (client-side token removal)
  * @access  Private

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { KeyRound, LoaderCircle, LockKeyhole, Mail, MessageCircle, ShieldCheck, UserPlus, UserRoundCheck } from "lucide-react";
+import { KeyRound, LoaderCircle, LockKeyhole, Mail, MessageCircle, Phone, RefreshCw, ShieldCheck, UserPlus, UserRoundCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,16 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registrationCompleted = searchParams?.get("registered") === "1";
-  const [mode, setMode] = useState<"email" | "telegram">(() => searchParams?.get("mode") === "telegram" ? "telegram" : "email");
+  const [mode, setMode] = useState<"email" | "phone" | "telegram">(() => {
+    const requestedMode = searchParams?.get("mode");
+    return requestedMode === "telegram" || requestedMode === "phone" ? requestedMode : "email";
+  });
   const [email, setEmail] = useState(() => registrationCompleted ? searchParams?.get("email") || "" : "");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [phoneStep, setPhoneStep] = useState<"phone" | "code">("phone");
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [telegramInitData] = useState(() => typeof window === "undefined" ? "" : window.Telegram?.WebApp?.initData || "");
   const [telegramMode, setTelegramMode] = useState<"login" | "signup">("login");
   const [telegramRegistration, setTelegramRegistration] = useState({ full_name_khmer: "", full_name_latin: "", email: "", phone: "", gender: "male" as "male" | "female", academic_level: "", academic_major_id: "", academic_year: "", password: "", confirmPassword: "" });
@@ -46,11 +53,45 @@ function LoginForm() {
   const [resetReason, setResetReason] = useState("");
   const [resetNotice, setResetNotice] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const registrationNotice = registrationCompleted ? "Registration completed. Enter the password you just created to sign in as a Student." : "";
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const restoreSession = async () => {
+      const token = localStorage.getItem("ksit_session_token");
+      if (!token) {
+        if (active) setIsCheckingSession(false);
+        return;
+      }
+
+      const response = await authAPI.getCurrentUser();
+      const role = response.user?.role;
+      const destination = role ? dashboardByRole[role] : undefined;
+      if (response.success && response.user && destination) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+        router.replace(destination);
+        return;
+      }
+
+      localStorage.removeItem("user");
+      localStorage.removeItem("ksit_session_token");
+      if (active) setIsCheckingSession(false);
+    };
+
+    void restoreSession();
+    return () => { active = false; };
+  }, [router]);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const interval = window.setInterval(() => setResendSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(interval);
+  }, [resendSeconds]);
 
   function completeLogin(response: ApiResponse) {
     const role = response.user?.role;
@@ -85,6 +126,58 @@ function LoginForm() {
   async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await signInWithEmail();
+  }
+
+  async function sendPhoneVerificationCode() {
+    if (!phone.trim()) {
+      setError("Enter your registered phone number.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await authAPI.sendPhoneOtp(phone.trim());
+      if (!response.success) {
+        setError(response.error?.message || "Unable to send the verification code.");
+        return;
+      }
+      setPhoneStep("code");
+      setOtpCode("");
+      setResendSeconds(response.data?.resend_after_seconds || 60);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function verifyPhoneVerificationCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (otpCode.length !== 6) {
+      setError("Enter the complete six-digit verification code.");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    try {
+      completeLogin(await authAPI.verifyPhoneOtp({ phone: phone.trim(), code: otpCode }));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function updateOtpDigit(index: number, value: string) {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const nextDigits = otpCode.padEnd(6, " ").split("");
+    nextDigits[index] = digit || " ";
+    setOtpCode(nextDigits.join("").replace(/\s+$/g, ""));
+    if (digit && index < 5) window.document.getElementById(`phone-otp-${index + 1}`)?.focus();
+  }
+
+  function pasteOtp(event: React.ClipboardEvent<HTMLInputElement>) {
+    const pastedCode = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pastedCode) return;
+    event.preventDefault();
+    setOtpCode(pastedCode);
+    window.document.getElementById(`phone-otp-${Math.min(pastedCode.length + 1, 6)}`)?.focus();
   }
 
   async function handleTelegramLogin() {
@@ -155,6 +248,10 @@ function LoginForm() {
     }
   }
 
+  if (isCheckingSession) {
+    return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-[#0b5c2c]"><LoaderCircle className="mr-2 size-4 animate-spin" /> Restoring your KSIT Dormitory session…</main>;
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_#e9f5ed,_transparent_43%),linear-gradient(135deg,_#f8faf7,_#eef5ef)] px-4 py-10">
       <section className="w-full max-w-md" aria-labelledby="login-title">
@@ -172,8 +269,9 @@ function LoginForm() {
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-2 rounded-xl border border-[#dce6dd] bg-[#f5f8f5] p-1" role="tablist" aria-label="Login options">
+            <div className="grid grid-cols-3 rounded-xl border border-[#dce6dd] bg-[#f5f8f5] p-1" role="tablist" aria-label="Login options">
               <button type="button" role="tab" aria-selected={mode === "email"} onClick={() => { setMode("email"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "email" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Mail className="size-4" /> Login with Email</button>
+              <button type="button" role="tab" aria-selected={mode === "phone"} onClick={() => { setMode("phone"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "phone" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Phone className="size-4" /> Phone</button>
               <button type="button" role="tab" aria-selected={mode === "telegram"} onClick={() => { setMode("telegram"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "telegram" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><MessageCircle className="size-4" /> Telegram</button>
             </div>
 
@@ -187,6 +285,11 @@ function LoginForm() {
                 <Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Signing in securely…</> : "Login with Email"}</Button>
                 <button type="button" onClick={() => { setResetOpen(true); setResetNotice(""); }} className="mx-auto flex min-h-11 items-center gap-2 text-sm font-bold text-[#0b5c2c] hover:underline"><KeyRound className="size-4" /> Forgot Password? / ភ្លេចពាក្យសម្ងាត់? ស្នើសុំប្តូរ</button>
               </form>
+            ) : mode === "phone" ? (
+              <section className="mt-5 space-y-4" aria-busy={isLoading} aria-label="Phone login with Telegram verification">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-slate-700"><div className="flex items-center gap-2 font-bold text-emerald-900"><Phone className="size-4" /> Login with Phone</div><p className="mt-2">Enter your registered number. The six-digit verification code is delivered only to the Telegram account linked to your dormitory profile.</p></div>
+                {phoneStep === "phone" ? <form onSubmit={(event) => { event.preventDefault(); void sendPhoneVerificationCode(); }} className="space-y-4"><div className="space-y-2"><Label htmlFor="phone-login">Registered phone number</Label><Input id="phone-login" inputMode="tel" autoComplete="tel" placeholder="089511383" value={phone} onChange={(event) => { setPhone(event.target.value); if (error) setError(""); }} disabled={isLoading} required className="h-11 border-[#dce3dc] focus-visible:ring-[#0b5c2c]" /></div><Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Sending code…</> : <><MessageCircle className="mr-2 size-4" /> Send Telegram code</>}</Button></form> : <form onSubmit={verifyPhoneVerificationCode} className="space-y-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-bold text-[#223128]">Enter the six-digit code</p><p className="mt-1 text-xs text-[#68736c]">Sent to the Telegram account linked with {phone}.</p></div><button type="button" onClick={() => { setPhoneStep("phone"); setOtpCode(""); setError(""); }} className="min-h-11 px-2 text-xs font-bold text-[#0b5c2c] hover:underline">Change number</button></div><div className="grid grid-cols-6 gap-2" onPasteCapture={pasteOtp}>{Array.from({ length: 6 }).map((_, index) => <Input key={index} id={`phone-otp-${index + 1}`} inputMode="numeric" autoComplete={index === 0 ? "one-time-code" : "off"} aria-label={`Verification digit ${index + 1}`} maxLength={1} value={otpCode[index] || ""} onChange={(event) => updateOtpDigit(index, event.target.value)} onKeyDown={(event) => { if (event.key === "Backspace" && !otpCode[index] && index > 0) window.document.getElementById(`phone-otp-${index}`)?.focus(); }} disabled={isLoading} className="h-12 px-0 text-center text-xl font-bold tracking-wide" />)}</div><Button type="submit" className="h-11 w-full bg-[#0b5c2c] font-semibold hover:bg-[#084a23]" disabled={isLoading || otpCode.length !== 6}>{isLoading ? <><LoaderCircle className="mr-2 size-4 animate-spin" /> Verifying…</> : "Verify and continue"}</Button><button type="button" onClick={() => void sendPhoneVerificationCode()} disabled={isLoading || resendSeconds > 0} className="mx-auto flex min-h-11 items-center gap-2 text-sm font-bold text-[#0b5c2c] disabled:text-[#8b9a90]"><RefreshCw className="size-4" /> {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend Telegram code"}</button></form>}
+              </section>
             ) : (
               <div className="mt-5 space-y-4" aria-busy={isLoading}>
                 <div className="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-slate-700"><div className="flex items-center gap-2 font-bold text-sky-900"><ShieldCheck className="size-4" /> Telegram access</div><p className="mt-2">Open this page from KSITDorm in Telegram. Existing users log in directly; new users sign up once and receive the Student dashboard by default.</p></div>

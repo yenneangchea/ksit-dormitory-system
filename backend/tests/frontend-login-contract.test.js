@@ -25,7 +25,7 @@ test('login page exposes email and Telegram choices plus a password-reset reques
   assert.match(login, /loginWithTelegram/);
   assert.match(login, /registerWithTelegram/);
   assert.match(login, /Sign up with Telegram/);
-  assert.match(login, /searchParams\?\.get\("mode"\) === "telegram"/);
+  assert.match(login, /requestedMode === "telegram" \|\| requestedMode === "phone"/);
   assert.match(login, /searchParams\?\.get\("registered"\)/);
   assert.match(login, /Registration completed\. Enter the password you just created/);
   assert.match(login, /Forgot Password\? \/ ភ្លេចពាក្យសម្ងាត់\? ស្នើសុំប្តូរ/);

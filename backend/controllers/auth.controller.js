@@ -2,6 +2,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getSupabase } = require('../config/supabase');
 const { verifyTelegramWebAppInitData } = require('../lib/telegram-webapp-auth');
+const {
+  OTP_MAX_ATTEMPTS,
+  OTP_RESEND_SECONDS,
+  assertSixDigitOtp,
+  buildTelegramOtpMessage,
+  generateSixDigitOtp,
+  getOtpExpiry,
+  normalizePhoneNumber,
+  phoneLookupCandidates,
+} = require('../lib/phone-otp');
 
 const APPROVED_DEMO_CREDENTIALS = Object.freeze({
   'yenneangchea@gmail.com': 'Neang12',
@@ -53,6 +63,35 @@ function createSessionToken(user) {
   }
 
   return jwt.sign({ sub: user.id, role: user.role }, secret, { expiresIn: '12h' });
+}
+
+function phoneOtpAcceptedResponse() {
+  return {
+    success: true,
+    message: 'If this registered phone number is linked to Telegram, a six-digit verification code has been sent.',
+    resend_after_seconds: OTP_RESEND_SECONDS,
+  };
+}
+
+async function sendTelegramOtp(telegramId, code) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    const error = new Error('Telegram OTP delivery is not configured. Please use email or Telegram Mini App login.');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: telegramId, text: buildTelegramOtpMessage(code) }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.ok) {
+    const error = new Error('The verification code could not be delivered to the linked Telegram account. Please use email login or try again later.');
+    error.statusCode = 503;
+    throw error;
+  }
 }
 
 function decodeSession(req) {
@@ -302,6 +341,127 @@ const loginWithTelegram = async (req, res, next) => {
 };
 
 /**
+ * @desc Send a one-time phone-login code to the account's linked Telegram chat.
+ * @route POST /api/auth/phone/send-otp
+ * @access Public, non-enumerating
+ */
+const sendPhoneOtp = async (req, res, next) => {
+  try {
+    const phone = normalizePhoneNumber(req.body?.phone);
+    const supabase = getSupabase();
+    const { data: users, error: lookupError } = await supabase
+      .from('users')
+      .select('id, telegram_id')
+      .in('phone', phoneLookupCandidates(phone))
+      .limit(1);
+    if (lookupError) throw lookupError;
+
+    const user = users?.[0];
+    if (!user?.telegram_id) return res.status(202).json(phoneOtpAcceptedResponse());
+
+    const resendWindowStart = new Date(Date.now() - OTP_RESEND_SECONDS * 1000).toISOString();
+    const { data: recentCodes, error: recentCodeError } = await supabase
+      .from('phone_verification_codes')
+      .select('id')
+      .eq('phone', phone)
+      .is('consumed_at', null)
+      .gte('created_at', resendWindowStart)
+      .limit(1);
+    if (recentCodeError) throw recentCodeError;
+    if (recentCodes?.length) return res.status(202).json(phoneOtpAcceptedResponse());
+
+    const now = new Date().toISOString();
+    const { error: invalidateError } = await supabase
+      .from('phone_verification_codes')
+      .update({ consumed_at: now })
+      .eq('phone', phone)
+      .is('consumed_at', null);
+    if (invalidateError) throw invalidateError;
+
+    const code = generateSixDigitOtp();
+    const { data: otpRecord, error: insertError } = await supabase
+      .from('phone_verification_codes')
+      .insert({ user_id: user.id, phone, code_hash: await bcrypt.hash(code, 12), expires_at: getOtpExpiry() })
+      .select('id')
+      .single();
+    if (insertError) throw insertError;
+
+    try {
+      await sendTelegramOtp(user.telegram_id, code);
+    } catch (deliveryError) {
+      await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id).is('consumed_at', null);
+      throw deliveryError;
+    }
+
+    return res.status(202).json(phoneOtpAcceptedResponse());
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Verify a Telegram-delivered phone OTP and issue a role-aware JWT session.
+ * @route POST /api/auth/phone/verify-otp
+ * @access Public
+ */
+const verifyPhoneOtp = async (req, res, next) => {
+  try {
+    const phone = normalizePhoneNumber(req.body?.phone);
+    const code = assertSixDigitOtp(req.body?.code);
+    const supabase = getSupabase();
+    const { data: otpRecord, error: codeLookupError } = await supabase
+      .from('phone_verification_codes')
+      .select('id, user_id, code_hash, expires_at, attempt_count')
+      .eq('phone', phone)
+      .is('consumed_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (codeLookupError) throw codeLookupError;
+
+    const invalidOtp = new Error('The verification code is invalid, expired, or has already been used.');
+    invalidOtp.statusCode = 401;
+    if (!otpRecord || new Date(otpRecord.expires_at).getTime() <= Date.now() || otpRecord.attempt_count >= OTP_MAX_ATTEMPTS) {
+      if (otpRecord?.id) await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id).is('consumed_at', null);
+      throw invalidOtp;
+    }
+
+    if (!(await bcrypt.compare(code, otpRecord.code_hash))) {
+      const nextAttempts = otpRecord.attempt_count + 1;
+      await supabase
+        .from('phone_verification_codes')
+        .update({ attempt_count: nextAttempts, ...(nextAttempts >= OTP_MAX_ATTEMPTS ? { consumed_at: new Date().toISOString() } : {}) })
+        .eq('id', otpRecord.id)
+        .is('consumed_at', null);
+      throw invalidOtp;
+    }
+
+    const { data: consumedRecord, error: consumeError } = await supabase
+      .from('phone_verification_codes')
+      .update({ consumed_at: new Date().toISOString() })
+      .eq('id', otpRecord.id)
+      .is('consumed_at', null)
+      .select('id')
+      .maybeSingle();
+    if (consumeError) throw consumeError;
+    if (!consumedRecord) throw invalidOtp;
+
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at')
+      .eq('id', otpRecord.user_id)
+      .maybeSingle();
+    if (userError) throw userError;
+    if (!user) throw invalidOtp;
+
+    const safeUser = publicUser(user);
+    return res.json({ success: true, message: 'Phone verification successful.', user: safeUser, role: safeUser.role, permissions: permissionsFor(safeUser.role), token: createSessionToken(user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc Log out of the local signed session.
  * @route POST /api/auth/logout
  * @access Private client cleanup; tokens are stateless.
@@ -433,6 +593,8 @@ module.exports = {
   login,
   registerWithTelegram,
   loginWithTelegram,
+  sendPhoneOtp,
+  verifyPhoneOtp,
   logout,
   getCurrentUser,
   changePassword,

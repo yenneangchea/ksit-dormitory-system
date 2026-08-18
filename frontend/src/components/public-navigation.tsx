@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, LogIn } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogIn } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type PublicRoute = 'about' | 'docs' | 'features' | 'changelog';
@@ -12,9 +12,17 @@ const systemLinks: Array<{ href: PublicRoute; label: string; detail: string }> =
   { href: 'changelog', label: '📢 កំណត់ត្រាកំណែទម្រង់', detail: 'Changelog & Latest Updates' },
 ];
 
+const dashboardByRole = {
+  admin: '/dashboard/admin',
+  manager: '/dashboard/manager',
+  teacher: '/dashboard/teacher',
+  student: '/dashboard/student',
+} as const;
+
 export function PublicNavigation({ active }: { active?: PublicRoute }) {
   const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
   const [dropdownLeft, setDropdownLeft] = useState(16);
+  const [dashboardHref, setDashboardHref] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -51,6 +59,27 @@ export function PublicNavigation({ active }: { active?: PublicRoute }) {
     };
   }, [aboutDropdownOpen]);
 
+  useEffect(() => {
+    const syncSessionAction = () => {
+      const token = localStorage.getItem('ksit_session_token');
+      const rawUser = localStorage.getItem('user');
+      if (!token || !rawUser) {
+        setDashboardHref(null);
+        return;
+      }
+      try {
+        const role = JSON.parse(rawUser)?.role as keyof typeof dashboardByRole | undefined;
+        setDashboardHref(role ? dashboardByRole[role] || null : null);
+      } catch {
+        setDashboardHref(null);
+      }
+    };
+
+    syncSessionAction();
+    window.addEventListener('storage', syncSessionAction);
+    return () => window.removeEventListener('storage', syncSessionAction);
+  }, []);
+
   return (
     <nav ref={navRef} aria-label="ម៉ឺនុយសាធារណៈ" className="sticky top-0 z-40 bg-[#147a5b] font-sans text-white shadow-md">
       <div className="scrollbar-none mx-auto flex max-w-7xl items-center overflow-x-auto whitespace-nowrap px-4 py-2.5 sm:px-6 lg:px-8">
@@ -71,7 +100,7 @@ export function PublicNavigation({ active }: { active?: PublicRoute }) {
           អំពីប្រព័ន្ធ <ChevronDown className={`size-4 text-emerald-200 transition-transform duration-200 ${aboutDropdownOpen ? 'rotate-180' : ''}`} />
         </button>
         <Link href="/#contact" className="shrink-0 rounded-lg px-3 py-2 text-sm font-bold hover:bg-[#0f6047]">ទំនាក់ទំនង</Link>
-        <Link href="/login" className="ml-2 inline-flex shrink-0 items-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"><LogIn className="size-4" /> ចូលប្រើប្រាស់</Link>
+        <Link href={dashboardHref || '/login'} className="ml-2 inline-flex shrink-0 items-center gap-2 rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">{dashboardHref ? <><LayoutDashboard className="size-4" /> ផ្ទាំងគ្រប់គ្រង</> : <><LogIn className="size-4" /> ចូលប្រើប្រាស់</>}</Link>
       </div>
 
       {aboutDropdownOpen && (
