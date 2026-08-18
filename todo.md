@@ -201,3 +201,5 @@
 - [x] Add a visible Mini App-only Telegram-link control in the portal shell with clear success and failure feedback.
 - [x] Diagnose and repair the reported missing Telegram OTP delivery for the now-linked Manager account.
 - [x] Improve mobile six-digit OTP entry so users can paste or type the full code without manually tapping every box.
+- [x] Verify the live single-field OTP UI, the linked Manager profile state, and the current SMS fallback availability.
+- [x] Make phone-number OTP the primary login experience while retaining email and Telegram as secondary options.

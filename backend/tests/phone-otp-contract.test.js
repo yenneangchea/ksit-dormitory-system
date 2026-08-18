@@ -79,6 +79,8 @@ test('login UI restores a valid session, offers a phone OTP tab, and makes publi
   assert.match(login, /Login with Phone/);
   assert.match(login, /authAPI\.sendPhoneOtp/);
   assert.match(login, /authAPI\.verifyPhoneOtp/);
+  assert.match(login, /requestedMode === "telegram" \|\| requestedMode === "email" \? requestedMode : "phone"/);
+  assert.ok(login.indexOf('Phone OTP') < login.indexOf('Login with Email'), 'Phone OTP must be listed before Email');
   assert.match(login, /id="phone-otp-code"/);
   assert.match(login, /autoComplete="one-time-code"/);
   assert.match(login, /maxLength=\{6\}/);

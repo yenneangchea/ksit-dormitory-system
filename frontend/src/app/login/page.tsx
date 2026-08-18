@@ -35,7 +35,7 @@ function LoginForm() {
   const registrationCompleted = searchParams?.get("registered") === "1";
   const [mode, setMode] = useState<"email" | "phone" | "telegram">(() => {
     const requestedMode = searchParams?.get("mode");
-    return requestedMode === "telegram" || requestedMode === "phone" ? requestedMode : "email";
+    return requestedMode === "telegram" || requestedMode === "email" ? requestedMode : "phone";
   });
   const [email, setEmail] = useState(() => registrationCompleted ? searchParams?.get("email") || "" : "");
   const [password, setPassword] = useState("");
@@ -258,13 +258,13 @@ function LoginForm() {
         <Card className="border-[#dce6dd] bg-white/95 shadow-xl shadow-[#183d2430]">
           <CardHeader className="space-y-3 pb-5 text-center">
             <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#eaf6ec] text-[#0b5c2c]"><LockKeyhole className="size-5" aria-hidden="true" /></span>
-            <div><CardTitle id="login-title" className="text-2xl font-bold tracking-[-0.03em] text-[#18231d]">ចូលប្រើប្រាស់ KSIT Dormitory</CardTitle><CardDescription className="mt-2 text-sm leading-6 text-[#68736c]">ជ្រើសរើសការចូលប្រើប្រាស់តាមអ៊ីមែល ឬ Telegram។ ប្រព័ន្ធនឹងបើកផ្ទាំងតួនាទីរបស់អ្នកដោយស្វ័យប្រវត្តិ។</CardDescription></div>
+            <div><CardTitle id="login-title" className="text-2xl font-bold tracking-[-0.03em] text-[#18231d]">ចូលប្រើប្រាស់ KSIT Dormitory</CardTitle><CardDescription className="mt-2 text-sm leading-6 text-[#68736c]">ចូលប្រើដោយលេខទូរស័ព្ទ និងលេខកូដ Telegram ជាជម្រើសចម្បង។ អ៊ីមែល និង Telegram Mini App នៅតែអាចប្រើបានជាជម្រើសផ្សេងទៀត។</CardDescription></div>
           </CardHeader>
 
           <CardContent>
             <div className="grid grid-cols-3 rounded-xl border border-[#dce6dd] bg-[#f5f8f5] p-1" role="tablist" aria-label="Login options">
-              <button type="button" role="tab" aria-selected={mode === "email"} onClick={() => { setMode("email"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "email" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Mail className="size-4" /> Login with Email</button>
-              <button type="button" role="tab" aria-selected={mode === "phone"} onClick={() => { setMode("phone"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "phone" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Phone className="size-4" /> Phone</button>
+              <button type="button" role="tab" aria-selected={mode === "phone"} onClick={() => { setMode("phone"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "phone" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Phone className="size-4" /> Phone OTP</button>
+              <button type="button" role="tab" aria-selected={mode === "email"} onClick={() => { setMode("email"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "email" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><Mail className="size-4" /> Email</button>
               <button type="button" role="tab" aria-selected={mode === "telegram"} onClick={() => { setMode("telegram"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition ${mode === "telegram" ? "bg-white text-[#0b5c2c] shadow-sm" : "text-[#68736c] hover:text-[#0b5c2c]"}`}><MessageCircle className="size-4" /> Telegram</button>
             </div>
 
