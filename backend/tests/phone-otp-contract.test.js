@@ -79,7 +79,11 @@ test('login UI restores a valid session, offers a phone OTP tab, and makes publi
   assert.match(login, /Login with Phone/);
   assert.match(login, /authAPI\.sendPhoneOtp/);
   assert.match(login, /authAPI\.verifyPhoneOtp/);
-  assert.match(login, /phone-otp-\$\{index \+ 1\}/);
+  assert.match(login, /id="phone-otp-code"/);
+  assert.match(login, /autoComplete="one-time-code"/);
+  assert.match(login, /maxLength=\{6\}/);
+  assert.match(login, /Type or paste the full six-digit code once\./);
+  assert.doesNotMatch(login, /phone-otp-\$\{index \+ 1\}/);
   assert.match(navigation, /dashboardByRole/);
   assert.match(navigation, /ផ្ទាំងគ្រប់គ្រង/);
   assert.match(api, /sendPhoneOtp/);

@@ -200,3 +200,4 @@
 - [x] Add a protected authenticated flow that links a logged-in KSIT account to verified Telegram Mini App identity data.
 - [x] Add a visible Mini App-only Telegram-link control in the portal shell with clear success and failure feedback.
 - [x] Diagnose and repair the reported missing Telegram OTP delivery for the now-linked Manager account.
+- [x] Improve mobile six-digit OTP entry so users can paste or type the full code without manually tapping every box.
