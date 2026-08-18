@@ -73,7 +73,12 @@ function LoginForm() {
       const role = response.user?.role;
       const destination = role ? dashboardByRole[role] : undefined;
       if (response.success && response.user && destination) {
-        localStorage.setItem("user", JSON.stringify(response.user));
+        let restoredUser = response.user;
+        if (telegramInitData) {
+          const linkResponse = await authAPI.linkTelegram(telegramInitData);
+          if (linkResponse.success && linkResponse.user) restoredUser = linkResponse.user;
+        }
+        localStorage.setItem("user", JSON.stringify(restoredUser));
         router.replace(destination);
         return;
       }
@@ -85,7 +90,7 @@ function LoginForm() {
 
     void restoreSession();
     return () => { active = false; };
-  }, [router]);
+  }, [router, telegramInitData]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;

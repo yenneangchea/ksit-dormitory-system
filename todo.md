@@ -184,3 +184,17 @@
 - [x] Persist transparent utility usage, subsidy, chargeable-usage, and room-split details for invoices and KHQR amounts.
 - [x] Display the complete subsidy-aware utility breakdown in Manager and Student billing workspaces.
 - [x] Add regression coverage, validate the production build, commit, push, deploy, and verify the Smart Utility Subsidies release.
+- [x] Review current RLS posture and prepare safe policy recommendations for site_settings and news_posts without disrupting existing access paths.
+- [x] Generate a stakeholder presentation summarizing the Smart Utility Subsidies and Free Quota release.
+- [x] Create and validate a reusable KSIT Dormitory secure feature-release skill.
+- [x] Add a least-privilege RLS migration for site_settings and news_posts to the repository without applying it to production.
+- [x] Run automated quota-aware split-billing regression tests and verify the RLS migration contract.
+- [x] Add session-aware login auto-redirect and role-aware homepage Dashboard navigation.
+- [x] Add idempotent, expiry-bound phone verification code storage for Telegram OTP login.
+- [x] Add secure phone OTP send and verification APIs with linked Telegram delivery and role-based JWT issuance.
+- [x] Add the six-digit phone OTP login experience for browser and Telegram Mini App contexts.
+- [x] Add auth and OTP regression coverage, run production build validation, commit, push, deploy, and verify the release.
+- [ ] Run one controlled live Telegram OTP delivery request for the registered Super Admin phone without exposing the OTP value.
+- [x] Diagnose and repair the missing production Telegram authentication and OTP-delivery configuration.
+- [ ] Link the authorized test account to Telegram and verify one real OTP delivery without exposing the code.
+- [ ] Add a protected authenticated flow that links a logged-in KSIT account to verified Telegram Mini App identity data.

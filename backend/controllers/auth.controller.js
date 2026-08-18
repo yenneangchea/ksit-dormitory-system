@@ -341,6 +341,81 @@ const loginWithTelegram = async (req, res, next) => {
 };
 
 /**
+ * @desc Bind the current signed-in KSIT account to verified Telegram Mini App identity data.
+ * @route POST /api/auth/telegram/link
+ * @access Private
+ */
+const linkTelegramToCurrentUser = async (req, res, next) => {
+  try {
+    const accountId = req.user?.sub;
+    if (!accountId) {
+      const error = new Error('A valid signed-in session is required to link Telegram.');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const { initData } = req.body || {};
+    const { telegramId } = verifyTelegramWebAppInitData(
+      initData,
+      process.env.TELEGRAM_BOT_TOKEN,
+      Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 600),
+    );
+    const supabase = getSupabase();
+    const selectFields = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
+
+    const { data: currentUser, error: currentUserError } = await supabase
+      .from('users')
+      .select(selectFields)
+      .eq('id', accountId)
+      .maybeSingle();
+    if (currentUserError) throw currentUserError;
+    if (!currentUser) {
+      const error = new Error('The signed-in account could not be found.');
+      error.statusCode = 401;
+      throw error;
+    }
+    if (currentUser.telegram_id && String(currentUser.telegram_id) !== String(telegramId)) {
+      const error = new Error('This KSIT account is already linked to a different Telegram account. Contact an administrator to change the linked account.');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const { data: linkedOwner, error: linkedOwnerError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('telegram_id', telegramId)
+      .maybeSingle();
+    if (linkedOwnerError) throw linkedOwnerError;
+    if (linkedOwner && linkedOwner.id !== accountId) {
+      const error = new Error('This Telegram account is already linked to a different KSIT dormitory profile.');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    if (String(currentUser.telegram_id || '') === String(telegramId)) {
+      return res.json({ success: true, message: 'This Telegram account is already linked.', user: publicUser(currentUser) });
+    }
+
+    const { data: linkedUser, error: updateError } = await supabase
+      .from('users')
+      .update({ telegram_id: telegramId, updated_at: new Date().toISOString() })
+      .eq('id', accountId)
+      .select(selectFields)
+      .single();
+    if (updateError) throw updateError;
+
+    return res.json({ success: true, message: 'Telegram account linked successfully.', user: publicUser(linkedUser) });
+  } catch (error) {
+    if (!error.statusCode && /not configured/.test(error.message || '')) {
+      error.statusCode = 503;
+    } else if (!error.statusCode && /Telegram login|Telegram user|could not be verified|incomplete|expired/.test(error.message || '')) {
+      error.statusCode = 401;
+    }
+    next(error);
+  }
+};
+
+/**
  * @desc Send a one-time phone-login code to the account's linked Telegram chat.
  * @route POST /api/auth/phone/send-otp
  * @access Public, non-enumerating
@@ -593,6 +668,7 @@ module.exports = {
   login,
   registerWithTelegram,
   loginWithTelegram,
+  linkTelegramToCurrentUser,
   sendPhoneOtp,
   verifyPhoneOtp,
   logout,

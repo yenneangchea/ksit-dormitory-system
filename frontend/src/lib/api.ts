@@ -259,6 +259,8 @@ export const authAPI = {
     fetchAPI<never>('/api/auth/telegram/register', { method: 'POST', body: JSON.stringify(payload) }, false),
   loginWithTelegram: (initData: string) =>
     fetchAPI<never>('/api/auth/telegram', { method: 'POST', body: JSON.stringify({ initData }) }, false),
+  linkTelegram: (initData: string) =>
+    fetchAPI<never>('/api/auth/telegram/link', { method: 'POST', body: JSON.stringify({ initData }) }),
   sendPhoneOtp: (phone: string) =>
     fetchAPI<{ resend_after_seconds: number }>('/api/auth/phone/send-otp', { method: 'POST', body: JSON.stringify({ phone }) }, false),
   verifyPhoneOtp: (payload: { phone: string; code: string }) =>

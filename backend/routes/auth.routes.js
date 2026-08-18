@@ -25,6 +25,13 @@ router.post('/telegram/register', authController.registerWithTelegram);
 router.post('/telegram', authController.loginWithTelegram);
 
 /**
+ * @route   POST /api/auth/telegram/link
+ * @desc    Link verified Telegram Mini App identity to the current signed-in KSIT account
+ * @access  Private
+ */
+router.post('/telegram/link', authenticate, authController.linkTelegramToCurrentUser);
+
+/**
  * @route   POST /api/auth/phone/send-otp
  * @desc    Send a six-digit sign-in code to the registered user's linked Telegram chat
  * @access  Public
