@@ -31,6 +31,16 @@ test('student lifecycle routes are authenticated and manager decisions cannot be
   assert.match(routes, /router\.patch\('\/manager\/applications\/:applicationId\/review', requireRole\('admin', 'manager'\), applicationLifecycle\.reviewManagerApplication\)/);
 });
 
+test('the draft-progress migration is additive and retains existing form data for safe resume', () => {
+  const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20260818_application_draft_progress_and_pdf_metadata.sql'), 'utf8');
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS step_progress INTEGER/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS draft_data JSONB/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS google_drive_folder_id TEXT/);
+  assert.match(migration, /CHECK \(step_progress BETWEEN 1 AND 5\)/);
+  assert.doesNotMatch(migration, /UPDATE\s+public\.room_applications/i);
+  assert.doesNotMatch(migration, /DROP\s+(TABLE|COLUMN|TYPE|SCHEMA)/i);
+});
+
 test('private upload and PDF handlers enforce owner access, file constraints, and signed retrieval', () => {
   const controller = fs.readFileSync(path.join(backend, 'controllers', 'application-lifecycle.controller.js'), 'utf8');
   assert.match(controller, /const DOCUMENTS =/);
@@ -41,6 +51,10 @@ test('private upload and PDF handlers enforce owner access, file constraints, an
   assert.match(controller, /driveStorage\.isDriveReference/);
   assert.match(controller, /findApplication\(supabase, req\.params\.applicationId, req\.user\.role === 'student' \? req\.user\.sub : null\)/);
   assert.match(controller, /status: 'under_review', submission_step: 5/);
+  assert.match(controller, /step_progress: 4/);
+  assert.match(controller, /draft_data: formData/);
+  assert.match(controller, /officialPdfFilename/);
+  assert.match(controller, /type === 'prefilled_pdf' \? 'attachment' : 'inline'/);
   assert.match(controller, /generateOfficialApplicationPdf/);
   assert.match(controller, /signed_application_doc_url/);
 });
@@ -69,6 +83,10 @@ test('student wizard exposes all official form sections and five protected lifec
   assert.match(wizard, /applicationsAPI\.submitForm/);
   assert.match(wizard, /applicationsAPI\.uploadSigned/);
   assert.match(wizard, /applicationsAPI\.openDocument\(application\.id, 'prefilled_pdf'\)/);
+  assert.match(wizard, /draft_data \|\| application\?\.form_data_json/);
+  assert.match(wizard, /step_progress: sectionProgress/);
+  assert.match(wizard, /រក្សាទុកពង្រាង/);
+  assert.match(wizard, /rows\.slice\(0, 1\)/);
 });
 
 test('student draft save preserves the reference-document stage across its parent data refresh', () => {

@@ -145,11 +145,15 @@ async function openProtectedApplicationDocument(applicationId: string, documentT
     throw new Error(data?.error?.message || 'Unable to open the protected document.');
   }
   const blob = await response.blob();
+  const filename = response.headers.get('content-disposition')?.match(/filename="?([^";]+)"?/i)?.[1];
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.target = '_blank';
-  anchor.rel = 'noopener noreferrer';
+  if (filename) anchor.download = filename;
+  else {
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+  }
   anchor.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
@@ -325,7 +329,7 @@ export const applicationsAPI = {
   submit: (payload: Record<string, unknown>) => fetchAPI<RoomApplication>('/api/applications', { method: 'POST', body: JSON.stringify(payload) }),
   review: (applicationId: string, payload: { status: 'under_review' | 'approved' | 'rejected'; rejection_reason?: string }) => fetchAPI<RoomApplication>(`/api/applications/${applicationId}/review`, { method: 'PATCH', body: JSON.stringify(payload) }),
   autoAssign: (applicationId: string) => fetchAPI(`/api/applications/${applicationId}/auto-assign`, { method: 'POST' }),
-  saveDraft: (payload: { academic_year_applied: string; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/save-draft', { method: 'POST', body: JSON.stringify(payload) }),
+  saveDraft: (payload: { academic_year_applied: string; step_progress?: number; form_data: Record<string, unknown> }) => fetchAPI<RoomApplication>('/api/applications/save-draft', { method: 'POST', body: JSON.stringify(payload) }),
   uploadReference: (applicationId: string, documentType: 'student_photo' | 'national_id' | 'family_book', file: File, onProgress?: (percent: number) => void) => {
     const form = new FormData();
     form.set('file', file);

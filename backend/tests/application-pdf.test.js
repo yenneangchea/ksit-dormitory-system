@@ -23,3 +23,9 @@ test('the official Khmer dormitory application generator emits a printable four-
   assert.ok(pdf.length > 8_000, 'expected a non-trivial printable PDF payload');
   assert.ok((pdf.toString('latin1').match(/\/Type \/Page/g) || []).length >= 4, 'expected four official application pages');
 });
+
+test('official PDF naming uses the student Latin name and a compact date stamp', () => {
+  const application = { users: { full_name_latin: 'Kanha Srey' } };
+  const filename = __private.officialPdfFilename(application, {});
+  assert.match(filename, /^Kanha_Srey_KSIT_Dorm_Application_\d{8}\.pdf$/);
+});

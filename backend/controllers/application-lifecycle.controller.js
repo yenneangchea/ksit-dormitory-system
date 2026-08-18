@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const { Readable } = require('stream');
 const PDFDocument = require('pdfkit');
@@ -13,7 +14,7 @@ const APPLICATION_FIELDS = `
   student_photo_url, national_id_doc_url, family_book_doc_url, signed_application_doc_url,
   google_drive_folder_id, prefilled_pdf_drive_url, student_photo_drive_url,
   national_id_drive_url, family_book_drive_url, signed_application_drive_url,
-  document_metadata_json, manager_notes, submission_step, submitted_for_review_at, form_data_json, drive_archive_url,
+  document_metadata_json, manager_notes, submission_step, step_progress, submitted_for_review_at, form_data_json, draft_data, google_drive_folder_id, drive_archive_url,
   users!room_applications_user_id_fkey(
     id, telegram_id, full_name_khmer, full_name_latin, gender, phone, email,
     academic_profiles(
@@ -79,6 +80,34 @@ async function validateConfiguredAcademicSelection(supabase, profile) {
 function safeFileName(name) {
   const extension = path.extname(name || '').toLowerCase().replace(/[^.a-z0-9]/g, '').slice(0, 8) || '.bin';
   return `${crypto.randomUUID()}${extension}`;
+}
+
+function safeDownloadFileName(value, fallback = 'KSIT_Dorm_Application.pdf') {
+  const normalized = String(value || '')
+    .normalize('NFKD')
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^[_ .-]+|[_ .-]+$/g, '')
+    .slice(0, 150);
+  return normalized || fallback;
+}
+
+function officialPdfFilename(application, profile) {
+  const user = application?.users || {};
+  const studentName = safeDownloadFileName(user.full_name_latin || user.full_name_khmer || profile?.student_id_card || 'KSIT_Student', 'KSIT_Student');
+  const dateStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `${studentName}_KSIT_Dorm_Application_${dateStamp}.pdf`;
+}
+
+function boundedStep(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? Math.min(5, Math.max(1, parsed)) : 1;
+}
+
+function mergeDraftData(application, incoming) {
+  const previous = application?.draft_data && typeof application.draft_data === 'object' ? application.draft_data : {};
+  const form = application?.form_data_json && typeof application.form_data_json === 'object' ? application.form_data_json : {};
+  return { ...form, ...previous, ...(incoming && typeof incoming === 'object' ? incoming : {}) };
 }
 
 function documentInfo(application) {
@@ -217,6 +246,7 @@ function validateCompleteProfile(profile) {
 
 function pdfLines(doc, lines, startY, width = 515) {
   let y = startY;
+  doc.font('Khmer');
   lines.filter(Boolean).forEach((line) => {
     doc.text(line, 42, y, { width, lineGap: 2 });
     y += 22;
@@ -225,6 +255,9 @@ function pdfLines(doc, lines, startY, width = 515) {
 }
 
 function pdfHeader(doc, title, showPhoto) {
+  doc.font('Khmer');
+  const logoPath = path.resolve(__dirname, '../assets/ksit-logo.png');
+  if (fs.existsSync(logoPath)) doc.image(logoPath, 43, 35, { fit: [44, 44] });
   doc.font('Khmer').fontSize(11).text('ព្រះរាជាណាចក្រកម្ពុជា', { align: 'center' });
   doc.fontSize(9).text('ជាតិ សាសនា ព្រះមហាក្សត្រ', { align: 'center' });
   doc.moveDown(0.6);
@@ -248,7 +281,7 @@ function signatureArea(doc, label, y) {
 
 function generateOfficialApplicationPdf(application, profile) {
   const user = application.users || {};
-  const fontPath = path.resolve(__dirname, '../assets/fonts/NotoSerifKhmer-Regular.ttf');
+  const fontPath = path.resolve(__dirname, '../assets/fonts/KantumruyPro-Regular.ttf');
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 42, autoFirstPage: true });
     const chunks = [];
@@ -256,8 +289,9 @@ function generateOfficialApplicationPdf(application, profile) {
     doc.on('error', reject);
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.registerFont('Khmer', fontPath);
+    doc.font('Khmer');
 
-    pdfHeader(doc, 'ពាក្យសុំចូលស្នាក់នៅក្នុងអន្តេវាសិកដ្ឋានសិស្ស និស្សិត', true);
+    pdfHeader(doc, `ពាក្យសុំចូលស្នាក់នៅក្នុងអន្តេវាសិកដ្ឋានសិស្ស និស្សិត (${application.academic_year_applied})`, true);
     let y = pdfLines(doc, [
       `ខ្ញុំបាទ/នាងខ្ញុំ ${user.full_name_khmer || user.full_name_latin || '................................'} ភេទ ${user.gender || '........'} ថ្ងៃខែឆ្នាំកំណើត ${profile.date_of_birth || '........'}.`,
       `សិស្ស/និស្សិតថ្នាក់ ${profile.class_section || '........'} ឆ្នាំទី ${profile.academic_year || '........'} ជំនាញ ${profile.major || '........'}.`,
@@ -333,19 +367,21 @@ async function saveDraft(req, res, next) {
     const academicYear = cleanText(req.body?.academic_year_applied, 20) || process.env.ACTIVE_ACADEMIC_YEAR || '2025-2026';
     let application = await findCurrentStudentApplication(supabase, req.user.sub, academicYear);
     const formData = req.body?.form_data && typeof req.body.form_data === 'object' ? req.body.form_data : {};
+    const stepProgress = boundedStep(req.body?.step_progress ?? formData.step_progress);
     if (!application) {
       const { data, error } = await supabase
         .from('room_applications')
-        .insert({ user_id: req.user.sub, academic_year_applied: academicYear, status: 'draft', submission_step: 1, form_data_json: formData })
+        .insert({ user_id: req.user.sub, academic_year_applied: academicYear, status: 'draft', submission_step: 1, step_progress: stepProgress, form_data_json: formData, draft_data: formData })
         .select(APPLICATION_FIELDS)
         .single();
       if (error) throw error;
       application = data;
     } else {
       if (!['draft', 'form_completed', 'correction_needed', 'pending_signed_doc'].includes(application.status)) throw fail('This application is already in review or finalized and cannot be edited.', 409);
+      const mergedDraft = mergeDraftData(application, formData);
       const { data, error } = await supabase
         .from('room_applications')
-        .update({ form_data_json: { ...(application.form_data_json || {}), ...formData }, status: application.status === 'correction_needed' ? 'draft' : application.status, submission_step: 1 })
+        .update({ form_data_json: mergedDraft, draft_data: mergedDraft, step_progress: stepProgress, status: application.status === 'correction_needed' ? 'draft' : application.status })
         .eq('id', application.id)
         .select(APPLICATION_FIELDS)
         .single();
@@ -371,7 +407,7 @@ async function uploadReference(req, res, next) {
     if (!['draft', 'form_completed', 'correction_needed', 'pending_signed_doc'].includes(application.status)) throw fail('This application no longer accepts reference document uploads.', 409);
     const stored = await storeDocument(supabase, application, req.params.documentType, { buffer: file.buffer, name: file.originalname, contentType: file.mimetype });
     const metadata = { ...documentInfo(application), [req.params.documentType]: { name: cleanText(stored.name, 160), fileName: cleanText(stored.name, 160), bucket: stored.bucket, path: stored.path, content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider } };
-    const patch = { ...stored.patch, [definition.attached]: true, document_metadata_json: metadata, status: 'form_completed', submission_step: 2 };
+    const patch = { ...stored.patch, [definition.attached]: true, document_metadata_json: metadata, status: 'form_completed', submission_step: 2, step_progress: Math.max(2, boundedStep(application.step_progress)) };
     const { data, error } = await supabase.from('room_applications').update(patch).eq('id', application.id).select(APPLICATION_FIELDS).single();
     if (error) throw error;
     res.json(payload(await presentApplication(supabase, data), 'Reference document uploaded securely.'));
@@ -392,15 +428,15 @@ async function submitForm(req, res, next) {
     const profile = await validateConfiguredAcademicSelection(supabase, rawProfile);
     const { error: profileError } = await supabase.from('academic_profiles').upsert({ user_id: req.user.sub, ...profile }, { onConflict: 'user_id' });
     if (profileError) throw profileError;
-    const formData = { ...(application.form_data_json || {}), ...(req.body?.form_data || {}), submitted_at: new Date().toISOString() };
+    const formData = { ...mergeDraftData(application, req.body?.form_data || {}), submitted_at: new Date().toISOString() };
     const { data: withProfile, error: refreshError } = await supabase.from('room_applications').select(APPLICATION_FIELDS).eq('id', application.id).single();
     if (refreshError) throw refreshError;
     const pdfBuffer = await generateOfficialApplicationPdf(withProfile, profile);
-    const stored = await storeDocument(supabase, withProfile, 'prefilled_pdf', { buffer: pdfBuffer, name: 'prefilled_application_form.pdf', contentType: 'application/pdf' });
+    const stored = await storeDocument(supabase, withProfile, 'prefilled_pdf', { buffer: pdfBuffer, name: officialPdfFilename(withProfile, profile), contentType: 'application/pdf' });
     const metadata = { ...documentInfo(application), prefilled_pdf: { name: stored.name, fileName: stored.name, bucket: stored.bucket, path: stored.path, content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider } };
     const { data, error } = await supabase
       .from('room_applications')
-      .update({ ...stored.patch, status: 'pending_signed_doc', submission_step: 3, prefilled_pdf_generated_at: new Date().toISOString(), form_data_json: formData, document_metadata_json: metadata, manager_notes: null, rejection_reason: null })
+      .update({ ...stored.patch, status: 'pending_signed_doc', submission_step: 3, step_progress: 4, prefilled_pdf_generated_at: new Date().toISOString(), form_data_json: formData, draft_data: formData, document_metadata_json: metadata, manager_notes: null, rejection_reason: null })
       .eq('id', application.id)
       .select(APPLICATION_FIELDS)
       .single();
@@ -424,7 +460,7 @@ async function uploadSignedApplication(req, res, next) {
     const metadata = { ...documentInfo(application), signed_application: { name: cleanText(stored.name, 160), fileName: cleanText(stored.name, 160), bucket: stored.bucket, path: stored.path, content_type: stored.contentType, size: stored.size, uploaded_at: new Date().toISOString(), storage_provider: stored.provider } };
     const { data, error } = await supabase
       .from('room_applications')
-      .update({ ...stored.patch, contract_signed: true, parent_guarantee_attached: true, status: 'under_review', submission_step: 5, submitted_for_review_at: new Date().toISOString(), manager_notes: null, rejection_reason: null, document_metadata_json: metadata })
+      .update({ ...stored.patch, contract_signed: true, parent_guarantee_attached: true, status: 'under_review', submission_step: 5, step_progress: 5, submitted_for_review_at: new Date().toISOString(), manager_notes: null, rejection_reason: null, document_metadata_json: metadata })
       .eq('id', application.id)
       .select(APPLICATION_FIELDS)
       .single();
@@ -449,9 +485,7 @@ async function downloadPrefilledPdf(req, res, next) {
     const supabase = getSupabase();
     const application = await findApplication(supabase, req.params.applicationId, req.user.role === 'student' ? req.user.sub : null);
     if (!application.prefilled_pdf_url) throw fail('The official PDF has not been generated yet.', 404);
-    if (driveStorage.isDriveReference(application.prefilled_pdf_url)) return res.json(payload({ url: `/api/applications/${application.id}/documents/prefilled_pdf`, expires_in_seconds: 0, requires_authenticated_download: true }));
-    const url = await createSignedUrl(supabase, 'generated-applications', application.prefilled_pdf_url);
-    res.json(payload({ url, expires_in_seconds: 900 }));
+    res.json(payload({ url: `/api/applications/${application.id}/documents/prefilled_pdf`, expires_in_seconds: 0, requires_authenticated_download: true }));
   } catch (error) {
     next(error);
   }
@@ -465,9 +499,9 @@ async function streamApplicationDocument(req, res, next) {
     const application = await findApplication(supabase, req.params.applicationId, req.user.role === 'student' ? req.user.sub : null);
     const document = await documentStream(supabase, application, type);
     const metadata = documentMetadata(application, type);
-    const safeName = String(metadata.name || `${type}.pdf`).replace(/[\r\n"]/g, '_');
+    const safeName = safeDownloadFileName(metadata.name || `${type}.pdf`);
     res.setHeader('Content-Type', document.contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
+    res.setHeader('Content-Disposition', `${type === 'prefilled_pdf' ? 'attachment' : 'inline'}; filename="${safeName}"`);
     document.stream.on('error', next).pipe(res);
   } catch (error) {
     next(error);
@@ -552,5 +586,5 @@ module.exports = {
   streamApplicationDocument,
   listManagerApplications,
   reviewManagerApplication,
-  __private: { generateOfficialApplicationPdf },
+  __private: { generateOfficialApplicationPdf, officialPdfFilename, mergeDraftData, boundedStep },
 };

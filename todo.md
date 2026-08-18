@@ -203,3 +203,8 @@
 - [x] Improve mobile six-digit OTP entry so users can paste or type the full code without manually tapping every box.
 - [x] Verify the live single-field OTP UI, the linked Manager profile state, and the current SMS fallback availability.
 - [x] Make phone-number OTP the primary login experience while retaining email and Telegram as secondary options.
+- [x] Repair safe application draft persistence and additive application metadata columns for all four student-form sections.
+- [x] Remove duplicate Section 4 guardian and emergency-contact controls while preserving the official agreement data.
+- [x] Repair Khmer PDF rendering, official-form field mapping, and meaningful student-specific PDF filenames.
+- [ ] Run a controlled synthetic Student-to-Manager application lifecycle test, apply the authorized additive migration, then commit, deploy, and verify production behavior.
+- [ ] Verify the user-applied production draft schema, align the repository migration with its five-step constraint and Google Drive folder field, then release and validate production.

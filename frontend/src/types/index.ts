@@ -169,10 +169,12 @@ export interface RoomApplication {
   rejection_reason?: string;
   manager_notes?: string;
   submission_step?: number;
+  step_progress?: number;
   prefilled_pdf_generated_at?: string;
   submitted_for_review_at?: string;
 
   form_data_json?: Record<string, unknown>;
+  draft_data?: Record<string, unknown>;
   users?: User & { academic_profiles?: AcademicProfile | AcademicProfile[] | null };
   academic_profiles?: AcademicProfile | null;
   document_urls?: {
