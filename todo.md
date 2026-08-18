@@ -197,4 +197,5 @@
 - [ ] Run one controlled live Telegram OTP delivery request for the registered Super Admin phone without exposing the OTP value.
 - [x] Diagnose and repair the missing production Telegram authentication and OTP-delivery configuration.
 - [ ] Link the authorized test account to Telegram and verify one real OTP delivery without exposing the code.
-- [ ] Add a protected authenticated flow that links a logged-in KSIT account to verified Telegram Mini App identity data.
+- [x] Add a protected authenticated flow that links a logged-in KSIT account to verified Telegram Mini App identity data.
+- [x] Add a visible Mini App-only Telegram-link control in the portal shell with clear success and failure feedback.

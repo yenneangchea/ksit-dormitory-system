@@ -4,12 +4,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, BedDouble, BellRing, Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, Home, KeyRound, LayoutDashboard, LogOut, Menu, Settings2, UsersRound, WalletCards, Wrench, X } from 'lucide-react';
+import { BarChart3, BedDouble, BellRing, Building2, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, Home, KeyRound, LayoutDashboard, Link2, LoaderCircle, LogOut, Menu, Settings2, UsersRound, WalletCards, Wrench, X } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import { roleLabel, useDashboardLocalization, useLanguage } from '@/lib/i18n';
 import type { User, UserRole } from '@/types';
 
 type NavItem = { label: string; href: string; tab?: string; icon: typeof LayoutDashboard };
+
+declare global {
+  interface Window {
+    Telegram?: { WebApp?: { initData?: string; ready?: () => void } };
+  }
+}
 
 const navigation: Record<UserRole, NavItem[]> = {
   admin: [
@@ -58,12 +64,33 @@ export function PortalShell({ role, children }: { role: UserRole; children: Reac
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordNotice, setPasswordNotice] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [telegramInitData, setTelegramInitData] = useState('');
+  const [telegramLinkNotice, setTelegramLinkNotice] = useState('');
+  const [telegramLinkStatus, setTelegramLinkStatus] = useState<'success' | 'error' | ''>('');
+  const [isLinkingTelegram, setIsLinkingTelegram] = useState(false);
   useDashboardLocalization(language);
 
   useEffect(() => {
     void authAPI.getCurrentUser().then((response) => {
       if (response.success && response.user) setUser(response.user);
     });
+  }, []);
+
+  useEffect(() => {
+    let retryTimer: number | undefined;
+    let attempts = 0;
+    const detectTelegramMiniApp = () => {
+      const initData = window.Telegram?.WebApp?.initData || '';
+      if (initData) {
+        window.Telegram?.WebApp?.ready?.();
+        setTelegramInitData(initData);
+        return;
+      }
+      attempts += 1;
+      if (attempts < 12) retryTimer = window.setTimeout(detectTelegramMiniApp, 250);
+    };
+    detectTelegramMiniApp();
+    return () => { if (retryTimer) window.clearTimeout(retryTimer); };
   }, []);
 
   function logout() {
@@ -85,6 +112,33 @@ export function PortalShell({ role, children }: { role: UserRole; children: Reac
     if (response.success) window.setTimeout(() => setPasswordOpen(false), 900);
   }
 
+  async function linkTelegramAccount() {
+    const initData = window.Telegram?.WebApp?.initData || telegramInitData;
+    if (!initData) {
+      setTelegramLinkStatus('error');
+      setTelegramLinkNotice('Open this portal from @KSITDorm_bot to link your Telegram account.');
+      return;
+    }
+    setIsLinkingTelegram(true);
+    setTelegramLinkNotice('');
+    setTelegramLinkStatus('');
+    const response = await authAPI.linkTelegram(initData);
+    if (!response.success) {
+      setTelegramLinkStatus('error');
+      setTelegramLinkNotice(response.error?.message || 'Unable to link Telegram. Please try again.');
+      setIsLinkingTelegram(false);
+      return;
+    }
+    const refreshedUser = response.user || (await authAPI.getCurrentUser()).user;
+    if (refreshedUser) {
+      setUser(refreshedUser);
+      window.localStorage.setItem('user', JSON.stringify(refreshedUser));
+    }
+    setTelegramLinkStatus('success');
+    setTelegramLinkNotice(response.message || 'Telegram linked successfully!');
+    setIsLinkingTelegram(false);
+  }
+
   const currentTab = searchParams?.get('tab') || '';
   const isActive = (item: NavItem) => pathname === item.href.split('?')[0] && (item.tab ? currentTab === item.tab : !currentTab);
   const profileInitial = displayName(user, role).trim().charAt(0).toUpperCase() || 'K';
@@ -98,7 +152,7 @@ export function PortalShell({ role, children }: { role: UserRole; children: Reac
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label={`${roleLabel(role, language)} navigation`}>
         {navigation[role].map((item) => { const Icon = item.icon; const active = isActive(item); return <Link onClick={() => setMobileOpen(false)} key={item.href} href={item.href} title={collapsed && !mobile ? item.label : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${active ? 'bg-[#0b5c2c] text-white shadow-sm' : 'text-[#405349] hover:bg-[#edf5ee] hover:text-[#0b5c2c]'} ${collapsed && !mobile ? 'justify-center px-2' : ''}`}><Icon className="size-5 shrink-0" />{(!collapsed || mobile) && <span className="truncate">{item.label}</span>}</Link>; })}
       </nav>
-      <div className="border-t border-[#edf0ed] p-3"><div className={`rounded-xl bg-[#f2f7f2] ${collapsed && !mobile ? 'p-2' : 'p-3'}`}><div className={`flex items-center gap-2.5 ${collapsed && !mobile ? 'justify-center' : ''}`}><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#147a5b] text-sm font-extrabold text-white">{profileInitial}</span>{(!collapsed || mobile) && <div className="min-w-0"><p className="truncate text-xs font-extrabold text-[#24332a]">{displayName(user, role)}</p><p className="mt-0.5 text-[10px] font-bold text-[#147a5b]">{roleLabel(role, language)}</p></div>}</div>{(!collapsed || mobile) && <label className="mt-3 block text-[10px] font-bold text-[#68736c]" htmlFor={mobile ? 'mobile-language' : 'language'}>{t.language}<select id={mobile ? 'mobile-language' : 'language'} value={language} onChange={(event) => setLanguage(event.target.value as 'en' | 'km')} className="mt-1.5 h-11 w-full rounded-lg border border-[#dce3dc] bg-white px-2 text-xs text-[#24332a]"><option value="en">{t.english}</option><option value="km">{t.khmer}</option></select></label>}<button type="button" onClick={() => { setPasswordOpen(true); setPasswordNotice(''); setMobileOpen(false); }} title={collapsed && !mobile ? 'Change Password' : undefined} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#b9d2bf] bg-white px-3 text-xs font-bold text-[#0b5c2c] hover:bg-[#edf7ee]"><KeyRound className="size-4" />{(!collapsed || mobile) && <span>Change Password</span>}</button><button type="button" onClick={logout} title={collapsed && !mobile ? 'Logout (ចាកចេញ)' : undefined} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#b83e31] px-3 text-xs font-bold text-white hover:bg-[#963126]"><LogOut className="size-4" />{(!collapsed || mobile) && <span>{t.logout}</span>}</button></div></div>
+      <div className="border-t border-[#edf0ed] p-3"><div className={`rounded-xl bg-[#f2f7f2] ${collapsed && !mobile ? 'p-2' : 'p-3'}`}><div className={`flex items-center gap-2.5 ${collapsed && !mobile ? 'justify-center' : ''}`}><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#147a5b] text-sm font-extrabold text-white">{profileInitial}</span>{(!collapsed || mobile) && <div className="min-w-0"><p className="truncate text-xs font-extrabold text-[#24332a]">{displayName(user, role)}</p><p className="mt-0.5 text-[10px] font-bold text-[#147a5b]">{roleLabel(role, language)}</p></div>}</div>{(!collapsed || mobile) && <label className="mt-3 block text-[10px] font-bold text-[#68736c]" htmlFor={mobile ? 'mobile-language' : 'language'}>{t.language}<select id={mobile ? 'mobile-language' : 'language'} value={language} onChange={(event) => setLanguage(event.target.value as 'en' | 'km')} className="mt-1.5 h-11 w-full rounded-lg border border-[#dce3dc] bg-white px-2 text-xs text-[#24332a]"><option value="en">{t.english}</option><option value="km">{t.khmer}</option></select></label>}{telegramInitData && user?.telegram_id && <p className={`mt-3 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#dff2e4] px-3 text-center text-xs font-bold text-[#16582b] ${collapsed && !mobile ? 'px-2' : ''}`} title="Telegram linked"><CheckCircle2 className="size-4 shrink-0" />{(!collapsed || mobile) && <span>Telegram linked</span>}</p>}{telegramInitData && user && !user.telegram_id && <button type="button" onClick={() => void linkTelegramAccount()} disabled={isLinkingTelegram} title={collapsed && !mobile ? 'Link Telegram (ភ្ជាប់ Telegram)' : undefined} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#87b897] bg-white px-3 text-xs font-bold text-[#0b5c2c] hover:bg-[#edf7ee] disabled:cursor-wait disabled:opacity-60">{isLinkingTelegram ? <LoaderCircle className="size-4 animate-spin" /> : <Link2 className="size-4" />}{(!collapsed || mobile) && <span>{isLinkingTelegram ? 'Linking Telegram…' : 'Link Telegram (ភ្ជាប់ Telegram)'}</span>}</button>}{telegramLinkNotice && <p role="status" className={`mt-2 rounded-lg px-3 py-2 text-xs font-semibold ${telegramLinkStatus === 'success' ? 'bg-[#dff2e4] text-[#16582b]' : 'bg-[#fce8e6] text-[#9c2c22]'}`}>{telegramLinkNotice}</p>}<button type="button" onClick={() => { setPasswordOpen(true); setPasswordNotice(''); setMobileOpen(false); }} title={collapsed && !mobile ? 'Change Password' : undefined} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#b9d2bf] bg-white px-3 text-xs font-bold text-[#0b5c2c] hover:bg-[#edf7ee]"><KeyRound className="size-4" />{(!collapsed || mobile) && <span>Change Password</span>}</button><button type="button" onClick={logout} title={collapsed && !mobile ? 'Logout (ចាកចេញ)' : undefined} className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#b83e31] px-3 text-xs font-bold text-white hover:bg-[#963126]"><LogOut className="size-4" />{(!collapsed || mobile) && <span>{t.logout}</span>}</button></div></div>
     </aside>
   );
 
