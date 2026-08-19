@@ -18,18 +18,28 @@ const TOPICS = Object.freeze({
   ATTENDANCE_LEAVE: 'attendanceLeave',
 });
 
+// Vercel runtime variables override this deployment-specific fallback. It is
+// intentionally limited to the manager-facing Application topic so a missing
+// environment variable cannot spill other operational alerts into General.
+const APPLICATION_TOPIC_FALLBACK = Object.freeze({
+  chatId: '-1004316855963',
+  threadId: 3,
+});
+
 function cleanText(value, maxLength = 600) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
 function configuredThreadId(topic) {
-  const value = String(process.env[TOPIC_ENVIRONMENT_KEYS[topic]] || '').trim();
+  const fallback = topic === TOPICS.APPLICATION ? APPLICATION_TOPIC_FALLBACK.threadId : '';
+  const value = String(process.env[TOPIC_ENVIRONMENT_KEYS[topic]] || fallback).trim();
   if (!/^\d+$/.test(value) || Number(value) < 1) return null;
   return Number(value);
 }
 
-function configuredChatId() {
-  const value = String(process.env.TELEGRAM_GROUP_CHAT_ID || '').trim();
+function configuredChatId(topic) {
+  const fallback = topic === TOPICS.APPLICATION ? APPLICATION_TOPIC_FALLBACK.chatId : '';
+  const value = String(process.env.TELEGRAM_GROUP_CHAT_ID || fallback).trim();
   return /^-?\d+$/.test(value) ? value : null;
 }
 
@@ -50,7 +60,7 @@ function timestamp() {
 
 async function sendTopicMessage(topic, text, options = {}) {
   const token = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
-  const chatId = configuredChatId();
+  const chatId = configuredChatId(topic);
   const threadId = configuredThreadId(topic);
   const envKey = TOPIC_ENVIRONMENT_KEYS[topic];
 
@@ -175,6 +185,7 @@ function attendanceNotification({ attendance, room, student }) {
 module.exports = {
   TOPICS,
   TOPIC_ENVIRONMENT_KEYS,
+  APPLICATION_TOPIC_FALLBACK,
   sendTopicMessage,
   notify,
   applicationNotification,

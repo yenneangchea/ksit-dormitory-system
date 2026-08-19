@@ -107,3 +107,31 @@ test('labels Manager approval events as Application-topic decisions', async () =
     restoreEnvironment(originalEnvironment);
   }
 });
+
+test('uses only the approved Application-topic fallback when Vercel group variables are absent', async () => {
+  const originalEnvironment = saveEnvironment();
+  const originalFetch = global.fetch;
+  let request;
+  process.env.TELEGRAM_BOT_TOKEN = 'unit-test-token';
+  delete process.env.TELEGRAM_GROUP_CHAT_ID;
+  delete process.env.TELEGRAM_TOPIC_APPLICATION_THREAD_ID;
+  global.fetch = async (_url, options) => {
+    request = JSON.parse(options.body);
+    return { ok: true, json: async () => ({ ok: true, result: { message_id: 101 } }) };
+  };
+
+  try {
+    const result = await telegram.applicationNotification({
+      event: 'form_submission',
+      student: { full_name_latin: 'Fallback E2E Student' },
+      profile: { major: 'Computer Technology', academic_year: 1 },
+      documentSummary: 'Synthetic documents',
+    });
+    assert.equal(result.delivered, true);
+    assert.equal(request.chat_id, '-1004316855963');
+    assert.equal(request.message_thread_id, 3);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment(originalEnvironment);
+  }
+});
