@@ -6,7 +6,7 @@ const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
 const driveStorage = require('../lib/application-storage');
 const { archiveApprovedApplication } = require('../services/syncManager.service');
-const { applicationNotification, systemLogNotification } = require('../services/telegram.service');
+const { applicationNotification, applicationPdfAttachment, systemLogNotification } = require('../services/telegram.service');
 
 const APPLICATION_FIELDS = `
   id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed,
@@ -484,9 +484,15 @@ async function submitForm(req, res, next) {
       profile: notificationProfile,
       documentSummary: applicationDocumentSummary(data),
     });
+    const applicationPdfNotification = await applicationPdfAttachment({
+      student: data.users,
+      profile: notificationProfile,
+      pdfBuffer,
+      fileName: stored.name,
+    });
     res.json({
       ...payload(await presentApplication(supabase, data), 'Official four-page application PDF generated. Download, print, sign, and upload the signed document.'),
-      notification: { application_topic: applicationTopicNotification },
+      notification: { application_topic: applicationTopicNotification, official_pdf: applicationPdfNotification },
     });
   } catch (error) {
     next(error);

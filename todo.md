@@ -237,3 +237,4 @@
 - [x] Repair the Vercel PDF font asset path so official Khmer application PDFs can be generated in production.
 - [x] Diagnose and repair missing Application-topic alerts for real student submission and Manager approval events, then verify production delivery.
 - [x] Add an environment-overridable Application-topic routing fallback for the approved KSITDormitory Supergroup when Vercel variables are absent at runtime.
+- [ ] Attach the generated official application PDF to the Application-topic Telegram notification and verify production document delivery.

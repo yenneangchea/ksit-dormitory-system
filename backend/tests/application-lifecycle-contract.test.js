@@ -56,6 +56,8 @@ test('private upload and PDF handlers enforce owner access, file constraints, an
   assert.match(controller, /officialPdfFilename/);
   assert.match(controller, /type === 'prefilled_pdf' \? 'attachment' : 'inline'/);
   assert.match(controller, /generateOfficialApplicationPdf/);
+  assert.match(controller, /applicationPdfAttachment/);
+  assert.match(controller, /official_pdf: applicationPdfNotification/);
   assert.match(controller, /signed_application_doc_url/);
 });
 

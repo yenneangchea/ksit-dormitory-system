@@ -135,3 +135,37 @@ test('uses only the approved Application-topic fallback when Vercel group variab
     restoreEnvironment(originalEnvironment);
   }
 });
+
+test('attaches the generated official application PDF to the Application topic', async () => {
+  const originalEnvironment = saveEnvironment();
+  const originalFetch = global.fetch;
+  let endpoint;
+  let form;
+  process.env.TELEGRAM_BOT_TOKEN = 'unit-test-token';
+  process.env.TELEGRAM_GROUP_CHAT_ID = '-1004316855963';
+  process.env.TELEGRAM_TOPIC_APPLICATION_THREAD_ID = '3';
+  global.fetch = async (url, options) => {
+    endpoint = url;
+    form = options.body;
+    return { ok: true, json: async () => ({ ok: true, result: { message_id: 102 } }) };
+  };
+
+  try {
+    const result = await telegram.applicationPdfAttachment({
+      student: { full_name_khmer: 'និស្សិត សាកល្បង', full_name_latin: 'PDF E2E Student' },
+      profile: { major: 'Computer Technology', academic_year: 1 },
+      pdfBuffer: Buffer.from('%PDF-1.4 synthetic official application'),
+      fileName: 'PDF_E2E_Student_KSIT_Dorm_Application.pdf',
+    });
+    assert.equal(result.delivered, true);
+    assert.equal(result.document, true);
+    assert.match(endpoint, /sendDocument$/);
+    assert.equal(form.get('chat_id'), '-1004316855963');
+    assert.equal(form.get('message_thread_id'), '3');
+    assert.match(form.get('caption'), /PDF ពាក្យសុំស្នាក់នៅ/);
+    assert.equal(form.get('document').name, 'PDF_E2E_Student_KSIT_Dorm_Application.pdf');
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment(originalEnvironment);
+  }
+});

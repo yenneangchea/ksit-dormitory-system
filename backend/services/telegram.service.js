@@ -92,12 +92,48 @@ async function sendTopicMessage(topic, text, options = {}) {
   return { delivered: true, topic, chatId, threadId, messageId: body.result?.message_id || null };
 }
 
+async function sendTopicDocument(topic, { buffer, fileName, caption }) {
+  const token = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  const chatId = configuredChatId(topic);
+  const threadId = configuredThreadId(topic);
+  const envKey = TOPIC_ENVIRONMENT_KEYS[topic];
+  if (!TOPIC_ENVIRONMENT_KEYS[topic]) return { delivered: false, skipped: true, reason: 'unknown_topic' };
+  if (!token || !chatId || !threadId) {
+    return { delivered: false, skipped: true, reason: 'notification_not_configured', missing: { token: !token, chatId: !chatId, threadId: !threadId ? envKey : null } };
+  }
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return { delivered: false, skipped: true, reason: 'document_not_available' };
+
+  const form = new FormData();
+  form.set('chat_id', chatId);
+  form.set('message_thread_id', String(threadId));
+  form.set('caption', cleanText(caption, 1024));
+  form.set('document', new Blob([buffer], { type: 'application/pdf' }), cleanText(fileName, 180) || 'KSIT_Dorm_Application.pdf');
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: form });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !body?.ok) {
+    const error = new Error('Telegram application PDF attachment delivery failed.');
+    error.statusCode = 502;
+    error.code = 'TELEGRAM_TOPIC_DOCUMENT_DELIVERY_FAILED';
+    throw error;
+  }
+  return { delivered: true, topic, chatId, threadId, messageId: body.result?.message_id || null, document: true };
+}
+
 async function notify(topic, text, context = {}) {
   try {
     return await sendTopicMessage(topic, text, context);
   } catch (error) {
     console.error('Telegram topic notification failed.', { topic, code: error.code || 'TELEGRAM_NOTIFICATION_FAILED', message: error.message });
     return { delivered: false, skipped: false, reason: error.code || 'TELEGRAM_NOTIFICATION_FAILED' };
+  }
+}
+
+async function notifyDocument(topic, document) {
+  try {
+    return await sendTopicDocument(topic, document);
+  } catch (error) {
+    console.error('Telegram topic document notification failed.', { topic, code: error.code || 'TELEGRAM_TOPIC_DOCUMENT_DELIVERY_FAILED', message: error.message });
+    return { delivered: false, skipped: false, reason: error.code || 'TELEGRAM_TOPIC_DOCUMENT_DELIVERY_FAILED' };
   }
 }
 
@@ -117,6 +153,19 @@ function applicationNotification({ student, profile, documentSummary, event }) {
     `📄 ឯកសារភ្ជាប់: ${cleanText(documentSummary, 400) || 'កំពុងរៀបចំឯកសារ'}`,
     `🔗 ពិនិត្យពាក្យសុំ: ${appUrl('/dashboard/manager?tab=applications')}`,
   ].join('\n'));
+}
+
+function applicationPdfAttachment({ student, profile, pdfBuffer, fileName }) {
+  return notifyDocument(TOPICS.APPLICATION, {
+    buffer: pdfBuffer,
+    fileName,
+    caption: [
+      '📎 ឯកសារ PDF ពាក្យសុំស្នាក់នៅ',
+      `👤 និស្សិត: ${displayName(student)}`,
+      `🎓 ជំនាញ: ${cleanText(profile?.major, 160) || 'មិនបានបញ្ជាក់'} - ឆ្នាំទី ${Number(profile?.academic_year) || 'មិនបានបញ្ជាក់'}`,
+      `🔗 ពិនិត្យពាក្យសុំ: ${appUrl('/dashboard/manager?tab=applications')}`,
+    ].join('\n'),
+  });
 }
 
 function passwordRequestNotification({ event, user, phone }) {
@@ -187,8 +236,11 @@ module.exports = {
   TOPIC_ENVIRONMENT_KEYS,
   APPLICATION_TOPIC_FALLBACK,
   sendTopicMessage,
+  sendTopicDocument,
   notify,
+  notifyDocument,
   applicationNotification,
+  applicationPdfAttachment,
   passwordRequestNotification,
   systemLogNotification,
   updateNotification,
