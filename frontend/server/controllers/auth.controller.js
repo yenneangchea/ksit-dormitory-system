@@ -823,6 +823,14 @@ const telegramWebhook = async (req, res, next) => {
       return res.json({ ok: true });
     }
 
+    const expectedSecret = String(process.env.TELEGRAM_WEBHOOK_SECRET || '').trim();
+    const receivedSecret = String(req.headers?.['x-telegram-bot-api-secret-token'] || '').trim();
+    if (expectedSecret && receivedSecret !== expectedSecret) {
+      const error = new Error('Telegram webhook authentication failed.');
+      error.statusCode = 401;
+      throw error;
+    }
+
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
       const error = new Error('Telegram bot integration is not configured.');

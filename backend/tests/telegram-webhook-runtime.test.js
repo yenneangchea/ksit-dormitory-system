@@ -6,12 +6,14 @@ test('telegram /start sends welcome buttons to the production login route', asyn
   const originalFetch = global.fetch;
   const originalToken = process.env.TELEGRAM_BOT_TOKEN;
   const originalMiniAppUrl = process.env.TELEGRAM_MINI_APP_URL;
+  const originalWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
   let requestUrl = '';
   let requestOptions;
   let responsePayload;
 
   process.env.TELEGRAM_BOT_TOKEN = 'test-token';
   process.env.TELEGRAM_MINI_APP_URL = 'https://ksit-dorm.vercel.app/login?mode=telegram';
+  process.env.TELEGRAM_WEBHOOK_SECRET = 'test-secret';
   global.fetch = async (url, options) => {
     requestUrl = url;
     requestOptions = options;
@@ -20,7 +22,7 @@ test('telegram /start sends welcome buttons to the production login route', asyn
 
   try {
     await authController.telegramWebhook(
-      { body: { message: { chat: { id: 42 }, text: '/start' } } },
+      { body: { message: { chat: { id: 42 }, text: '/start' } }, headers: { 'x-telegram-bot-api-secret-token': 'test-secret' } },
       {
         status() { return this; },
         json(payload) { responsePayload = payload; return this; },
@@ -33,6 +35,8 @@ test('telegram /start sends welcome buttons to the production login route', asyn
     else process.env.TELEGRAM_BOT_TOKEN = originalToken;
     if (originalMiniAppUrl === undefined) delete process.env.TELEGRAM_MINI_APP_URL;
     else process.env.TELEGRAM_MINI_APP_URL = originalMiniAppUrl;
+    if (originalWebhookSecret === undefined) delete process.env.TELEGRAM_WEBHOOK_SECRET;
+    else process.env.TELEGRAM_WEBHOOK_SECRET = originalWebhookSecret;
   }
 
   assert.equal(requestUrl, 'https://api.telegram.org/bottest-token/sendMessage');
