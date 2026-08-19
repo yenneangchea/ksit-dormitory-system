@@ -13,9 +13,7 @@ const APPLICATION_FIELDS = `
   parent_guarantee_attached, family_book_attached, id_card_attached, rejection_reason,
   applied_at, reviewed_at, reviewed_by, prefilled_pdf_url, prefilled_pdf_generated_at,
   student_photo_url, national_id_doc_url, family_book_doc_url, signed_application_doc_url,
-  google_drive_folder_id, prefilled_pdf_drive_url, student_photo_drive_url,
-  national_id_drive_url, family_book_drive_url, signed_application_drive_url,
-  document_metadata_json, manager_notes, submission_step, step_progress, submitted_for_review_at, form_data_json, draft_data, google_drive_folder_id, drive_archive_url,
+  document_metadata_json, manager_notes, submission_step, step_progress, submitted_for_review_at, form_data_json, draft_data,
   users!room_applications_user_id_fkey(
     id, telegram_id, full_name_khmer, full_name_latin, gender, phone, email,
     academic_profiles(

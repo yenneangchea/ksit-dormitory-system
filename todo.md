@@ -232,3 +232,5 @@
 - [x] Add mocked notification-service coverage, run regressions and the production build, then commit, push, and verify the Vercel release.
 - [x] Configure the Telegram Supergroup topic environment variables in the Vercel Production environment and run one approved live topic-delivery test.
 - [x] Send authorized diagnostic messages to every configured Telegram Supergroup topic and record the delivery status.
+- [ ] Execute a clearly labeled synthetic student application through document upload, official PDF generation, Application-topic notification, and Manager approval, then report and clean up the test data where supported.
+- [ ] Add and apply the missing application-lifecycle Google Drive storage URL columns required by the deployed production API.
