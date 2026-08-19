@@ -225,4 +225,4 @@
 
 - [x] Diagnose and repair the Telegram `/start` command so it responds reliably and opens the production Mini App or login flow.
 - [x] Add regression coverage for Telegram `/start` handling and verify webhook behavior in production.
-- [ ] Commit and push the Telegram `/start` repair after validation.
+- [x] Commit and push the Telegram `/start` repair after validation.
