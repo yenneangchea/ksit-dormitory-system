@@ -785,6 +785,29 @@ const registerWithPhone = async (req, res, next) => {
 };
 
 /**
+ * Build a stable login URL for Telegram web_app buttons. TELEGRAM_MINI_APP_URL
+ * may already contain a path or query string, so never concatenate another
+ * `/login` path onto it.
+ */
+function telegramMiniAppUrl(mode) {
+  const fallback = 'https://ksit-dorm.vercel.app/login';
+  const configured = process.env.TELEGRAM_MINI_APP_URL || fallback;
+
+  try {
+    const url = new URL(configured, fallback);
+    if (url.pathname === '/' || !url.pathname) url.pathname = '/login';
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('mode', mode);
+    return url.toString();
+  } catch {
+    const url = new URL(fallback);
+    url.searchParams.set('mode', mode);
+    return url.toString();
+  }
+}
+
+/**
  * @desc Handle Telegram Bot webhook updates (e.g. /start command with inline buttons)
  * @route POST /api/auth/telegram/webhook
  * @access Public
@@ -794,20 +817,22 @@ const telegramWebhook = async (req, res, next) => {
     const update = req.body || {};
     const message = update.message || update.callback_query?.message;
     const chatId = message?.chat?.id;
-    const text = message?.text || '';
+    const text = String(message?.text || '').trim();
 
     if (!chatId) {
       return res.json({ ok: true });
     }
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
-    if (!token) return res.json({ ok: true });
+    if (!token) {
+      const error = new Error('Telegram bot integration is not configured.');
+      error.statusCode = 503;
+      throw error;
+    }
 
     if (text.startsWith('/start') || text.startsWith('/help')) {
-      const welcomeText = '👋 រវាសរវាញស្វាគមន៍មកកាន់ **ប្រព័ន្ធគ្រប់គ្រងអន្តេវាសិកដ្ឋាន KSIT Dormitory**!\n\nសូមជ្រើសរើសជម្រើសខាងក្រោមដើម្បីចុះឈ្មោះ ឬចូលប្រើប្រាស់ប្រព័ន្ធ៖';
-      const webAppUrl = process.env.TELEGRAM_MINI_APP_URL || 'https://ksit-dorm.vercel.app';
-
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      const welcomeText = '👋 សូមស្វាគមន៍មកកាន់ **ប្រព័ន្ធគ្រប់គ្រងការស្នាក់នៅអន្តេវាសិកដ្ឋាននិស្សិត KSIT**!\n\nសូមជ្រើសរើសជម្រើសខាងក្រោមដើម្បីចុះឈ្មោះ ឬចូលប្រើប្រាស់ប្រព័ន្ធ៖';
+      const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -815,15 +840,19 @@ const telegramWebhook = async (req, res, next) => {
           text: welcomeText,
           parse_mode: 'Markdown',
           reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '📝 ចុះឈ្មោះស្នាក់នៅ (Register)', web_app: { url: `${webAppUrl}/login?mode=register` } },
-                { text: '🔐 ចូលប្រើប្រាស់ (Login)', web_app: { url: `${webAppUrl}/login` } }
-              ]
-            ]
-          }
+            inline_keyboard: [[
+              { text: '📝 ចុះឈ្មោះស្នាក់នៅ (Register)', web_app: { url: telegramMiniAppUrl('register') } },
+              { text: '🔐 ចូលប្រើប្រាស់ (Login)', web_app: { url: telegramMiniAppUrl('telegram') } },
+            ]],
+          },
         }),
       });
+      const telegramBody = await telegramResponse.json().catch(() => null);
+      if (!telegramResponse.ok || !telegramBody?.ok) {
+        const error = new Error('Telegram could not deliver the welcome message.');
+        error.statusCode = 502;
+        throw error;
+      }
     }
 
     return res.json({ ok: true });

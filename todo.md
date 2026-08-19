@@ -222,3 +222,7 @@
 - [ ] Implement Telegram bot /start webhook handler with inline registration and login Mini App action buttons.
 - [ ] Add loading animations and clear error state UI for the 3-step OTP registration flow.
 - [ ] Implement a profile editing page in the Student Dashboard where users can update optional email and view registered phone number.
+
+- [x] Diagnose and repair the Telegram `/start` command so it responds reliably and opens the production Mini App or login flow.
+- [x] Add regression coverage for Telegram `/start` handling and verify webhook behavior in production.
+- [ ] Commit and push the Telegram `/start` repair after validation.
