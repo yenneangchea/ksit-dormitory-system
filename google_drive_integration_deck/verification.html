@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#f7f4eb;color:#18231d;font-family:Arial,Helvetica,sans-serif;position:relative}
+.head{height:132px;background:#0b5c2c;color:#fff;padding:39px 86px 0}.eyebrow{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#c7e1cf;font-weight:700}.head h1{margin:10px 0 0;font-size:36px;letter-spacing:-.7px}
+.metric{position:absolute;left:86px;top:186px;width:270px;height:304px;border-top:8px solid #0b5c2c;background:#e7f0e8;padding:28px 25px 0}.metric .big{font-size:75px;line-height:.88;font-weight:800;letter-spacing:-4px;color:#0b5c2c}.metric .small{font-size:24px;font-weight:700;color:#0b5c2c}.metric p{margin:22px 0 0;font-size:15px;line-height:1.43;color:#55635a}.metric .build{margin-top:22px;border-top:1px solid #bfd0c1;padding-top:13px;font-size:14px;color:#386147}.metric .build strong{font-size:17px;color:#0b5c2c}
+.evidence{position:absolute;left:400px;top:186px;width:708px}.label{font-size:13px;letter-spacing:1.8px;text-transform:uppercase;color:#287243;font-weight:700}.evidence h2{font-size:27px;line-height:1.15;margin:11px 0 19px;color:#20342a}.flow{height:118px;border-top:2px solid #bed1c0;border-bottom:2px solid #bed1c0;display:flex;align-items:center;justify-content:space-between}.artifact{width:126px;text-align:center}.artifact i{display:flex;width:43px;height:43px;border-radius:50%;margin:0 auto 9px;align-items:center;justify-content:center;background:#0b5c2c;color:#fff;font-style:normal;font-size:13px;font-weight:800}.artifact:nth-child(4) i{background:#f39a75;color:#5b2819}.artifact span{display:block;font-size:12px;line-height:1.25;color:#526058}.evidence-text{margin:24px 0 0;font-size:16px;line-height:1.47;color:#59665e}.evidence-text strong{color:#0b5c2c}
+.boundary{position:absolute;left:400px;top:474px;width:708px;border-top:4px solid #f39a75;padding-top:15px;display:flex;gap:17px}.boundary-mark{width:35px;height:35px;border-radius:50%;background:#f39a75;color:#5b2819;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 35px}.boundary h3{margin:0;font-size:17px;color:#9b4a30}.boundary p{margin:6px 0 0;font-size:14px;line-height:1.4;color:#6a5b53}.footer{position:absolute;left:86px;right:86px;bottom:42px;border-top:1px solid #d0dbd1;padding-top:15px;display:flex;justify-content:space-between;font-size:14px;color:#647168}.footer strong{color:#0b5c2c}
+</style>
+</head>
+<body>
+<div class="slide-container">
+<header class="head"><div class="eyebrow">Automated validation</div><h1>Simulation proves the Drive contract before real credentials are activated</h1></header>
+<section class="metric"><div class="big">39</div><div class="small">of 39 backend tests passed</div><p>The regression suite includes lifecycle contracts, official Khmer PDF generation, RBAC, Drive configuration checks, and a mocked submission path.</p><div class="build"><strong>Next.js production build</strong><br>Compiled, type-checked, and generated static routes successfully.</div></section>
+<section class="evidence"><div class="label">Mocked Google Drive submission</div><h2>One deterministic student folder received five lifecycle artifacts</h2><div class="flow"><div class="artifact"><i>01</i><span>Photo<br>reference</span></div><div class="artifact"><i>02</i><span>National ID<br>reference</span></div><div class="artifact"><i>03</i><span>Family book<br>reference</span></div><div class="artifact"><i>04</i><span>Pre-filled<br>official PDF</span></div><div class="artifact"><i>05</i><span>Signed<br>application</span></div></div><p class="evidence-text"><strong>The simulation asserted:</strong> academic-year folder creation, deterministic student naming, five provider references, artifact names, MIME types, and uploaded byte content—without a live Drive account.</p></section>
+<section class="boundary"><div class="boundary-mark">!</div><div><h3>Production activation remains deliberately separate</h3><p>Real Drive writes begin only after both backend Vercel secrets are configured, the root folder is shared with the service account, and the additive database migration is applied.</p></div></section>
+<footer class="footer"><span><strong>Test method:</strong> injected fake Drive client, no external file writes</span><span><strong>Runtime today:</strong> private Supabase fallback remains active</span></footer>
+</div>
+</body>
+</html>

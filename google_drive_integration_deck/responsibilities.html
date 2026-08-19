@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><style>
+*{box-sizing:border-box}body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#f7f4eb;color:#18231d;font-family:Arial,Helvetica,sans-serif;position:relative}
+.top{height:154px;background:#0b5c2c;color:#fff;padding:48px 86px 0}
+.eyebrow{font-size:14px;letter-spacing:2.2px;text-transform:uppercase;color:#c7e1cf;font-weight:700}
+.top h1{font-size:37px;margin:12px 0 0;letter-spacing:-.6px}
+.content{display:flex;height:555px;padding:48px 86px 0;gap:36px}
+.column{width:470px}
+.divider{width:2px;height:335px;background:#c7d7c9;margin-top:14px}
+.label{font-size:13px;letter-spacing:1.8px;text-transform:uppercase;font-weight:700;color:#287243}
+.column h2{font-size:30px;margin:13px 0 18px;color:#0b5c2c}
+.column p{font-size:19px;line-height:1.45;margin:0 0 18px;color:#47534c}
+.item{display:flex;gap:14px;margin-top:14px}
+.dot{width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:#0b5c2c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.item strong{display:block;font-size:17px;color:#20342a}
+.item span{display:block;margin-top:3px;font-size:14px;line-height:1.35;color:#65736a}
+.boundary{position:absolute;left:421px;top:580px;width:438px;border-top:3px solid #f39a75;text-align:center;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#9b4a30;padding-top:8px}
+.note{position:absolute;right:86px;bottom:28px;color:#68736c;font-size:14px}
+</style></head>
+<body><div class="slide-container"><header class="top"><div class="eyebrow">Architecture principle</div><h1>One system, two data responsibilities</h1></header><main class="content"><section class="column"><div class="label">Google Drive</div><h2>Document bytes live here</h2><p>Drive is the scalable repository for the files that must be retained and reviewed.</p><div class="item"><div class="dot">1</div><div><strong>Official artifacts</strong><span>Photo, identity reference, family book, pre-filled PDF, and signed application.</span></div></div><div class="item"><div class="dot">2</div><div><strong>Deterministic folders</strong><span>Academic year and student identity make every file traceable without manual filing.</span></div></div></section><div class="divider"></div><section class="column"><div class="label">Supabase PostgreSQL</div><h2>Structured records stay here</h2><p>Supabase holds the lifecycle, form data, review decisions, and lightweight storage references.</p><div class="item"><div class="dot">1</div><div><strong>No document blobs</strong><span>Applications keep file IDs, metadata, and provider references—not sensitive binary content.</span></div></div><div class="item"><div class="dot">2</div><div><strong>One source of truth</strong><span>Status transitions and role checks remain governed by the existing application domain model.</span></div></div></section></main><div class="boundary">Server-only credential boundary · browser never receives a service-account key</div><div class="note">KSIT Dormitory Management System</div></div></body></html>

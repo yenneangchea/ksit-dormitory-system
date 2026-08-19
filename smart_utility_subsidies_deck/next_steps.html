@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operational Next Steps</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f5ef; color: #173d25; font-family: "Kantumruy Pro", "Noto Sans Khmer", Arial, sans-serif; }
+    .top-rule { min-height: 14px; background: #0b5c2c; }
+    .header { min-height: 138px; padding-top: 40px; padding-left: 82px; padding-right: 82px; border-bottom: 1px solid #dbe4dc; }
+    .eyebrow { color: #55866a; font-size: 14px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+    h1 { margin-top: 10px; font-size: 40px; line-height: 1.06; letter-spacing: -0.04em; }
+    .main { min-height: 568px; display: grid; grid-template-columns: 0.94fr 1.06fr; margin-left: 82px; margin-right: 82px; }
+    .release { min-height: 568px; padding-top: 84px; padding-right: 56px; border-right: 1px solid #d7e2d8; }
+    .released { color: #0b5c2c; font-size: 66px; line-height: 0.92; font-weight: 800; letter-spacing: -0.065em; }
+    .release-copy { margin-top: 21px; color: #53685b; font-size: 20px; line-height: 1.45; max-width: 390px; }
+    .url { margin-top: 32px; color: #a26b17; font-size: 18px; font-weight: 800; line-height: 1.35; word-break: break-word; }
+    .url-label { margin-top: 8px; color: #7a887e; font-size: 13px; }
+    .follow-through { min-height: 568px; padding-top: 60px; padding-left: 52px; }
+    .follow-title { color: #173d25; font-size: 23px; font-weight: 800; }
+    .step { min-height: 112px; display: grid; grid-template-columns: 74px 1fr; border-top: 1px solid #cddbcf; padding-top: 18px; }
+    .step:first-of-type { margin-top: 23px; }
+    .step-num { color: #a26b17; font-size: 29px; font-weight: 800; letter-spacing: -0.04em; }
+    .step-title { color: #173d25; font-size: 19px; font-weight: 800; }
+    .step-copy { margin-top: 7px; color: #627467; font-size: 15px; line-height: 1.4; max-width: 485px; }
+    .note { margin-top: 18px; max-width: 555px; border-top: 2px solid #0b5c2c; padding-top: 14px; color: #4f6556; font-size: 14px; line-height: 1.42; }
+    .note b { color: #0b5c2c; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="top-rule"></div>
+    <header class="header">
+      <div class="eyebrow">Operational close</div>
+      <h1>Release now. Harden deliberately.</h1>
+    </header>
+    <main class="main">
+      <section class="release">
+        <div class="released">RELEASED</div>
+        <p class="release-copy">Smart Utility Subsidies and Free Quota billing is ready for the KSIT Dormitory production workflow.</p>
+        <p class="url">ksit-dorm.vercel.app</p>
+        <p class="url-label">Primary production application</p>
+      </section>
+      <section class="follow-through">
+        <p class="follow-title">Recommended RLS follow-through</p>
+        <div class="step"><div class="step-num">01</div><div><p class="step-title">Define the intended data surface</p><p class="step-copy">Keep public reads limited to active homepage settings and visible news; retain all administrative writes behind the server’s existing Admin API routes.</p></div></div>
+        <div class="step"><div class="step-num">02</div><div><p class="step-title">Test policies before enforcement</p><p class="step-copy">Validate anonymous public reads, authenticated direct-table denial, and server-side Admin workflows in a non-production environment first.</p></div></div>
+        <div class="step"><div class="step-num">03</div><div><p class="step-title">Enable RLS, then reduce grants</p><p class="step-copy">Apply reviewed SELECT-only public policies, preserve server-side service-role operations, and revoke broad anon/authenticated write privileges in the same release.</p></div></div>
+        <p class="note"><b>Current security finding:</b> `site_settings` and `news_posts` are exposed in the public schema with RLS disabled. The recommended remediation is staged policy review and testing—not an untested direct switch in production.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

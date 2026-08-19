@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "title": "Executive Security Overview",
+    "created": 1787104487.755,
+    "last_updated": 1787104561.647,
+    "total_slides": 5
+  },
+  "slides": [
+    {
+      "id": "overview",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "alerting",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "sessions",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "checklist",
+      "state": "edited",
+      "pageNum": 5
+    }
+  ],
+  "outline": [
+    {
+      "id": "overview",
+      "title": "Executive Security Overview",
+      "summary": "Summary of the Supabase RLS hardening across all 16 public tables in production and staging.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "architecture",
+      "title": "Defense-in-Depth Architecture",
+      "summary": "How Next.js, Vercel Serverless Express, and Supabase service-role isolation protect data.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "alerting",
+      "title": "Automated Security Alerting",
+      "summary": "Strategies for Supabase database linters, cron checks, and Telegram security webhooks.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "sessions",
+      "title": "Token & Session Management",
+      "summary": "HttpOnly cookies, BCrypt password hashing, and HMAC Telegram Mini App verification.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "checklist",
+      "title": "Security Operating Checklist",
+      "summary": "Actionable best practices using Manus AI, GitHub, Vercel, and Supabase.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

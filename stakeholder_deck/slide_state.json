@@ -1,0 +1,78 @@
+{
+  "project_info": {
+    "title": "System Capacity Overview",
+    "created": 1786949582.887,
+    "last_updated": 1786949642.439,
+    "total_slides": 6
+  },
+  "slides": [
+    {
+      "id": "overview",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "legacy_dorms",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "new_dorms_male",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "new_dorms_female",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "room_lock_feature",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "enforcement_logic",
+      "state": "edited",
+      "pageNum": 6
+    }
+  ],
+  "outline": [
+    {
+      "id": "overview",
+      "title": "System Capacity Overview",
+      "summary": "High-level summary of the updated 68-room layout and 464-bed capacity across 6 buildings.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "legacy_dorms",
+      "title": "Legacy Dormitories (A, B, C, D)",
+      "summary": "Details of the legacy buildings: 20 rooms total, 4 beds per room, specifically allocated for Male and Female residents.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "new_dorms_male",
+      "title": "New Male Dormitory (M_NEW)",
+      "summary": "Configuration of the new 4-story male building: 24 rooms with 8 beds each, including floor-by-floor breakdown.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "new_dorms_female",
+      "title": "New Female Dormitory (F_NEW)",
+      "summary": "Configuration of the new 4-story female building: 24 rooms with 8 beds each, including floor-by-floor breakdown.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "room_lock_feature",
+      "title": "New Feature: Room Lock & Custom Capacity",
+      "summary": "Introduction of the Room Lock (is_locked) toggle and Custom Capacity override for Admin and Manager portals.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "enforcement_logic",
+      "title": "Allocation Enforcement & Security",
+      "summary": "Explanation of how the Waterfall algorithm and Drag-and-Drop UI strictly enforce room locks and capacity limits.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

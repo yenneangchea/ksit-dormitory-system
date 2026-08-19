@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validated for Production</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f5ef; color: #173d25; font-family: "Kantumruy Pro", "Noto Sans Khmer", Arial, sans-serif; }
+    .top-rule { min-height: 14px; background: #0b5c2c; }
+    .header { min-height: 146px; padding-top: 41px; padding-left: 82px; padding-right: 82px; border-bottom: 1px solid #dbe4dc; }
+    .eyebrow { color: #55866a; font-size: 14px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+    h1 { margin-top: 9px; font-size: 39px; line-height: 1.08; letter-spacing: -0.04em; }
+    .body { min-height: 370px; margin-left: 82px; margin-right: 82px; display: grid; grid-template-columns: 0.88fr 2.12fr; column-gap: 42px; align-items: center; }
+    .proof { min-height: 248px; border-top: 4px solid #0b5c2c; padding-top: 25px; }
+    .proof-number { color: #0b5c2c; font-size: 92px; line-height: 0.85; font-weight: 800; letter-spacing: -0.075em; }
+    .proof-label { margin-top: 13px; color: #a26b17; font-size: 18px; font-weight: 800; }
+    .proof-copy { margin-top: 13px; max-width: 260px; color: #647569; font-size: 15px; line-height: 1.45; }
+    .checks { min-height: 248px; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #c9d9cb; }
+    .check { min-height: 124px; padding-top: 21px; padding-left: 24px; padding-right: 20px; }
+    .check:nth-child(2), .check:nth-child(4) { border-left: 1px solid #d8e2d9; }
+    .check:nth-child(3), .check:nth-child(4) { border-top: 1px solid #d8e2d9; }
+    .check-status { color: #0b5c2c; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    h2 { margin-top: 8px; color: #243e2e; font-size: 20px; line-height: 1.16; }
+    .check-copy { margin-top: 7px; color: #68786c; font-size: 13px; line-height: 1.36; }
+    .endpoint { min-height: 153px; margin-left: 82px; margin-right: 82px; border-top: 2px solid #b8cfbc; display: grid; grid-template-columns: 1fr 1fr; }
+    .endpoint-left { padding-top: 25px; padding-right: 36px; }
+    .endpoint-right { border-left: 1px solid #d1ded3; padding-top: 25px; padding-left: 30px; }
+    .endpoint-title { color: #31553d; font-size: 17px; font-weight: 800; }
+    .endpoint-copy { margin-top: 9px; color: #66766b; font-size: 14px; line-height: 1.42; }
+    .code { color: #0b5c2c; font-family: "Courier New", monospace; font-size: 14px; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="top-rule"></div>
+    <header class="header">
+      <div class="eyebrow">Release assurance</div>
+      <h1>Validated for production</h1>
+    </header>
+    <main class="body">
+      <section class="proof">
+        <div class="proof-number">64/64</div>
+        <div class="proof-label">Backend tests passing</div>
+        <p class="proof-copy">The complete backend regression suite passed with no failures, including the new quota, chargeable-usage, and rounded KHQR split contract.</p>
+      </section>
+      <section class="checks" aria-label="Validation results">
+        <article class="check"><div class="check-status">Applied</div><h2>Additive database migration</h2><p class="check-copy">New quota, subsidy, chargeable-usage, and stored-total fields were confirmed in utility_bills.</p></article>
+        <article class="check"><div class="check-status">Passed</div><h2>Production Next.js build</h2><p class="check-copy">The optimized build completed successfully with NODE_ENV=production and type validation.</p></article>
+        <article class="check"><div class="check-status">Synchronized</div><h2>Vercel backend copy</h2><p class="check-copy">The deployed frontend/server controller matches the primary quota-aware backend controller.</p></article>
+        <article class="check"><div class="check-status">Configured</div><h2>Production defaults saved</h2><p class="check-copy">50 kWh, 5 m³, 800៛/kWh, 1,500៛/m³, and 10,000៛ trash are stored in System Settings.</p></article>
+      </section>
+    </main>
+    <footer class="endpoint">
+      <div class="endpoint-left"><div class="endpoint-title">Primary production route</div><p class="endpoint-copy"><span class="code">/dashboard/admin?tab=settings</span> returned <b>HTTP 200</b> during the release health check.</p></div>
+      <div class="endpoint-right"><div class="endpoint-title">Protected utility API</div><p class="endpoint-copy"><span class="code">/api/utility-bills</span> returned <b>HTTP 401</b> without a bearer token, confirming the endpoint remains protected.</p></div>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        box-sizing: border-box; 
+        background: #f8faf7; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        overflow: hidden;
+      }
+      .left-panel {
+        width: 400px;
+        background: #147a5b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .left-panel i {
+        font-size: 180px;
+        color: rgba(255, 255, 255, 0.2);
+      }
+      .right-panel {
+        flex: 1;
+        padding: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .badge {
+        display: inline-block;
+        background: #e6f4e8;
+        color: #0b5c2c;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 24px;
+        width: fit-content;
+      }
+      h1 {
+        font-size: 56px;
+        font-weight: 800;
+        color: #18231d;
+        line-height: 1.1;
+        margin-bottom: 24px;
+        letter-spacing: -1px;
+      }
+      .subtitle {
+        font-size: 28px;
+        color: #147a5b;
+        font-weight: 600;
+        margin-bottom: 40px;
+      }
+      .description {
+        font-size: 20px;
+        color: #68736c;
+        line-height: 1.6;
+        max-width: 600px;
+      }
+      .footer-info {
+        margin-top: auto;
+        font-size: 14px;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="left-panel">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="right-panel">
+            <div class="badge">Production Release Update</div>
+            <h1>KSIT Dormitory Management System</h1>
+            <div class="subtitle">Academic Majors & Audit Management</div>
+            <p class="description">
+                A dynamic academic program catalog integrated with cascading registration workflows, waterfall room allocation, and administrator accountability logs.
+            </p>
+            <div class="footer-info">
+                August 17, 2026 · Vercel Production Deployment · Version ffba085
+            </div>
+        </div>
+    </div>
+</body>
+</html>

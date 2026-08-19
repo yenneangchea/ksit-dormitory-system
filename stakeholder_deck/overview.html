@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        background: #ffffff; 
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        border-top: 10px solid #147a5b;
+      }
+      .bg-shape {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 40%;
+        height: 100%;
+        background: #f0f7f4;
+        clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
+        z-index: 1;
+      }
+      .content {
+        z-index: 2;
+        width: 100%;
+        padding: 0 100px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .title-section {
+        width: 60%;
+      }
+      .title-section h1 {
+        color: #147a5b;
+        font-size: 56px;
+        line-height: 1.1;
+        margin-bottom: 20px;
+      }
+      .title-section p {
+        color: #64748b;
+        font-size: 24px;
+        max-width: 500px;
+      }
+      .stats-grid {
+        width: 35%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-left: 5px solid #147a5b;
+      }
+      .stat-icon {
+        background: #147a5b;
+        color: white;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+      }
+      .stat-info h3 {
+        color: #147a5b;
+        font-size: 36px;
+        margin-bottom: 5px;
+      }
+      .stat-info p {
+        color: #64748b;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .footer-logo {
+        position: absolute;
+        bottom: 40px;
+        left: 100px;
+        color: #147a5b;
+        font-weight: bold;
+        font-size: 20px;
+      }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="bg-shape"></div>
+        <div class="content">
+            <div class="title-section">
+                <h1>System Capacity Overview</h1>
+                <p>Updated Dormitory Layout and Feature Release for KSIT Management System.</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-building"></i></div>
+                    <div class="stat-info">
+                        <h3>6</h3>
+                        <p>Total Buildings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                    <div class="stat-info">
+                        <h3>68</h3>
+                        <p>Active Rooms</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-bed"></i></div>
+                    <div class="stat-info">
+                        <h3>464</h3>
+                        <p>Total Beds</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-logo">KSIT DORMITORY SYSTEM</div>
+    </div>
+</body>
+</html>

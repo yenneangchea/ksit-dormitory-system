@@ -1,0 +1,78 @@
+{
+  "project_info": {
+    "title": "Release Summary: Academic & Majors Analytics",
+    "created": 1786955787.783,
+    "last_updated": 1786955845.46,
+    "total_slides": 6
+  },
+  "slides": [
+    {
+      "id": "title_slide",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "feature_overview",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "role_permissions",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "export_capabilities",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "validation_results",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "closing_slide",
+      "state": "edited",
+      "pageNum": 6
+    }
+  ],
+  "outline": [
+    {
+      "id": "title_slide",
+      "title": "Release Summary: Academic & Majors Analytics",
+      "summary": "Title slide for the KSIT Dormitory Management System Academic & Majors Analytics release.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "feature_overview",
+      "title": "Multi-Role Academic Analytics Workspace",
+      "summary": "Overview of the new integrated analytics panel for Admin, Manager, and Teacher roles.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "role_permissions",
+      "title": "Secure Role-Based Access Controls",
+      "summary": "Detailed breakdown of permissions and security boundaries for each user role.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "export_capabilities",
+      "title": "Advanced Data Export & Reporting",
+      "summary": "Summary of Excel and PDF export capabilities with dynamic filtering.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "validation_results",
+      "title": "Production Readiness & Validation",
+      "summary": "Evidence of 59 passing tests, clean production build, and live endpoint verification.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "closing_slide",
+      "title": "System Deployment & Next Steps",
+      "summary": "Confirmation of production readiness and final release status.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

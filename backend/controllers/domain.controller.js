@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
+const { normalizePhoneNumber, phoneLookupCandidates } = require('../lib/phone-otp');
 const { exportMonthlyAttendanceToDrive, exportMonthlyBillingToDrive } = require('../services/syncManager.service');
 
 const KHR_PER_USD = Number(process.env.KHR_PER_USD || 4100);
@@ -1184,6 +1185,16 @@ async function createUser(req, res, next) {
       throw fail('Khmer name, Latin name, email, phone, gender, role, and a temporary password of at least 8 characters are required.');
     }
     const supabase = getSupabase();
+    const normalizedPhone = normalizePhoneNumber(phone);
+    const { data: existingPhoneUsers, error: phoneCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .in('phone', phoneLookupCandidates(normalizedPhone));
+    if (phoneCheckError) throw phoneCheckError;
+    if (existingPhoneUsers && existingPhoneUsers.length > 0) {
+      throw fail('លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ សូមធ្វើការ Login ឬប្រើលេខទូរស័ព្ទផ្សេង (This phone number is already in use).', 409);
+    }
+
     const hasAcademicSelection = academic_level !== undefined || academic_major_id !== undefined || academic_year !== undefined;
     if (role === 'student' && !hasAcademicSelection) throw fail('Student accounts require an academic level, major, and year level.');
     const resolvedSelection = hasAcademicSelection ? await resolveConfiguredMajor(supabase, { academic_level, academic_major_id, academic_year }) : null;
@@ -1191,7 +1202,7 @@ async function createUser(req, res, next) {
       full_name_khmer: String(full_name_khmer).trim(),
       full_name_latin: String(full_name_latin).trim(),
       email: normalizedEmail,
-      phone: String(phone).trim(),
+      phone: normalizedPhone,
       gender,
       role,
       password_hash: await bcrypt.hash(password, 12),
@@ -1228,7 +1239,19 @@ async function updateUser(req, res, next) {
     if (full_name_khmer !== undefined) patch.full_name_khmer = String(full_name_khmer).trim();
     if (full_name_latin !== undefined) patch.full_name_latin = String(full_name_latin).trim();
     if (email !== undefined) patch.email = String(email).trim().toLowerCase();
-    if (phone !== undefined) patch.phone = String(phone).trim();
+    if (phone !== undefined) {
+      const normalizedPhone = normalizePhoneNumber(phone);
+      const { data: existingPhoneUsers, error: phoneCheckError } = await supabase
+        .from('users')
+        .select('id')
+        .neq('id', targetUser.id)
+        .in('phone', phoneLookupCandidates(normalizedPhone));
+      if (phoneCheckError) throw phoneCheckError;
+      if (existingPhoneUsers && existingPhoneUsers.length > 0) {
+        throw fail('លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ សូមធ្វើការ Login ឬប្រើលេខទូរស័ព្ទផ្សេង (This phone number is already in use).', 409);
+      }
+      patch.phone = normalizedPhone;
+    }
     if (gender !== undefined) patch.gender = gender;
     if (role !== undefined) patch.role = role;
     if (password !== undefined) {

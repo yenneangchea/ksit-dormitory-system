@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Export Capabilities</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .slide-container { 
+            width: 1280px; 
+            min-height: 720px; 
+            background: #ffffff; 
+            display: flex; 
+            flex-direction: column;
+            position: relative;
+        }
+        .header-stripe {
+            width: 100%;
+            height: 20px;
+            background: #147a5b;
+        }
+        .footer-stripe {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #147a5b;
+        }
+        .title-section {
+            padding-top: 60px;
+            padding-left: 80px;
+            margin-bottom: 40px;
+        }
+        .slide-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: #147a5b;
+        }
+        .main-content {
+            display: flex;
+            padding-left: 80px;
+            padding-right: 80px;
+            gap: 80px;
+            flex: 1;
+        }
+        .export-types {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .export-card {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            background: #f0f7f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #147a5b;
+            border: 1px solid #d1e2d9;
+        }
+        .export-info h3 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+        .export-info p {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.4;
+        }
+        .logic-section {
+            flex: 1;
+            background: #fafafa;
+            border: 1px solid #eee;
+            padding: 40px;
+        }
+        .logic-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #147a5b;
+            border-bottom: 2px solid #147a5b;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+        .logic-step {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 18px;
+            color: #444;
+        }
+        .step-num {
+            width: 30px;
+            height: 30px;
+            background: #147a5b;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-stripe"></div>
+        
+        <div class="title-section">
+            <h2 class="slide-title">Advanced Data Export & Reporting</h2>
+        </div>
+        
+        <div class="main-content">
+            <div class="export-types">
+                <div class="export-card">
+                    <div class="icon-box"><i class="fas fa-file-excel"></i></div>
+                    <div class="export-info">
+                        <h3>Excel Spreadsheet (.xlsx)</h3>
+                        <p>Comprehensive raw data export for deep institutional analysis, supporting external processing and archival.</p>
+                    </div>
+                </div>
+                <div class="export-card">
+                    <div class="icon-box"><i class="fas fa-file-pdf"></i></div>
+                    <div class="export-info">
+                        <h3>Printable PDF Reports</h3>
+                        <p>Professional, formatted summaries including enrollment charts and distribution tables ready for official meetings.</p>
+                    </div>
+                </div>
+                <div class="export-card">
+                    <div class="icon-box"><i class="fas fa-bolt"></i></div>
+                    <div class="export-info">
+                        <h3>High-Performance Engine</h3>
+                        <p>Server-side generation optimized for large student datasets, ensuring fast delivery without browser lag.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="logic-section">
+                <div class="logic-title">Dynamic Reporting Logic</div>
+                <div class="logic-step">
+                    <div class="step-num">1</div>
+                    <span>User applies UI filters (Level, Major, Year)</span>
+                </div>
+                <div class="logic-step">
+                    <div class="step-num">2</div>
+                    <span>Frontend sends active filter state to API</span>
+                </div>
+                <div class="logic-step">
+                    <div class="step-num">3</div>
+                    <span>Backend queries Supabase with specific criteria</span>
+                </div>
+                <div class="logic-step">
+                    <div class="step-num">4</div>
+                    <span>Report generated based on filtered dataset</span>
+                </div>
+                <div class="logic-step">
+                    <div class="step-num">5</div>
+                    <span>Secure download link served to authorized user</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-stripe"></div>
+    </div>
+</body>
+</html>

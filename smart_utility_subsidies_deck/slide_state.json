@@ -1,0 +1,89 @@
+{
+  "project_info": {
+    "title": "Smart Utility Subsidies & Free Quota",
+    "created": 1787032017.472,
+    "last_updated": 1787032195.89,
+    "total_slides": 7
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "release_at_a_glance",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "calculation_flow",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "admin_controls",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "invoice_transparency",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "release_validation",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "next_steps",
+      "state": "edited",
+      "pageNum": 7
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Smart Utility Subsidies & Free Quota",
+      "summary": "KSIT Dormitory Management System release overview: fair room-level utility subsidies, transparent billing, and exact KHQR allocations.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "release_at_a_glance",
+      "title": "A Fairer Room Utility Model",
+      "summary": "Explain the new 50 kWh electricity and 5 m³ water room quotas, default rates, and the benefit of charging only usage above the free allowance.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "calculation_flow",
+      "title": "Subsidy Logic, Step by Step",
+      "summary": "Show meter usage, free quota deduction, chargeable units, room total, and upward-rounded per-student KHQR amount using the implemented formula.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "admin_controls",
+      "title": "Admin Controls the Policy",
+      "summary": "Describe the System Settings inputs for rates, free quotas, trash fee, and housing fee, and emphasize that settings are snapshotted onto each new invoice.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "invoice_transparency",
+      "title": "Every Invoice Explains Itself",
+      "summary": "Show how Manager and Student portals disclose used, free, chargeable, rate, cost, room total, residents, and the matching KHQR amount.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "release_validation",
+      "title": "Validated for Production",
+      "summary": "Summarize the additive database migration, 64 passing backend tests, successful Next.js production build, and protected API health check.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_steps",
+      "title": "Operational Next Steps",
+      "summary": "Close with the released production URL and a concise security follow-through note: enable RLS with reviewed public-read-only and server-managed policies before revoking excess grants.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

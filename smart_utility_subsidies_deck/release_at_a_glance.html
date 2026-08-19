@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Fairer Room Utility Model</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f5ef; color: #173d25; font-family: "Kantumruy Pro", "Noto Sans Khmer", Arial, sans-serif; }
+    .top-rule { height: 8px; background: #0b5c2c; }
+    .header { min-height: 125px; padding-top: 36px; padding-left: 72px; padding-right: 72px; border-bottom: 1px solid #dbe4dc; }
+    .eyebrow { color: #55866a; font-size: 14px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+    h1 { margin-top: 9px; font-size: 38px; line-height: 1.08; letter-spacing: -0.035em; }
+    .columns { min-height: 320px; display: grid; grid-template-columns: repeat(3, 1fr); margin-left: 72px; margin-right: 72px; }
+    .column { min-height: 320px; padding-top: 36px; padding-left: 24px; padding-right: 24px; }
+    .column:first-child { padding-left: 0; }
+    .column + .column { border-left: 1px solid #d7e2d8; }
+    .number { font-size: 78px; line-height: 0.92; font-weight: 800; letter-spacing: -0.06em; color: #0b5c2c; }
+    .unit { margin-top: 8px; color: #a26b17; font-size: 20px; font-weight: 800; }
+    h2 { margin-top: 18px; font-size: 22px; line-height: 1.18; }
+    .copy { margin-top: 10px; max-width: 260px; color: #617266; font-size: 16px; line-height: 1.45; }
+    .policy { font-size: 48px; line-height: 0.98; color: #0b5c2c; font-weight: 800; letter-spacing: -0.05em; }
+    .footer { min-height: 140px; margin-left: 72px; margin-right: 72px; border-top: 2px solid #b8cfbc; display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; align-items: center; }
+    .foot-head { padding-right: 20px; color: #365044; font-size: 15px; line-height: 1.38; }
+    .metric { min-height: 64px; border-left: 1px solid #d7e2d8; padding-left: 18px; }
+    .metric-value { font-size: 23px; font-weight: 800; color: #173d25; }
+    .metric-label { margin-top: 6px; color: #718074; font-size: 13px; line-height: 1.3; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="top-rule"></div>
+    <header class="header">
+      <div class="eyebrow">Release at a glance</div>
+      <h1>A fairer room utility model</h1>
+    </header>
+    <main class="columns">
+      <section class="column">
+        <div class="number">50</div>
+        <div class="unit">kWh per room</div>
+        <h2>Electricity allowance first</h2>
+        <p class="copy">Each room receives the configured electricity quota before any electricity cost is calculated.</p>
+      </section>
+      <section class="column">
+        <div class="number">5</div>
+        <div class="unit">m³ per room</div>
+        <h2>Water allowance first</h2>
+        <p class="copy">Each room receives the configured water quota before water charges are added to the room bill.</p>
+      </section>
+      <section class="column">
+        <div class="policy">ONLY<br>EXCESS<br>IS CHARGED</div>
+        <p class="copy">Subsidies apply at room level, then the resulting room total is shared only among active residents.</p>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="foot-head"><b>Configured production defaults</b><br>All values can be maintained by an administrator in System Settings.</div>
+      <div class="metric"><div class="metric-value">800៛</div><div class="metric-label">per chargeable kWh</div></div>
+      <div class="metric"><div class="metric-value">1,500៛</div><div class="metric-label">per chargeable m³</div></div>
+      <div class="metric"><div class="metric-value">10,000៛</div><div class="metric-label">trash fee per room</div></div>
+    </footer>
+  </div>
+</body>
+</html>

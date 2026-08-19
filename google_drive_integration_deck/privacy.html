@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; }
+.slide-container { width: 1280px; min-height: 720px; background: #f7f4eb; color: #18231d; font-family: Arial, Helvetica, sans-serif; position: relative; }
+.header { height: 132px; background: #0b5c2c; color: #ffffff; padding: 40px 86px 0; }
+.header p { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #c7e1cf; }
+.header h1 { margin: 9px 0 0; font-size: 36px; letter-spacing: -.7px; }
+.content-row { display: flex; gap: 50px; padding: 18px 86px 0; }
+.section-label { font-size: 13px; letter-spacing: 1.8px; text-transform: uppercase; color: #287243; font-weight: 700; }
+.roles { width: 280px; }
+.roles h2, .enforcement h2, .outcome h2 { margin: 11px 0 16px; font-size: 24px; color: #0b5c2c; }
+.role { height: 52px; display: flex; align-items: center; border-top: 1px solid #ccd7cd; }
+.role:last-child { border-bottom: 1px solid #ccd7cd; }
+.badge { width: 36px; height: 36px; border-radius: 50%; background: #0b5c2c; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 13px; }
+.role span { font-size: 17px; font-weight: 700; color: #304037; }
+.arrow { align-self: center; width: 90px; height: 3px; background: #f39a75; margin: 0 10px; position: relative; }
+.arrow:after { content: ""; position: absolute; right: -1px; top: -6px; width: 14px; height: 14px; border-top: 3px solid #f39a75; border-right: 3px solid #f39a75; transform: rotate(45deg); }
+.enforcement { width: 335px; }
+.guard { border-top: 6px solid #0b5c2c; background: #e8f0e8; padding: 18px 20px 12px; }
+.guard .lock { width: 56px; height: 56px; border-radius: 50%; background: #0b5c2c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 25px; font-weight: 700; }
+.guard strong { display: block; margin-top: 14px; font-size: 21px; color: #0b5c2c; }
+.guard p { margin: 8px 0 0; font-size: 15px; line-height: 1.45; color: #526058; }
+.outcome { width: 285px; }
+.outcome h2 { margin-bottom: 12px; }
+.outcome-item { margin-top: 12px; border-top: 2px solid #c9d9cc; padding-top: 10px; }
+.outcome-item strong { display: block; font-size: 17px; color: #20342a; }
+.outcome-item span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.38; color: #65736a; }
+.footer { position: absolute; left: 86px; right: 86px; bottom: 20px; border-top: 1px solid #cfd8d0; padding-top: 12px; display: flex; justify-content: space-between; font-size: 15px; color: #5a675f; }
+.footer strong { color: #b55334; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <header class="header"><p>Security by design</p><h1>Privacy and access control stay inside the KSIT backend</h1></header>
+  <div class="content-row">
+    <section class="roles"><div class="section-label">Authorized roles</div><h2>Who may request files</h2><div class="role"><div class="badge">S</div><span>Student · own application</span></div><div class="role"><div class="badge">M</div><span>Manager · review queue</span></div><div class="role"><div class="badge">A</div><span>Admin · authorized oversight</span></div></section>
+    <div style="display:flex;flex-direction:column;align-items:stretch;">
+      <div style="height:20px"></div>
+      <div class="arrow" aria-hidden="true"></div>
+    </div>
+    <section class="enforcement"><div class="section-label">Server boundary</div><h2>One protected gateway</h2><div class="guard"><div class="lock">◆</div><strong>Authenticated document streaming</strong><p>Express API authenticates and streams files; service-account keys never reach browser code.</p></div></section>
+    <div style="display:flex;flex-direction:column;align-items:stretch;">
+      <div style="height:20px"></div>
+      <div class="arrow" aria-hidden="true"></div>
+    </div>
+    <section class="outcome"><div class="section-label">Storage outcome</div><h2>Private by default</h2><div class="outcome-item"><strong>Google Drive primary</strong><span>Drive links stored as server-side references, not public URLs.</span></div><div class="outcome-item"><strong>Supabase fallback</strong><span>Private buckets served via short-lived backend tokens.</span></div><div class="outcome-item"><strong>Audit-ready records</strong><span>Provider metadata and lifecycle remain with the application.</span></div></section>
+  </div>
+  <footer class="footer"><span>Principle: <strong>no public identity documents</strong></span><span>Credential scope: backend deployment only</span></footer>
+</div>
+</body>
+</html>

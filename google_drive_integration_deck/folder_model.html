@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:0}
+.slide-container{width:1280px;min-height:720px;background:#f7f4eb;font-family:Arial,Helvetica,sans-serif;color:#18231d;position:relative;margin-top:-1px}
+.header{height:132px;background:#0b5c2c;color:#fff;padding:38px 86px 0}
+.header .eyebrow{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#c7e1cf;font-weight:700}
+.header h1{font-size:36px;margin:10px 0 0;letter-spacing:-.6px}
+.intro{position:absolute;left:86px;top:160px;font-size:18px;line-height:1.4;color:#58645d;width:760px}
+.tree{position:absolute;left:86px;top:252px;width:1108px;height:330px;display:flex;align-items:flex-start}
+.level{position:relative}
+.root{width:254px}.year{width:250px;margin-left:56px}.student{width:294px;margin-left:56px}.files{width:360px;margin-left:56px}
+.connector{position:absolute;top:51px;height:3px;background:#9fbea4}.root .connector{left:234px;width:76px}.year .connector{left:230px;width:76px}.student .connector{left:274px;width:76px}
+.node{min-height:104px;border-top:8px solid #0b5c2c;background:#fff;padding:20px 20px 0}
+.node.coral{border-top-color:#f39a75}.node.light{border-top-color:#83ad8b}
+.node .tag{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#287243;font-weight:700}.node h2{font-size:21px;line-height:1.18;margin:9px 0 0;color:#20342a}.node p{font-size:13px;line-height:1.35;color:#66736b;margin:9px 0 0}
+.files .file-title{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#287243;font-weight:700;margin:0 0 15px}.file{height:43px;border-top:1px solid #cdd9cf;display:flex;align-items:center;font-size:15px;color:#38463d}.file:last-child{border-bottom:1px solid #cdd9cf}.file b{display:inline-flex;width:34px;height:26px;align-items:center;justify-content:center;background:#eaf4ec;color:#0b5c2c;margin-right:12px;font-size:12px}
+.caption{position:absolute;left:86px;right:86px;bottom:10px;border-top:1px solid #d2ddd4;padding-top:17px;display:flex;justify-content:space-between}.caption span{font-size:15px;color:#59665e}.caption strong{color:#0b5c2c}.caption .accent{color:#9b4a30}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <header class="header"><div class="eyebrow">Google Drive hierarchy</div><h1>Every applicant receives a predictable evidence folder</h1></header>
+  <p class="intro">The adapter creates—or reuses—the same folder path for every submission. This prevents orphaned files and gives staff a consistent audit trail.</p>
+  <section class="tree">
+    <article class="level root"><div class="node"><div class="tag">Root folder</div><h2>KSIT_Dormitory_<br>Applications_2025_2026</h2><p>Institution-controlled entry point</p></div><div class="connector"></div></article>
+    <article class="level year"><div class="node light"><div class="tag">Academic year</div><h2>[2026-2027]</h2><p>Separates annual application cycles</p></div><div class="connector"></div></article>
+    <article class="level student"><div class="node coral"><div class="tag">Student folder</div><h2>[StudentID]_<br>[Student Khmer Name]</h2><p>Deterministic, sanitized, and reusable</p></div><div class="connector"></div></article>
+    <article class="level files"><p class="file-title">Five official artifacts</p><div class="file"><b>01</b>photo_4x6.jpg / .png</div><div class="file"><b>02</b>national_id.pdf / .jpg</div><div class="file"><b>03</b>family_book.pdf / .jpg</div><div class="file"><b>04</b>prefilled_application_form.pdf</div><div class="file"><b>05</b>signed_thumbprinted_application.pdf</div></article>
+  </section>
+  <footer class="caption"><span><strong>Database stores:</strong> folder ID, file IDs, metadata, and Drive references</span><span class="accent"><strong>Drive stores:</strong> document bytes</span></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "title": "Academic Majors Management Overview",
+    "created": 1786954202.292,
+    "last_updated": 1786954262.29,
+    "total_slides": 5
+  },
+  "slides": [
+    {
+      "id": "overview",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "search_filters",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "bulk_import",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "audit_history",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "security_validation",
+      "state": "edited",
+      "pageNum": 5
+    }
+  ],
+  "outline": [
+    {
+      "id": "overview",
+      "title": "Academic Majors Management Overview",
+      "summary": "Introduction to the dynamic academic program catalog, structured academic levels, and cascading registration architecture for KSIT Dormitory.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "search_filters",
+      "title": "Searchable Filters & Catalog Management",
+      "summary": "Real-time table search, academic level filtering, status toggling, and clear-results behavior in the Admin settings workspace.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "bulk_import",
+      "title": "Spreadsheet Bulk Import Engine",
+      "summary": "Validated CSV, XLS, XLSX, and XLSM bulk import supporting row checks, duplicate-safe upserts, and downloadable templates.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "audit_history",
+      "title": "Administrator Audit Log & History",
+      "summary": "Database-backed audit history tracking administrator actions, snapshots, timestamps, and identity for accountability.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "security_validation",
+      "title": "Security Architecture & Production Deployment",
+      "summary": "Role-based access control, RLS protection on audit tables, and live Vercel deployment verification.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

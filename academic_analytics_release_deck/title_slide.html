@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title Slide</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .slide-container { 
+            width: 1280px; 
+            min-height: 720px; 
+            background: #ffffff; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header-stripe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: #147a5b;
+        }
+        .footer-stripe {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #147a5b;
+        }
+        .content {
+            text-align: center;
+            z-index: 2;
+        }
+        .institutional-title {
+            font-size: 24px;
+            color: #147a5b;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .main-title {
+            font-size: 64px;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        .subtitle {
+            font-size: 32px;
+            color: #666;
+            margin-bottom: 60px;
+        }
+        .release-badge {
+            display: inline-block;
+            background: #147a5b;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        .meta-info {
+            font-size: 18px;
+            color: #888;
+        }
+        .decoration-circle {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: rgba(20, 122, 91, 0.03);
+            top: -100px;
+            right: -100px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-stripe"></div>
+        <div class="decoration-circle"></div>
+        
+        <div class="content">
+            <div class="institutional-title">Kampong Speu Institute of Technology</div>
+            <h1 class="main-title">Academic & Majors Analytics<br>Release Summary</h1>
+            <div class="subtitle">KSIT Dormitory Management System</div>
+            <div class="release-badge">Production Release: v1.2.0</div>
+            <div class="meta-info">
+                <i class="fas fa-calendar-alt"></i> August 17, 2026 | <i class="fas fa-code-branch"></i> Commit: 672cf54
+            </div>
+        </div>
+        
+        <div class="footer-stripe"></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        background: #ffffff; 
+        padding-top: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .header {
+        width: 100%;
+        padding: 0 80px;
+        margin-bottom: 50px;
+        border-left: 8px solid #147a5b;
+      }
+      .header h2 {
+        color: #147a5b;
+        font-size: 42px;
+      }
+      .features-container {
+        width: 100%;
+        padding: 0 80px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+      }
+      .feature-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .feature-icon {
+        font-size: 48px;
+        color: #147a5b;
+        margin-bottom: 10px;
+      }
+      .feature-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+      .feature-description {
+        font-size: 20px;
+        color: #475569;
+        line-height: 1.6;
+      }
+      .badge-preview {
+        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 8px 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 14px;
+      }
+      .capacity-preview {
+        margin-top: 10px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #147a5b;
+      }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h2>Room Lock & Custom Capacity</h2>
+        </div>
+        <div class="features-container">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-lock"></i></div>
+                <div class="feature-title">Room Lock Control</div>
+                <div class="feature-description">
+                    Admin and Managers can now manually lock rooms to prevent further assignments.
+                    <ul style="margin-top: 15px; margin-left: 20px;">
+                        <li>Strictly skipped by Auto-Allocation</li>
+                        <li>Blocks Drag-and-Drop assignments</li>
+                        <li>Visual status indicator in Matrix</li>
+                    </ul>
+                </div>
+                <div class="badge-preview">
+                    <i class="fas fa-lock"></i> Locked (បិទការចាត់តាំង)
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-users-cog"></i></div>
+                <div class="feature-title">Custom Capacity Override</div>
+                <div class="feature-description">
+                    Override default bed counts for specific operational requirements.
+                    <ul style="margin-top: 15px; margin-left: 20px;">
+                        <li>Support for Single/Double occupancy</li>
+                        <li>Dynamic occupancy tracking (X/N beds)</li>
+                        <li>Instant database synchronization</li>
+                    </ul>
+                </div>
+                <div class="capacity-preview">
+                    Capacity: 2 Beds
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

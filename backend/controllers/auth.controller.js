@@ -667,6 +667,171 @@ const requestPasswordReset = async (req, res, next) => {
   }
 };
 
+
+
+/**
+ * @desc Register or sign in a student via verified Telegram contact / phone OTP flow.
+ * @route POST /api/auth/phone/register
+ * @access Public
+ */
+const registerWithPhone = async (req, res, next) => {
+  try {
+    const { phone, code, full_name_khmer, full_name_latin, gender, email, initData } = req.body;
+    const normalizedPhone = normalizePhoneNumber(phone);
+    const otpCode = assertSixDigitOtp(code);
+
+    const khmerName = String(full_name_khmer || '').trim();
+    const latinName = String(full_name_latin || '').trim();
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+
+    if (!khmerName || !latinName || !['male', 'female'].includes(gender)) {
+      const error = new Error('Khmer name, Latin name, and gender are required.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const supabase = getSupabase();
+
+    // Verify phone OTP
+    const { data: otpRecord, error: codeLookupError } = await supabase
+      .from('phone_verification_codes')
+      .select('id, user_id, code_hash, expires_at, attempt_count')
+      .eq('phone', normalizedPhone)
+      .is('consumed_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (codeLookupError) throw codeLookupError;
+
+    const invalidOtp = new Error('The verification code is invalid, expired, or has already been used.');
+    invalidOtp.statusCode = 401;
+    if (!otpRecord || new Date(otpRecord.expires_at).getTime() <= Date.now() || otpRecord.attempt_count >= OTP_MAX_ATTEMPTS) {
+      if (otpRecord?.id) await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id).is('consumed_at', null);
+      throw invalidOtp;
+    }
+
+    if (!(await bcrypt.compare(otpCode, otpRecord.code_hash))) {
+      const nextAttempts = otpRecord.attempt_count + 1;
+      await supabase
+        .from('phone_verification_codes')
+        .update({ attempt_count: nextAttempts, ...(nextAttempts >= OTP_MAX_ATTEMPTS ? { consumed_at: new Date().toISOString() } : {}) })
+        .eq('id', otpRecord.id)
+        .is('consumed_at', null);
+      throw invalidOtp;
+    }
+
+    // Check unique phone enforcement across users (using candidates to catch +855 / 0855 variations)
+    const { data: existingPhoneUsers, error: phoneCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .in('phone', phoneLookupCandidates(normalizedPhone));
+    if (phoneCheckError) throw phoneCheckError;
+
+    if (existingPhoneUsers && existingPhoneUsers.length > 0) {
+      const conflict = new Error('លេខទូរស័ព្ទនេះត្រូវបានចុះឈ្មោះរួចហើយ សូមធ្វើការ Login ឬប្រើលេខទូរស័ព្ទផ្សេង (This phone number is already in use).');
+      conflict.statusCode = 409;
+      throw conflict;
+    }
+
+    let telegramId = null;
+    let avatarUrl = null;
+    if (initData) {
+      try {
+        const verified = verifyTelegramWebAppInitData(
+          initData,
+          process.env.TELEGRAM_BOT_TOKEN,
+          Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 600),
+        );
+        telegramId = verified.telegramId;
+        avatarUrl = verified.user?.photo_url || null;
+      } catch {
+        // optional initData verification failure shouldn't block phone registration if OTP is valid
+      }
+    }
+
+    // Mark OTP consumed
+    await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id);
+
+    const selectFields = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        telegram_id: telegramId,
+        role: 'student',
+        full_name_khmer: khmerName,
+        full_name_latin: latinName,
+        gender,
+        phone: normalizedPhone,
+        email: normalizedEmail || null,
+        password_hash: null, // phone OTP users authenticate via Telegram OTP / phone login
+        avatar_url: avatarUrl,
+      })
+      .select(selectFields)
+      .single();
+    if (insertError) throw insertError;
+
+    const safeUser = publicUser(newUser);
+    return res.status(201).json({
+      success: true,
+      message: 'Student account registered successfully.',
+      user: safeUser,
+      role: safeUser.role,
+      permissions: permissionsFor(safeUser.role),
+      token: createSessionToken(newUser),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Handle Telegram Bot webhook updates (e.g. /start command with inline buttons)
+ * @route POST /api/auth/telegram/webhook
+ * @access Public
+ */
+const telegramWebhook = async (req, res, next) => {
+  try {
+    const update = req.body || {};
+    const message = update.message || update.callback_query?.message;
+    const chatId = message?.chat?.id;
+    const text = message?.text || '';
+
+    if (!chatId) {
+      return res.json({ ok: true });
+    }
+
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return res.json({ ok: true });
+
+    if (text.startsWith('/start') || text.startsWith('/help')) {
+      const welcomeText = '👋 រវាសរវាញស្វាគមន៍មកកាន់ **ប្រព័ន្ធគ្រប់គ្រងអន្តេវាសិកដ្ឋាន KSIT Dormitory**!\n\nសូមជ្រើសរើសជម្រើសខាងក្រោមដើម្បីចុះឈ្មោះ ឬចូលប្រើប្រាស់ប្រព័ន្ធ៖';
+      const webAppUrl = process.env.TELEGRAM_MINI_APP_URL || 'https://ksit-dorm.vercel.app';
+
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: welcomeText,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📝 ចុះឈ្មោះស្នាក់នៅ (Register)', web_app: { url: `${webAppUrl}/login?mode=register` } },
+                { text: '🔐 ចូលប្រើប្រាស់ (Login)', web_app: { url: `${webAppUrl}/login` } }
+              ]
+            ]
+          }
+        }),
+      });
+    }
+
+    return res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   registerWithTelegram,
@@ -674,9 +839,13 @@ module.exports = {
   linkTelegramToCurrentUser,
   sendPhoneOtp,
   verifyPhoneOtp,
+  registerWithPhone,
+  telegramWebhook,
   logout,
   getCurrentUser,
   changePassword,
   requestPasswordReset,
   decodeSession,
 };
+
+

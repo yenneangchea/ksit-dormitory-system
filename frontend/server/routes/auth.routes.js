@@ -61,4 +61,7 @@ router.get('/me', authenticate, authController.getCurrentUser);
 router.post('/change-password', authenticate, authController.changePassword);
 router.post('/request-password-reset', authController.requestPasswordReset);
 
+router.post('/phone/register', authController.registerWithPhone);
+router.post('/telegram/webhook', authController.telegramWebhook);
+
 module.exports = router;

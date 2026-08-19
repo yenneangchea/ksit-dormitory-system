@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        box-sizing: border-box; 
+        background: #ffffff; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding-top: 60px;
+        position: relative;
+      }
+      .header {
+        border-left: 8px solid #147a5b;
+        padding-left: 30px;
+        margin-left: 60px;
+        margin-bottom: 50px;
+      }
+      h2 {
+        font-size: 42px;
+        color: #18231d;
+        letter-spacing: -0.5px;
+      }
+      .content-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 60px;
+        padding: 0 60px;
+      }
+      .security-layers {
+        list-style: none;
+      }
+      .layer-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 35px;
+      }
+      .layer-icon {
+        width: 50px;
+        height: 50px;
+        background: #e6f4e8;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #147a5b;
+        font-size: 20px;
+      }
+      .layer-text h3 {
+        font-size: 22px;
+        color: #2b4935;
+        margin-bottom: 8px;
+      }
+      .layer-text p {
+        font-size: 18px;
+        color: #68736c;
+        line-height: 1.5;
+      }
+      .verification-panel {
+        background: #fafcf9;
+        border: 2px solid #e1e7e1;
+        border-radius: 16px;
+        padding: 30px;
+      }
+      .panel-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #18231d;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-list {
+        list-style: none;
+      }
+      .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #edf0ed;
+      }
+      .status-item:last-child { border: none; }
+      .status-label {
+        font-size: 14px;
+        color: #39473f;
+        font-weight: 600;
+      }
+      .status-value {
+        font-size: 13px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+      }
+      .status-success {
+        background: #e6f4e8;
+        color: #16582b;
+      }
+      .deployment-info {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px dashed #dce3dc;
+      }
+      .deployment-info p {
+        font-size: 12px;
+        color: #68736c;
+        margin-bottom: 5px;
+      }
+      .deployment-info b {
+        color: #147a5b;
+      }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h2>Security Architecture & Production Deployment</h2>
+        </div>
+        <div class="content-grid">
+            <ul class="security-layers">
+                <li class="layer-item">
+                    <div class="layer-icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="layer-text">
+                        <h3>Role-Based Access Control (RBAC)</h3>
+                        <p>Strict enforcement of Admin-only privileges for academic catalog modifications, bulk imports, and audit log access.</p>
+                    </div>
+                </li>
+                <li class="layer-item">
+                    <div class="layer-icon"><i class="fas fa-database"></i></div>
+                    <div class="layer-text">
+                        <h3>Row Level Security (RLS)</h3>
+                        <p>Database-level protection on audit tables ensures that sensitive snapshots and administrator identities are only accessible via authorized service roles.</p>
+                    </div>
+                </li>
+                <li class="layer-item">
+                    <div class="layer-icon"><i class="fas fa-network-wired"></i></div>
+                    <div class="layer-text">
+                        <h3>Same-Project API Dispatching</h3>
+                        <p>Unified Vercel deployment routes all API traffic through the primary domain, maintaining secure session persistence and CORS integrity.</p>
+                    </div>
+                </li>
+            </ul>
+            <div class="verification-panel">
+                <div class="panel-title">
+                    <i class="fas fa-check-circle" style="color: #147a5b;"></i>
+                    Production Health Check
+                </div>
+                <ul class="status-list">
+                    <li class="status-item">
+                        <span class="status-label">API Health (/api/health)</span>
+                        <span class="status-value status-success">200 OK</span>
+                    </li>
+                    <li class="status-item">
+                        <span class="status-label">Supabase Connectivity</span>
+                        <span class="status-value status-success">ACTIVE</span>
+                    </li>
+                    <li class="status-item">
+                        <span class="status-label">JWT Auth Validation</span>
+                        <span class="status-value status-success">VERIFIED</span>
+                    </li>
+                    <li class="status-item">
+                        <span class="status-label">Audit RLS Protection</span>
+                        <span class="status-value status-success">ENFORCED</span>
+                    </li>
+                </ul>
+                <div class="deployment-info">
+                    <p>Domain: <b>ksit-dorm.vercel.app</b></p>
+                    <p>Environment: <b>Production</b></p>
+                    <p>Last Release: <b>Version ffba085</b></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -269,6 +269,8 @@ export const authAPI = {
     fetchAPI<{ resend_after_seconds: number }>('/api/auth/phone/send-otp', { method: 'POST', body: JSON.stringify({ phone }) }, false),
   verifyPhoneOtp: (payload: { phone: string; code: string }) =>
     fetchAPI<never>('/api/auth/phone/verify-otp', { method: 'POST', body: JSON.stringify(payload) }, false),
+  registerWithPhone: (payload: { phone: string; code: string; full_name_khmer: string; full_name_latin: string; gender: 'male' | 'female'; email?: string; initData?: string }) =>
+    fetchAPI<never>('/api/auth/phone/register', { method: 'POST', body: JSON.stringify(payload) }, false),
   logout: () => fetchAPI<never>('/api/auth/logout', { method: 'POST' }),
   getCurrentUser: () => fetchAPI<never>('/api/auth/me'),
   changePassword: (payload: { current_password: string; new_password: string; confirm_password: string }) => fetchAPI<never>('/api/auth/change-password', { method: 'POST', body: JSON.stringify(payload) }),

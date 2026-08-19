@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Role Permissions</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .slide-container { 
+            width: 1280px; 
+            min-height: 720px; 
+            background: #ffffff; 
+            display: flex; 
+            flex-direction: column;
+            position: relative;
+        }
+        .header-stripe {
+            width: 100%;
+            height: 20px;
+            background: #147a5b;
+        }
+        .footer-stripe {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #147a5b;
+        }
+        .title-section {
+            padding-top: 60px;
+            padding-left: 80px;
+            margin-bottom: 50px;
+        }
+        .slide-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: #147a5b;
+        }
+        .table-container {
+            padding-left: 80px;
+            padding-right: 80px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 20px;
+        }
+        th {
+            background: #147a5b;
+            color: white;
+            text-align: left;
+            padding: 20px;
+            font-weight: 600;
+        }
+        td {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            color: #444;
+        }
+        tr:nth-child(even) {
+            background: #fcfdfc;
+        }
+        .check-icon {
+            color: #147a5b;
+            font-weight: bold;
+        }
+        .cross-icon {
+            color: #d9534f;
+        }
+        .permission-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-full { background: #e8f5e9; color: #2e7d32; }
+        .badge-read { background: #e3f2fd; color: #1565c0; }
+        .badge-none { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-stripe"></div>
+        
+        <div class="title-section">
+            <h2 class="slide-title">Secure Role-Based Access Controls</h2>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User Role</th>
+                        <th>Academics Tab</th>
+                        <th>Analytics View</th>
+                        <th>Excel/PDF Export</th>
+                        <th>Catalog CRUD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Super Admin</strong></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Enabled</span></td>
+                        <td><span class="permission-badge badge-full">Full Access</span></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Yes</span></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Manager</strong></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Enabled</span></td>
+                        <td><span class="permission-badge badge-read">Read Only</span></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Yes</span></td>
+                        <td><span class="cross-icon"><i class="fas fa-times"></i> No</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Teacher</strong></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Enabled</span></td>
+                        <td><span class="permission-badge badge-read">Read Only</span></td>
+                        <td><span class="check-icon"><i class="fas fa-check"></i> Yes</span></td>
+                        <td><span class="cross-icon"><i class="fas fa-times"></i> No</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Student</strong></td>
+                        <td><span class="cross-icon"><i class="fas fa-times"></i> Hidden</span></td>
+                        <td><span class="permission-badge badge-none">No Access</span></td>
+                        <td><span class="cross-icon"><i class="fas fa-times"></i> No</span></td>
+                        <td><span class="cross-icon"><i class="fas fa-times"></i> No</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer-stripe"></div>
+    </div>
+</body>
+</html>

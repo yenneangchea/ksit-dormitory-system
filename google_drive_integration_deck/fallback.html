@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f4eb; color: #18231d; font-family: Arial, Helvetica, sans-serif; position: relative; }
+    .head { height: 132px; background: #0b5c2c; color: #ffffff; padding: 39px 86px 0; }
+    .eyebrow { margin: 0; font-size: 14px; letter-spacing: 2.2px; text-transform: uppercase; color: #c7e1cf; font-weight: 700; }
+    h1 { margin: 10px 0 0; font-size: 37px; letter-spacing: -.7px; }
+    /* compacted intro and grid to reduce overall page footprint */
+    .intro { position: absolute; left: 86px; top: 156px; width: 760px; font-size: 20px; line-height: 1.42; color: #526058; }
+    .grid { position: absolute; left: 86px; top: 248px; width: 1108px; height: 320px; display: flex; }
+    .state { width: 369px; padding: 0 18px; }
+    .state + .state { border-left: 1px solid #cbd8cd; }
+    .badge { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; margin-bottom: 14px; }
+    .drive { background: #0b5c2c; color: #ffffff; }
+    .fallback { background: #c7e1cf; color: #0b5c2c; }
+    .stop { background: #f39a75; color: #5c281a; }
+    .state h2 { margin: 0; font-size: 24px; line-height: 1.16; color: #0b5c2c; }
+    .state p { margin: 12px 0 0; font-size: 16px; line-height: 1.45; color: #58665d; }
+    .outcome { margin-top: 18px; border-top: 3px solid #0b5c2c; padding-top: 10px; font-size: 14px; line-height: 1.42; color: #20342a; }
+    .state:nth-child(3) .outcome { border-color: #f39a75; }
+    .outcome strong { display: block; margin-bottom: 5px; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: #287243; }
+    .state:nth-child(3) .outcome strong { color: #a34a2d; }
+    /* bring footer a bit closer to the bottom to use space efficiently */
+    .bottom { position: absolute; left: 86px; right: 86px; bottom: 30px; border-top: 1px solid #d2ddd3; padding-top: 12px; display: flex; justify-content: space-between; font-size: 15px; color: #65736a; }
+    .bottom strong { color: #0b5c2c; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <header class="head"><p class="eyebrow">Runtime behavior</p><h1>Drive-primary with a safe fallback boundary</h1></header>
+    <p class="intro">The adapter does not make a best-effort guess. Its storage path is deterministic from the two required server-side configuration values.</p>
+    <section class="grid">
+      <article class="state"><div class="badge drive">A</div><h2>Both Drive values configured</h2><p>Service-account JSON and the root folder ID are present in the backend environment.</p><div class="outcome"><strong>Runtime outcome</strong>Creates or reuses the student folder, uploads artifacts to Google Drive, and records Drive references in Supabase.</div></article>
+      <article class="state"><div class="badge fallback">B</div><h2>No Drive values configured</h2><p>Neither Drive variable is present, such as during the current fallback-ready deployment.</p><div class="outcome"><strong>Runtime outcome</strong>Uses the existing private Supabase buckets and preserves the same lifecycle state transitions and access controls.</div></article>
+      <article class="state"><div class="badge stop">C</div><h2>Only one value configured</h2><p>A root folder without credentials, or credentials without a root folder, creates an unsafe ambiguous state.</p><div class="outcome"><strong>Runtime outcome</strong>Stops with an explicit configuration error. It never silently writes sensitive files to an unintended store.</div></article>
+    </section>
+    <footer class="bottom"><span><strong>Activation rule:</strong> set both variables in the backend Vercel project, then redeploy.</span><span>Fallback remains private by design.</span></footer>
+  </div>
+</body>
+</html>

@@ -208,3 +208,15 @@
 - [x] Repair Khmer PDF rendering, official-form field mapping, and meaningful student-specific PDF filenames.
 - [x] Run a controlled synthetic Student-to-Manager application lifecycle test, apply the authorized additive migration, then commit, deploy, and verify production behavior.
 - [x] Verify the user-applied production draft schema, align the repository migration with its five-step constraint and Google Drive folder field, then release and validate production.
+
+- [x] Enable and harden Row-Level Security (RLS) on all Supabase tables for both production (KSIT-dorm-DB) and staging projects, ensuring backend service-role operations remain fully functional.
+
+- [x] Document automated security alerting for Supabase RLS and token/session management best practices.
+- [x] Generate the security audit and architecture presentation deck summarizing RLS hardening, Vercel routing, and token security.
+
+- [x] Perform comprehensive Supabase security scan for RLS enforcement and policy grants.
+- [x] Configure Supabase database webhook to alert Telegram admins upon security drift.
+
+- [ ] Implement unique normalized phone enforcement across user registration and updates (returning HTTP 409 if phone exists).
+- [ ] Implement streamlined student phone OTP registration flow (optional email, required Khmer/Latin names, gender, phone OTP).
+- [ ] Implement Telegram bot /start webhook handler with inline registration and login Mini App action buttons.

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        background: #ffffff; 
+        padding-top: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .header {
+        width: 100%;
+        padding: 0 80px;
+        margin-bottom: 40px;
+        border-left: 8px solid #147a5b;
+      }
+      .header h2 {
+        color: #147a5b;
+        font-size: 42px;
+      }
+      .content-grid {
+        width: 100%;
+        padding: 0 80px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+      }
+      .floor-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .floor-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .floor-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #147a5b;
+      }
+      .room-range {
+        color: #64748b;
+        font-size: 18px;
+      }
+      .stats-column {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+      }
+      .stat-highlight {
+        background: #147a5b;
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+      .stat-highlight h3 {
+        font-size: 64px;
+        margin-bottom: 10px;
+      }
+      .stat-highlight p {
+        font-size: 24px;
+        opacity: 0.9;
+      }
+      .rooftop-badge {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 10px 20px;
+        display: inline-block;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h2>New Male Dormitory (M_NEW)</h2>
+        </div>
+        <div class="content-grid">
+            <div class="floor-list">
+                <div class="floor-item">
+                    <span class="floor-number">Floor 1</span>
+                    <span class="room-range">Rooms: M101 - M104 (4 Rooms)</span>
+                </div>
+                <div class="floor-item">
+                    <span class="floor-number">Floor 2</span>
+                    <span class="room-range">Rooms: M201 - M210 (10 Rooms)</span>
+                </div>
+                <div class="floor-item">
+                    <span class="floor-number">Floor 3</span>
+                    <span class="room-range">Rooms: M301 - M310 (10 Rooms)</span>
+                </div>
+                <div class="floor-item" style="opacity: 0.6;">
+                    <span class="floor-number">Floor 4</span>
+                    <span class="rooftop-badge">Rooftop Area</span>
+                </div>
+            </div>
+            <div class="stats-column">
+                <div class="stat-highlight">
+                    <h3>192</h3>
+                    <p>Total Male Beds</p>
+                </div>
+                <div style="font-size: 22px; color: #475569; line-height: 1.6;">
+                    <p><i class="fas fa-info-circle" style="color: #147a5b;"></i> High-capacity configuration with 8 beds per room.</p>
+                    <p><i class="fas fa-info-circle" style="color: #147a5b;"></i> Modern 4-story infrastructure.</p>
+                    <p><i class="fas fa-info-circle" style="color: #147a5b;"></i> Integrated study and common spaces.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

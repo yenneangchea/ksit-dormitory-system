@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Every Invoice Explains Itself</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: #f7f5ef; color: #173d25; font-family: "Kantumruy Pro", "Noto Sans Khmer", Arial, sans-serif; }
+    .top-rule { min-height: 14px; background: #0b5c2c; }
+    .header { min-height: 136px; padding-top: 40px; padding-left: 82px; padding-right: 82px; border-bottom: 1px solid #dbe4dc; }
+    .eyebrow { color: #55866a; font-size: 14px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+    h1 { margin-top: 9px; font-size: 38px; line-height: 1.08; letter-spacing: -0.035em; }
+    .main { min-height: 370px; display: grid; grid-template-columns: 1.62fr 0.9fr; column-gap: 52px; margin-left: 82px; margin-right: 82px; padding-top: 34px; }
+    .ledger-title { color: #4f7a5a; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    .ledger { min-height: 248px; margin-top: 14px; border-top: 3px solid #0b5c2c; }
+    .ledger-head, .ledger-row { display: grid; grid-template-columns: 1.18fr 0.95fr 1fr 1.1fr; column-gap: 12px; align-items: center; }
+    .ledger-head { min-height: 43px; border-bottom: 1px solid #d9e3da; color: #76877a; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .ledger-row { min-height: 72px; border-bottom: 1px solid #d9e3da; font-size: 15px; color: #4c6153; }
+    .ledger-row strong { color: #173d25; }
+    .amount { color: #0b5c2c; font-size: 18px; font-weight: 800; }
+    .rate { color: #a26b17; font-weight: 800; }
+    .side { min-height: 272px; border-top: 3px solid #b9cdbb; }
+    .side-block { min-height: 126px; padding-top: 19px; }
+    .side-block + .side-block { border-top: 1px solid #d3dfd4; }
+    .role { color: #a26b17; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+    h2 { margin-top: 7px; font-size: 21px; line-height: 1.16; }
+    .side p { margin-top: 8px; color: #68786c; font-size: 14px; line-height: 1.42; }
+    .total-strip { min-height: 164px; background: #103e24; color: #f7f5ef; display: grid; grid-template-columns: 1.4fr 1fr 1fr; align-items: center; padding-top: 26px; padding-left: 82px; padding-right: 82px; }
+    .total-label { color: #b8d3bd; font-size: 14px; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
+    .total-copy { margin-top: 8px; max-width: 460px; color: #d9e8da; font-size: 16px; line-height: 1.38; }
+    .total-metric { min-height: 78px; border-left: 1px solid #5d8768; padding-left: 25px; }
+    .total-value { font-size: 31px; font-weight: 800; letter-spacing: -0.04em; }
+    .total-note { margin-top: 5px; color: #b8d3bd; font-size: 13px; line-height: 1.3; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="top-rule"></div>
+    <header class="header">
+      <div class="eyebrow">Portal experience</div>
+      <h1>Every invoice explains itself</h1>
+    </header>
+    <main class="main">
+      <section>
+        <div class="ledger-title">Subsidy-aware invoice breakdown</div>
+        <div class="ledger">
+          <div class="ledger-head"><span>Utility</span><span>Used − free</span><span>Chargeable × rate</span><span>Cost</span></div>
+          <div class="ledger-row"><strong>Electricity</strong><span>80 kWh − 50 kWh</span><span>30 kWh × <span class="rate">800៛</span></span><span class="amount">24,000៛</span></div>
+          <div class="ledger-row"><strong>Water</strong><span>8 m³ − 5 m³</span><span>3 m³ × <span class="rate">1,500៛</span></span><span class="amount">4,500៛</span></div>
+          <div class="ledger-row"><strong>Room operations</strong><span>Trash fee</span><span>Fixed room charge</span><span class="amount">10,000៛</span></div>
+        </div>
+      </section>
+      <aside class="side">
+        <div class="side-block"><div class="role">Manager view</div><h2>Review the full room calculation</h2><p>See usage, subsidy, chargeable units, cost, residents, and the amount issued to each student.</p></div>
+        <div class="side-block"><div class="role">Student view</div><h2>See why the KHQR amount is due</h2><p>Read the same breakdown, then pay the exact stored amount shown in the KHQR reference.</p></div>
+      </aside>
+    </main>
+    <footer class="total-strip">
+      <div><div class="total-label">One room · one auditable total</div><div class="total-copy">The portal surfaces the complete calculation before payment, so the subsidy and the split remain transparent to residence staff and students.</div></div>
+      <div class="total-metric"><div class="total-value">38,500៛</div><div class="total-note">room total</div></div>
+      <div class="total-metric"><div class="total-value">12,834៛</div><div class="total-note">exact KHQR amount per student</div></div>
+    </footer>
+  </div>
+</body>
+</html>

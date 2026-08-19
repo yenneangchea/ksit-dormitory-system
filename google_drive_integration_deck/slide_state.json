@@ -1,0 +1,133 @@
+{
+  "project_info": {
+    "title": "KSIT Dormitory Application Storage",
+    "created": 1786782058.534,
+    "last_updated": 1786782309.717,
+    "total_slides": 11
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "responsibilities",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "lifecycle",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "folder_model",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "privacy",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "fallback",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "schema_api",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "runbook",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "verification",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "checklist",
+      "state": "edited",
+      "pageNum": 11
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "KSIT Dormitory Application Storage",
+      "summary": "Google Drive primary storage with secure Supabase fallback for the KSIT five-stage dormitory application lifecycle.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "responsibilities",
+      "title": "One system, two data responsibilities",
+      "summary": "Explain the separation between Google Drive document bytes, Supabase structured records, and a server-only credential boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "lifecycle",
+      "title": "Five-stage applicant journey",
+      "summary": "Show the Student-to-Manager lifecycle from the four-section official form through Manager approval.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "architecture",
+      "title": "Storage architecture",
+      "summary": "Show the Student and Manager dashboards, Express API, storage adapter, Google Drive, Supabase fallback, and database reference flow.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "folder_model",
+      "title": "Per-student Drive organization",
+      "summary": "Show the root folder, academic year branch, deterministic student folder, and five stored artifacts.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "privacy",
+      "title": "Privacy and access control",
+      "summary": "Explain role enforcement, backend document streaming, no browser credentials, and private Supabase fallback access.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "fallback",
+      "title": "Drive-primary with safe fallback",
+      "summary": "Explain behavior when Drive is fully configured, absent, or partially configured.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "schema_api",
+      "title": "Database and API changes",
+      "summary": "Summarize additive migration fields, provider metadata, document availability, and unified protected document access.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "runbook",
+      "title": "Vercel activation runbook",
+      "summary": "Present the setup sequence for the service account, folder permission, Vercel secrets, migration, deployment, and controlled verification.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "verification",
+      "title": "Verification evidence",
+      "summary": "Present the mocked Drive simulation coverage, passing test count, build result, and activation boundary.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "checklist",
+      "title": "Operating checklist",
+      "summary": "Close with the practical checklist for activation, testing, monitoring, and fallback readiness.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+*{box-sizing:border-box}body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#f7f4eb;color:#18231d;font-family:Arial,Helvetica,sans-serif;position:relative;margin-top:-1px}
+.head{height:126px;background:#0b5c2c;color:#fff;padding:38px 84px 0}
+.eyebrow{font-size:13px;letter-spacing:2.2px;text-transform:uppercase;color:#c7e1cf;font-weight:700}.head h1{font-size:35px;margin:10px 0 0}
+.rail{position:absolute;left:116px;top:350px;width:1048px;height:4px;background:#b9cdbb}
+.node{position:absolute;text-align:center;z-index:2}.cap{font-size:12px;letter-spacing:1.3px;text-transform:uppercase;font-weight:700;color:#5c6962;margin-bottom:12px}
+.box{height:122px;background:#fff;border:1px solid #c8d7c9;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.box strong{font-size:21px;color:#0b5c2c}.box span{font-size:13px;color:#627066;margin-top:7px;max-width:155px;line-height:1.3}.dot{width:42px;height:42px;border-radius:50%;margin:-22px auto 12px;background:#0b5c2c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+.student{left:84px;top:228px;width:180px}.manager{left:286px;top:228px;width:180px}.api{left:515px;top:204px;width:220px}.adapter{left:770px;top:204px;width:220px}.drive{left:1020px;top:164px;width:180px}.db{left:1020px;top:420px;width:180px}
+.student .box,.manager .box{border-top:6px solid #287243}.api .box{border-top:6px solid #0b5c2c}.adapter .box{border-top:6px solid #f39a75}.drive .box{border-top:6px solid #287243}.db .box{border-top:6px solid #6f8b76}
+.branch{position:absolute;left:1098px;top:286px;width:3px;height:159px;background:#b9cdbb}.branchline{position:absolute;left:990px;top:286px;width:110px;height:3px;background:#b9cdbb}.branchline.two{top:444px}
+.callout{position:absolute;left:520px;top:465px;width:470px;border-top:3px solid #f39a75;padding-top:14px;font-size:15px;line-height:1.45;color:#5d6961}
+.callout strong{color:#9b4a30}
+.legend{position:absolute;left:84px;right:84px;bottom:42px;border-top:1px solid #d2ddd3;padding-top:15px;display:flex;gap:40px;font-size:14px;color:#5e6a62}
+.swatch{display:inline-block;width:12px;height:12px;margin-right:8px;background:#287243}.swatch.coral{background:#f39a75}.swatch.gray{background:#6f8b76}
+</style>
+</head>
+<body>
+<div class="slide-container">
+<header class="head"><div class="eyebrow">Request and storage topology</div><h1>One protected API chooses the correct storage path</h1></header>
+<div class="rail"></div>
+<section class="node student"><div class="cap">Student portal</div><div class="box"><div class="dot">S</div><strong>Upload &amp; download</strong><span>Four-section form and five document artifacts</span></div></section>
+<section class="node manager"><div class="cap">Manager portal</div><div class="box"><div class="dot">M</div><strong>Review &amp; decide</strong><span>Protected previews and lifecycle decisions</span></div></section>
+<section class="node api"><div class="cap">Express API</div><div class="box"><div class="dot">A</div><strong>Role guard</strong><span>Student, Manager, and Admin authorization</span></div></section>
+<section class="node adapter"><div class="cap">Storage adapter</div><div class="box"><div class="dot">⇄</div><strong>Provider selection</strong><span>Drive only when both server secrets exist</span></div></section>
+<section class="node drive"><div class="cap">Primary</div><div class="box"><div class="dot">D</div><strong>Google Drive</strong><span>Document bytes and per-student folders</span></div></section>
+<section class="node db"><div class="cap">Structured record</div><div class="box"><div class="dot">DB</div><strong>Supabase</strong><span>Status, form data, IDs, and metadata</span></div></section>
+<div class="branch"></div><div class="branchline"></div><div class="branchline two"></div>
+<div class="callout"><strong>Fallback rule:</strong> when both Drive variables are absent, the adapter writes to private Supabase Storage. A partial configuration fails clearly instead of selecting an unsafe path.</div>
+<footer class="legend"><span><i class="swatch"></i>Primary Drive document store</span><span><i class="swatch coral"></i>Server-only provider decision</span><span><i class="swatch gray"></i>Database stores references, never document bytes</span></footer>
+</div>
+</body>
+</html>

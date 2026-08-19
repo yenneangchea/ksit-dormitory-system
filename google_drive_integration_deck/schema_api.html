@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; }
+.slide-container { width: 1280px; min-height: 720px; background: #f7f4eb; color: #18231d; font-family: Arial, Helvetica, sans-serif; position: relative; }
+.header { height: 130px; background: #0b5c2c; color: #ffffff; padding: 38px 86px 0; }
+.header p { margin: 0; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #c7e1cf; font-weight: 700; }
+.header h1 { margin: 10px 0 0; font-size: 36px; letter-spacing: -.7px; }
+.band { position: absolute; left: 86px; right: 86px; display: flex; border-top: 1px solid #cbd8cd; }
+.band.one { top: 160px; height: 128px; }
+.band.two { top: 300px; height: 130px; }
+.band.three { top: 440px; height: 110px; }
+.kicker { width: 245px; padding-top: 10px; }
+.kicker span { font-size: 13px; letter-spacing: 1.7px; text-transform: uppercase; color: #287243; font-weight: 700; }
+.kicker h2 { margin: 10px 0 0; font-size: 23px; line-height: 1.18; color: #0b5c2c; }
+.details { width: 863px; display: flex; gap: 24px; padding-top: 12px; }
+.detail { width: 260px; }
+.detail strong { display: block; font-size: 16px; color: #20342a; }
+.detail p { margin: 7px 0 0; font-size: 14px; line-height: 1.42; color: #617067; }
+.code { margin-top: 10px; display: inline-block; background: #e8f0e8; color: #0b5c2c; padding: 7px 10px 0; font-size: 12px; font-family: "Courier New", monospace; }
+.accent { border-top: 4px solid #f39a75; padding-top: 10px; }
+.accent strong { color: #9b4a30; }
+.footer { position: absolute; left: 86px; right: 86px; bottom: 48px; font-size: 13px; color: #6c786f; letter-spacing: .25px; }
+.footer b { color: #0b5c2c; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+<header class="header"><p>Additive implementation</p><h1>Database and API changes keep one protected document contract</h1></header>
+<section class="band one">
+  <div class="kicker"><span>01 · Migration</span><h2>Add references, never blobs</h2></div>
+  <div class="details">
+    <div class="detail"><strong>Folder reference</strong><p>Each app keeps the Drive folder id for the student evidence set.</p><span class="code">google_drive_folder_id</span></div>
+    <div class="detail"><strong>Five Drive artifacts</strong><p>Dedicated fields map photo, ID, family book, PDF, and signed doc to references.</p><span class="code">*_drive_url</span></div>
+    <div class="detail"><strong>Additive safety</strong><p>Migration only adds nullable metadata columns and an index.</p><span class="code">IF NOT EXISTS</span></div>
+  </div>
+</section>
+<section class="band two">
+  <div class="kicker"><span>02 · Lifecycle record</span><h2>Provider metadata remains explicit</h2></div>
+  <div class="details">
+    <div class="detail"><strong>Storage provider</strong><p>Response data flags Google Drive or private Supabase Storage.</p></div>
+    <div class="detail"><strong>Document availability</strong><p>Screens receive boolean availability for each required artifact.</p></div>
+    <div class="detail"><strong>Existing status model</strong><p>Draft, review, correction, approval, and assignment stay in the same record.</p></div>
+  </div>
+</section>
+<section class="band three">
+  <div class="kicker"><span>03 · Protected API</span><h2>One access path for both stores</h2></div>
+  <div class="details">
+    <div class="detail accent"><strong>Authenticated stream</strong><p>The API checks ownership or a privileged role before serving files.</p></div>
+    <div class="detail"><strong>Drive mode</strong><p>The server streams the Drive file by its private reference; no public link reaches the browser.</p></div>
+    <div class="detail"><strong>Fallback mode</strong><p>The same action resolves a private Supabase object via the protected path.</p></div>
+  </div>
+</section>
+<footer class="footer"><b>Result:</b> the UI calls one document action while the backend controls authorization and storage-provider behavior.</footer>
+</div>
+</body>
+</html>

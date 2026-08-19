@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.slide-container{width:1280px;min-height:720px;background:#f7f4eb;color:#18231d;font-family:Arial,Helvetica,sans-serif;position:relative}
+.head{height:132px;background:#0b5c2c;color:#fff;padding:38px 86px 0}
+.eyebrow{font-size:14px;letter-spacing:2.1px;text-transform:uppercase;color:#c7e1cf;font-weight:700}
+.head h1{font-size:36px;margin:10px 0 0;letter-spacing:-.7px}
+.sub{position:absolute;left:86px;top:150px;width:770px;font-size:18px;line-height:1.4;color:#56635b}
+.path{position:absolute;left:86px;top:240px;width:1108px;display:grid;grid-template-columns:repeat(3, 1fr);grid-template-rows:140px 140px;column-gap:20px;row-gap:12px}
+.step{position:relative;border-top:5px solid #0b5c2c;padding-top:12px;padding-left:48px}
+.step:nth-child(4),.step:nth-child(5){border-top-color:#287243}.step:nth-child(6){border-top-color:#f39a75}
+.num{position:absolute;left:0;top:11px;width:35px;height:35px;border-radius:50%;background:#0b5c2c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}.step:nth-child(6) .num{background:#f39a75;color:#5a2618}
+.step h2{font-size:19px;line-height:1.16;margin:0;color:#20342a}
+.step p{font-size:14px;line-height:1.38;color:#617067;margin:6px 0 0;max-width:270px}
+.code{font-family:Consolas,monospace;font-size:12px;color:#0b5c2c;background:#e5f0e6;padding:3px 5px;white-space:nowrap}
+.route{position:absolute;left:86px;right:86px;bottom:50px;border-top:1px solid #cfd8d0;padding-top:12px;display:flex;justify-content:space-between;font-size:14px;color:#5e6a62}
+.route strong{color:#0b5c2c}.route .warn{color:#a14b2e}
+</style>
+</head>
+<body>
+<div class="slide-container">
+<header class="head"><div class="eyebrow">Production activation</div><h1>Vercel activation is a six-step controlled handoff</h1></header>
+<p class="sub">The code is deployment-ready. Google Drive becomes the primary store only after the school administrator completes the credential, permission, and migration steps below.</p>
+<section class="path">
+  <article class="step"><div class="num">1</div><h2>Enable Google Drive API</h2><p>In the Google Cloud project, enable the Google Drive API used by the storage service account.</p></article>
+  <article class="step"><div class="num">2</div><h2>Create service account</h2><p>Generate a dedicated service-account JSON key. Treat it as a backend-only production secret.</p></article>
+  <article class="step"><div class="num">3</div><h2>Share the root folder</h2><p>Grant the service account <strong>Editor</strong> access to the KSIT application root folder in the school Drive.</p></article>
+  <article class="step"><div class="num">4</div><h2>Set two Vercel secrets</h2><p><span class="code">GOOGLE_SERVICE_ACCOUNT_JSON</span><br><span class="code">GOOGLE_DRIVE_ROOT_FOLDER_ID</span></p></article>
+  <article class="step"><div class="num">5</div><h2>Apply the additive migration</h2><p>Run <span class="code">run-google-drive-storage-migration.mjs</span> from a secure machine with database access.</p></article>
+  <article class="step"><div class="num">6</div><h2>Redeploy & verify</h2><p>Create a labeled Student application, then confirm Manager access and Drive folder placement.</p></article>
+</section>
+<footer class="route"><span><strong>Success condition:</strong> one submission produces five artifacts in one deterministic student folder.</span><span class="warn">Do not set only one Drive variable.</span></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; }
+      .slide-container { 
+        width: 1280px; 
+        min-height: 720px; 
+        box-sizing: border-box; 
+        background: #ffffff; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding-top: 60px;
+        position: relative;
+      }
+      .header {
+        border-left: 8px solid #147a5b;
+        padding-left: 30px;
+        margin-left: 60px;
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-size: 42px;
+        color: #18231d;
+        letter-spacing: -0.5px;
+      }
+      .content-grid {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 50px;
+        padding: 0 60px;
+      }
+      .info-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+      }
+      .info-item {
+        display: flex;
+        gap: 20px;
+      }
+      .info-icon {
+        font-size: 24px;
+        color: #147a5b;
+        margin-top: 5px;
+      }
+      .info-text h3 {
+        font-size: 22px;
+        color: #2b4935;
+        margin-bottom: 8px;
+      }
+      .info-text p {
+        font-size: 17px;
+        color: #68736c;
+        line-height: 1.5;
+      }
+      .audit-table-container {
+        background: #fafcf9;
+        border: 1px solid #e1e7e1;
+        border-radius: 16px;
+        padding: 25px;
+        overflow: hidden;
+      }
+      .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .audit-table th {
+        text-align: left;
+        padding: 12px 10px;
+        color: #68736c;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #edf0ed;
+      }
+      .audit-table td {
+        padding: 15px 10px;
+        border-bottom: 1px solid #edf0ed;
+        vertical-align: top;
+      }
+      .action-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 10px;
+      }
+      .badge-update { background: #e0f2fe; color: #0369a1; }
+      .badge-create { background: #e6f4e8; color: #16582b; }
+      .badge-import { background: #fef3c7; color: #92400e; }
+      .admin-name { font-weight: 600; color: #2b4935; }
+      .admin-email { font-size: 11px; color: #68736c; margin-top: 2px; }
+      .snapshot { color: #68736c; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header">
+            <h2>Administrator Audit Log & History</h2>
+        </div>
+        <div class="content-grid">
+            <div class="info-panel">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-history"></i></div>
+                    <div class="info-text">
+                        <h3>Full Accountability</h3>
+                        <p>Every change to the academic catalog is recorded with the administrator's identity, source, and precise timestamp.</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-camera-retro"></i></div>
+                    <div class="info-text">
+                        <h3>Data Snapshots</h3>
+                        <p>System captures "Before" and "After" states for every modification, allowing for easy verification and historical tracking.</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="info-text">
+                        <h3>Protected Integrity</h3>
+                        <p>Audit logs are stored in a dedicated table with Row Level Security (RLS), ensuring they cannot be tampered with or bypassed.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="audit-table-container">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Administrator</th>
+                            <th>Action</th>
+                            <th>Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>10:45 AM</td>
+                            <td>
+                                <p class="admin-name">Chea Yenneang</p>
+                                <p class="admin-email">admin@ksit.edu.kh</p>
+                            </td>
+                            <td><span class="action-badge badge-update">UPDATE</span></td>
+                            <td class="snapshot">Changed "Plant Science" availability to Y1-Y4</td>
+                        </tr>
+                        <tr>
+                            <td>09:12 AM</td>
+                            <td>
+                                <p class="admin-name">System</p>
+                                <p class="admin-email">bulk_import</p>
+                            </td>
+                            <td><span class="action-badge badge-import">IMPORT</span></td>
+                            <td class="snapshot">Imported 12 new majors from XLSX</td>
+                        </tr>
+                        <tr>
+                            <td>Yesterday</td>
+                            <td>
+                                <p class="admin-name">Admin User</p>
+                                <p class="admin-email">staff@ksit.edu.kh</p>
+                            </td>
+                            <td><span class="action-badge badge-create">CREATE</span></td>
+                            <td class="snapshot">Added "Mechatronics Technology" (9+3)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
