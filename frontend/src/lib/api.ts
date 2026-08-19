@@ -180,9 +180,19 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, authenti
       ...options,
     });
 
-    const data = (await response.json()) as ApiResponse<T>;
+    const text = await response.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!response.ok) {
+        return { success: false, error: { message: `Server error (${response.status} ${response.statusText}): endpoint returned HTML instead of JSON.` } };
+      }
+      return { success: false, error: { message: 'Invalid server response format.' } };
+    }
+
     if (!response.ok) {
-      return { success: false, error: { message: data.error?.message || 'The request could not be completed.' } };
+      return { success: false, error: { message: data?.error?.message || `Request failed with status ${response.status}` } };
     }
     return data;
   } catch (error) {

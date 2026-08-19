@@ -269,7 +269,25 @@ function LoginForm() {
             </div>
 
             {registrationNotice && <div role="status" className="mt-5 rounded-xl border border-[#b8ddc0] bg-[#eff9f1] px-4 py-3 text-sm leading-5 text-[#166534]">{registrationNotice}</div>}
-            {error && <div role="alert" className="mt-5 rounded-xl border border-[#f3c8c1] bg-[#fff4f2] px-4 py-3 text-sm leading-5 text-[#a4382a]">{error}</div>}
+            {error && (
+              <div role="alert" className="mt-5 animate-shake flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800 shadow-sm transition-all duration-200">
+                <div className="rounded-full bg-rose-100 p-1 text-rose-600">⚠️</div>
+                <div className="flex-1">
+                  <p className="font-bold">Authentication Notice / ការជូនដំណឹង</p>
+                  <p className="mt-0.5">{error}</p>
+                </div>
+                <button type="button" onClick={() => setError("")} className="text-xs font-bold text-rose-600 hover:text-rose-900">Dismiss</button>
+              </div>
+            )}
+            {isLoading && (
+              <div className="mt-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 text-xs font-bold text-emerald-900 shadow-sm animate-pulse">
+                <LoaderCircle className="size-5 animate-spin text-[#0b5c2c]" />
+                <div>
+                  <p className="text-sm font-bold">កំពុងដំណើរការ...</p>
+                  <p className="text-xs text-emerald-700">Verifying credentials and securely connecting to the KSIT Dormitory backend...</p>
+                </div>
+              </div>
+            )}
 
             {mode === "email" ? (
               <form onSubmit={handleEmailSubmit} className="mt-5 space-y-5" aria-busy={isLoading}>

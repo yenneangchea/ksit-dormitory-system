@@ -220,3 +220,5 @@
 - [ ] Implement unique normalized phone enforcement across user registration and updates (returning HTTP 409 if phone exists).
 - [ ] Implement streamlined student phone OTP registration flow (optional email, required Khmer/Latin names, gender, phone OTP).
 - [ ] Implement Telegram bot /start webhook handler with inline registration and login Mini App action buttons.
+- [ ] Add loading animations and clear error state UI for the 3-step OTP registration flow.
+- [ ] Implement a profile editing page in the Student Dashboard where users can update optional email and view registered phone number.

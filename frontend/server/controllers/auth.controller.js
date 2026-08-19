@@ -667,6 +667,13 @@ const requestPasswordReset = async (req, res, next) => {
   }
 };
 
+
+
+/**
+ * @desc Register or sign in a student via verified Telegram contact / phone OTP flow.
+ * @route POST /api/auth/phone/register
+ * @access Public
+ */
 const registerWithPhone = async (req, res, next) => {
   try {
     const { phone, code, full_name_khmer, full_name_latin, gender, email, initData } = req.body;
@@ -685,6 +692,7 @@ const registerWithPhone = async (req, res, next) => {
 
     const supabase = getSupabase();
 
+    // Verify phone OTP
     const { data: otpRecord, error: codeLookupError } = await supabase
       .from('phone_verification_codes')
       .select('id, user_id, code_hash, expires_at, attempt_count')
@@ -712,6 +720,7 @@ const registerWithPhone = async (req, res, next) => {
       throw invalidOtp;
     }
 
+    // Check unique phone enforcement across users (using candidates to catch +855 / 0855 variations)
     const { data: existingPhoneUsers, error: phoneCheckError } = await supabase
       .from('users')
       .select('id')
@@ -740,6 +749,7 @@ const registerWithPhone = async (req, res, next) => {
       }
     }
 
+    // Mark OTP consumed
     await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id);
 
     const selectFields = 'id, telegram_id, role, full_name_khmer, full_name_latin, gender, phone, email, avatar_url, created_at, updated_at';
@@ -753,7 +763,7 @@ const registerWithPhone = async (req, res, next) => {
         gender,
         phone: normalizedPhone,
         email: normalizedEmail || null,
-        password_hash: null,
+        password_hash: null, // phone OTP users authenticate via Telegram OTP / phone login
         avatar_url: avatarUrl,
       })
       .select(selectFields)
@@ -774,6 +784,11 @@ const registerWithPhone = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc Handle Telegram Bot webhook updates (e.g. /start command with inline buttons)
+ * @route POST /api/auth/telegram/webhook
+ * @access Public
+ */
 const telegramWebhook = async (req, res, next) => {
   try {
     const update = req.body || {};
@@ -832,3 +847,5 @@ module.exports = {
   requestPasswordReset,
   decodeSession,
 };
+
+

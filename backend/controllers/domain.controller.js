@@ -1268,6 +1268,28 @@ async function updateUser(req, res, next) {
   }
 }
 
+async function updateMyProfile(req, res, next) {
+  try {
+    const { email } = req.body;
+    const supabase = getSupabase();
+    const patch = { updated_at: new Date().toISOString() };
+    if (email !== undefined) {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      if (normalizedEmail) {
+        const { data: existing, error: checkError } = await supabase.from('users').select('id').eq('email', normalizedEmail).neq('id', req.user.sub).maybeSingle();
+        if (checkError) throw checkError;
+        if (existing) throw fail('This email address is already in use by another account.', 409);
+      }
+      patch.email = normalizedEmail || null;
+    }
+    const { data, error } = await supabase.from('users').update(patch).eq('id', req.user.sub).select(USER_FIELDS).single();
+    if (error) throw error;
+    res.json(publicPayload(data, 'Profile updated successfully.'));
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function deleteUser(req, res, next) {
   try {
     const supabase = getSupabase();
@@ -1948,6 +1970,7 @@ module.exports = {
   listUsers,
   createUser,
   updateUser,
+  updateMyProfile,
   deleteUser,
   updateUserRole,
   resetUserPassword,

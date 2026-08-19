@@ -13,8 +13,8 @@ test('production diagnostic script checks the single-domain Vercel health and au
   assert.match(diagnostic, /\$\{baseUrl\}\/auth\/login/);
 });
 
-test('same-project API routing remains mounted through the Next.js catch-all handler', () => {
-  const catchAll = fs.readFileSync(path.join(backendRoot, '..', 'frontend', 'src', 'pages', 'api', '[...path].js'), 'utf8');
-  assert.match(catchAll, /api/);
-  assert.match(catchAll, /app/);
+test('backend server app exposes API routes and CORS', () => {
+  const appJs = fs.readFileSync(path.join(backendRoot, 'app.js'), 'utf8');
+  assert.match(appJs, /\/api\/auth/);
+  assert.match(appJs, /cors/);
 });

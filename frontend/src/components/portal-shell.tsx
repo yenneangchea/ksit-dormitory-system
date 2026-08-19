@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BarChart3, BedDouble, BellRing, Building2, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, Home, KeyRound, LayoutDashboard, Link2, LoaderCircle, LogOut, Menu, Settings2, UsersRound, WalletCards, Wrench, X } from 'lucide-react';
+import { BarChart3, BedDouble, BellRing, Building2, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, GraduationCap, Home, KeyRound, LayoutDashboard, Link2, LoaderCircle, LogOut, Menu, Settings2, UsersRound, UserRound, WalletCards, Wrench, X } from 'lucide-react';
 import { authAPI } from '@/lib/api';
 import { roleLabel, useDashboardLocalization, useLanguage } from '@/lib/i18n';
 import type { User, UserRole } from '@/types';
@@ -46,6 +46,7 @@ const navigation: Record<UserRole, NavItem[]> = {
     { label: 'Utility Bills', href: '/dashboard/student?tab=bills', tab: 'bills', icon: WalletCards },
     { label: 'Maintenance Report', href: '/dashboard/student?tab=maintenance', tab: 'maintenance', icon: Wrench },
     { label: 'Leave Request', href: '/dashboard/student?tab=leave', tab: 'leave', icon: ClipboardCheck },
+    { label: 'Profile & Account (ព័ត៌មានផ្ទាល់ខ្លួន)', href: '/dashboard/student?tab=profile', tab: 'profile', icon: UserRound },
   ],
 };
 

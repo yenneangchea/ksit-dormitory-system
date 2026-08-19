@@ -10,7 +10,7 @@ import { UtilitySubsidyBreakdown } from '@/components/utility-subsidy-breakdown'
 import { applicationsAPI, attendanceAPI, billingAPI, maintenanceAPI, residenceAPI } from '@/lib/api';
 import type { MaintenanceRequest, RoomApplication, StudentBill } from '@/types';
 
-type StudentTab = 'overview' | 'bills' | 'maintenance' | 'application' | 'leave';
+type StudentTab = 'overview' | 'bills' | 'maintenance' | 'application' | 'leave' | 'profile';
 type ResidenceDetails = { assignment: { bed_number: number; academic_year: string; rooms?: { room_number?: string; floor_number?: number; buildings?: { code?: string; name?: string } | null } | null } | null; roommates: { student_id: string; bed_number: number; users?: { full_name_latin?: string; full_name_khmer?: string } | null }[] };
 
 function StudentDashboardContent() {
@@ -24,7 +24,7 @@ function StudentDashboardContent() {
   const [notice, setNotice] = useState('');
   const [working, setWorking] = useState(false);
   const requestedTab = searchParams?.get('tab');
-  const activeTab: StudentTab = requestedTab === 'apply' ? 'application' : requestedTab === 'bills' ? 'bills' : requestedTab === 'maintenance' ? 'maintenance' : requestedTab === 'leave' ? 'leave' : 'overview';
+  const activeTab: StudentTab = requestedTab === 'apply' ? 'application' : requestedTab === 'bills' ? 'bills' : requestedTab === 'maintenance' ? 'maintenance' : requestedTab === 'leave' ? 'leave' : requestedTab === 'profile' ? 'profile' : 'overview';
 
   const load = useCallback(async () => {
     const [billsResponse, maintenanceResponse, applicationsResponse, attendanceResponse, residenceResponse] = await Promise.all([billingAPI.listStudent(), maintenanceAPI.list(), applicationsAPI.list(), attendanceAPI.list(), residenceAPI.mine()]);
@@ -41,7 +41,7 @@ function StudentDashboardContent() {
   const present = attendance.filter((item) => item.status === 'present').length;
   if (isChecking) return <DashboardRoleGuardLoading />;
   if (!isAuthorized) return null;
-  return <PortalShell role="student"><section className="min-h-[calc(100vh-156px)]"><div className="mb-8"><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">{activeTab === 'overview' ? 'My Room' : activeTab === 'application' ? 'Room Application' : activeTab === 'bills' ? 'Utility Bills' : activeTab === 'maintenance' ? 'Maintenance Report' : 'Leave Request'}</h1><p className="mt-1.5 text-sm text-[#68736c]">{activeTab === 'overview' ? 'Your residence status and essential dormitory information.' : activeTab === 'application' ? 'Complete the official four-section application, print the generated PDF, then submit the signed document for manager verification.' : 'This protected workspace displays only the section selected in the sidebar.'}</p></div>{notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}{activeTab === 'overview' && <Overview bills={bills} maintenance={maintenance} present={present} residence={residence} />}{activeTab === 'bills' && <Bills bills={bills} working={working} onMarkPaid={confirmBillPayment} />}{activeTab === 'maintenance' && <Maintenance maintenance={maintenance} working={working} submit={submitMaintenance} />}{activeTab === 'application' && <StudentApplicationWizard applications={applications} onUpdated={load} />}{activeTab === 'leave' && <LeaveRecords attendance={attendance} />}</section></PortalShell>;
+  return <PortalShell role="student"><section className="min-h-[calc(100vh-156px)]"><div className="mb-8"><h1 className="text-[29px] font-extrabold tracking-[-0.045em]">{activeTab === 'overview' ? 'My Room' : activeTab === 'application' ? 'Room Application' : activeTab === 'bills' ? 'Utility Bills' : activeTab === 'maintenance' ? 'Maintenance Report' : activeTab === 'leave' ? 'Leave Request' : 'Profile & Account'}</h1><p className="mt-1.5 text-sm text-[#68736c]">{activeTab === 'overview' ? 'Your residence status and essential dormitory information.' : activeTab === 'application' ? 'Complete the official four-section application, print the generated PDF, then submit the signed document for manager verification.' : activeTab === 'profile' ? 'View your registered phone number, verified Telegram status, and update your optional email address.' : 'This protected workspace displays only the section selected in the sidebar.'}</p></div>{notice && <div className="mb-5 rounded-xl border border-[#cfe0d1] bg-[#edf7ee] px-4 py-3 text-sm text-[#16582b]">{notice}</div>}{activeTab === 'overview' && <Overview bills={bills} maintenance={maintenance} present={present} residence={residence} />}{activeTab === 'bills' && <Bills bills={bills} working={working} onMarkPaid={confirmBillPayment} />}{activeTab === 'maintenance' && <Maintenance maintenance={maintenance} working={working} submit={submitMaintenance} />}{activeTab === 'application' && <StudentApplicationWizard applications={applications} onUpdated={load} />}{activeTab === 'leave' && <LeaveRecords attendance={attendance} />}{activeTab === 'profile' && <StudentProfileSection onNotice={setNotice} />}</section></PortalShell>;
 }
 
 export default function StudentDashboard() { return <Suspense fallback={<DashboardRoleGuardLoading />}><StudentDashboardContent /></Suspense>; }
@@ -51,3 +51,139 @@ function Bills({ bills, working, onMarkPaid }: { bills: StudentBill[]; working: 
 function Maintenance({ maintenance, working, submit }: { maintenance: MaintenanceRequest[]; working: boolean; submit: (formData: FormData) => Promise<void> }) { return <div className="grid gap-6 xl:grid-cols-[.85fr_1.15fr]"><section className="ksit-card p-6"><h2 className="text-lg font-bold">New maintenance ticket</h2><p className="mt-1 text-sm text-[#68736c]">Start from your room’s Magic QR code so the ticket is routed to the correct residence.</p><form action={submit} className="mt-6 space-y-4"><StudentField label="Room Magic QR" name="magic_qr_code" placeholder="Scan or paste the room code" required /><StudentField label="Issue title" name="title" placeholder="For example: Bathroom light not working" required /><label className="block text-sm font-medium text-[#39473f]">Category<select name="category" className="mt-1.5 h-10 w-full rounded-xl border border-[#dce3dc] bg-white px-3 text-sm"><option value="electricity">Electricity</option><option value="plumbing">Plumbing</option><option value="furniture">Furniture</option><option value="door_lock">Door / lock</option><option value="internet">Internet</option><option value="other">Other</option></select></label><label className="block text-sm font-medium text-[#39473f]">Urgency<select name="urgency" className="mt-1.5 h-10 w-full rounded-xl border border-[#dce3dc] bg-white px-3 text-sm"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="emergency">Emergency</option></select></label><label className="block text-sm font-medium text-[#39473f]">Description<textarea name="description" required className="mt-1.5 min-h-24 w-full rounded-xl border border-[#dce3dc] bg-white p-3 text-sm" placeholder="Describe what is needed and when it began." /></label><button disabled={working} className="rounded-lg bg-[#0b5c2c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{working ? 'Submitting…' : 'Submit ticket'}</button></form></section><section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">My maintenance tickets</h2><p className="mt-1 text-sm text-[#68736c]">Track the status and outcome of reported residence issues.</p></div>{maintenance.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-7 text-sm text-[#68736c]">No maintenance tickets have been submitted.</p> : <div className="border-t border-[#edf0ed]">{maintenance.map((ticket) => <div className="border-b border-[#edf0ed] px-6 py-4" key={ticket.id}><div className="flex items-start justify-between gap-4"><div><p className="font-semibold">{ticket.title}</p><p className="mt-1 text-sm text-[#68736c]">{ticket.description}</p></div><span className="rounded-full bg-[#f4f1e8] px-2.5 py-1 text-xs font-semibold capitalize text-[#806525]">{ticket.status.replaceAll('_', ' ')}</span></div><p className="mt-3 text-xs text-[#68736c]">{ticket.category} · {ticket.urgency} urgency{ticket.resolution_notes ? ` · ${ticket.resolution_notes}` : ''}</p></div>)}</div>}</section></div>; }
 function LeaveRecords({ attendance }: { attendance: { id: string; status: string; attendance_date: string }[] }) { const leaves = attendance.filter((record) => record.status === 'leave'); return <section className="ksit-card overflow-hidden"><div className="p-6"><h2 className="text-lg font-bold">My leave records</h2><p className="mt-1 text-sm text-[#68736c]">Attendance records currently marked as leave.</p></div>{leaves.length === 0 ? <p className="border-t border-[#edf0ed] px-6 py-7 text-sm text-[#68736c]">No leave records are available.</p> : <div className="border-t border-[#edf0ed]">{leaves.map((record) => <div className="flex items-center justify-between border-b border-[#edf0ed] px-6 py-4" key={record.id}><span>{record.attendance_date}</span><span className="rounded-full bg-[#f4f1e8] px-2.5 py-1 text-xs font-semibold text-[#806525]">Leave</span></div>)}</div>}</section>; }
 function StudentField({ label, name, placeholder, defaultValue, required }: { label: string; name: string; placeholder?: string; defaultValue?: string; required?: boolean }) { return <label className="block text-sm font-medium text-[#39473f]">{label}<input name={name} placeholder={placeholder} defaultValue={defaultValue} required={required} className="mt-1.5 h-11 w-full rounded-xl border border-[#dce3dc] bg-white px-3 text-sm outline-none focus:border-[#5f9b6f]" /></label>; }
+
+function StudentProfileSection({ onNotice }: { onNotice: (msg: string) => void }) {
+  const [user, setUser] = useState<{ full_name_khmer?: string; full_name_latin?: string; phone?: string; email?: string; gender?: string; role?: string; telegram_id?: string | number } | null>(null);
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const raw = localStorage.getItem('user');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        setUser(parsed);
+        setEmail(parsed.email || '');
+      } catch {}
+    }
+  }, []);
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    onNotice('');
+    try {
+      const token = localStorage.getItem('ksit_session_token');
+      const res = await fetch('/api/auth/me/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error?.message || 'Unable to update profile.');
+      }
+      setUser(data.user);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      onNotice('Student profile updated successfully.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while updating profile.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!user) return <div className="ksit-card p-6">Loading profile...</div>;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <section className="ksit-card p-6">
+        <h2 className="text-lg font-bold text-[#18231d]">Student Account & Contact</h2>
+        <p className="mt-1 text-sm text-[#68736c]">Review your registered phone number, verified Telegram status, and update your optional email address.</p>
+        
+        {error && (
+          <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="mt-6 space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Khmer Name (នាមត្រកូល និងនាមខ្លួន)</label>
+            <div className="rounded-xl border border-[#dce3dc] bg-[#f9faf9] px-3.5 py-2.5 text-sm font-semibold text-[#18231d]">
+              {user.full_name_khmer || '—'}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Latin Name</label>
+            <div className="rounded-xl border border-[#dce3dc] bg-[#f9faf9] px-3.5 py-2.5 text-sm font-semibold text-[#18231d]">
+              {user.full_name_latin || '—'}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Registered Phone Number (Primary Login)</label>
+            <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/55 px-3.5 py-2.5 text-sm font-bold text-[#0b5c2c]">
+              <span>{user.phone || '—'}</span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">Verified</span>
+            </div>
+            <p className="text-xs text-[#68736c]">Phone number is your secure primary identifier for SMS and Telegram OTP authentication.</p>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Telegram ID / Link Status</label>
+            <div className="rounded-xl border border-[#dce3dc] bg-[#f9faf9] px-3.5 py-2.5 text-sm font-medium text-[#18231d]">
+              {user.telegram_id ? `Linked (ID: ${user.telegram_id})` : 'Not linked to Telegram bot yet'}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="student-email-input" className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Optional Email Address (អ៊ីមែល)</label>
+            <input
+              id="student-email-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="student@ksit.edu.kh"
+              className="h-11 w-full rounded-xl border border-[#dce3dc] bg-white px-3.5 text-sm outline-none focus:border-[#0b5c2c]"
+            />
+            <p className="text-xs text-[#68736c]">Email is optional and used for notifications or academic correspondence.</p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="h-11 w-full rounded-xl bg-[#0b5c2c] font-semibold text-white hover:bg-[#084a23] disabled:opacity-50"
+          >
+            {saving ? 'Saving changes...' : 'Save Profile Changes'}
+          </button>
+        </form>
+      </section>
+
+      <section className="ksit-card p-6">
+        <h2 className="text-lg font-bold text-[#18231d]">Security & Role Privileges</h2>
+        <p className="mt-1 text-sm text-[#68736c]">Your active access level and security credentials within the KSIT Dormitory system.</p>
+        
+        <div className="mt-6 space-y-4">
+          <div className="rounded-xl border border-[#dce3dc] bg-[#fafcf9] p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Current Assigned Role</p>
+            <p className="mt-1 text-base font-bold text-[#0b5c2c] capitalize">{user.role || 'student'}</p>
+            <p className="mt-2 text-xs text-[#68736c]">Student portal access allows room application, utility bill settlement, QR attendance, and maintenance reporting.</p>
+          </div>
+
+          <div className="rounded-xl border border-[#dce3dc] bg-[#fafcf9] p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-[#68736c]">Authentication Method</p>
+            <p className="mt-1 text-sm font-semibold text-[#18231d]">Phone OTP & Telegram Bot Verification</p>
+            <p className="mt-2 text-xs text-[#68736c]">You can sign in securely anytime using your phone number and six-digit Telegram verification code.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

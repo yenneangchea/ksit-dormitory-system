@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'KSIT Dormitory Management System',
   description: 'Smart residence operations for Kampong Speu Institute of Technology.',
 };

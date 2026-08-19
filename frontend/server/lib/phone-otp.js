@@ -13,14 +13,22 @@ function normalizePhoneNumber(value) {
     error.statusCode = 400;
     throw error;
   }
-
   return normalized;
 }
 
-function phoneLookupCandidates(phone) {
-  const normalized = normalizePhoneNumber(phone);
-  const international = `855${normalized.slice(1)}`;
-  return [...new Set([normalized, international, `+${international}`])];
+function phoneLookupCandidates(value) {
+  try {
+    const normalized = normalizePhoneNumber(value);
+    const withoutLeadingZero = normalized.startsWith('0') ? normalized.slice(1) : normalized;
+    return Array.from(new Set([
+      normalized,
+      `855${withoutLeadingZero}`,
+      `+855${withoutLeadingZero}`,
+    ]));
+  } catch {
+    const raw = String(value || '').trim();
+    return raw ? [raw] : [];
+  }
 }
 
 function generateSixDigitOtp() {

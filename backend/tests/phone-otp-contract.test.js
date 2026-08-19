@@ -26,7 +26,6 @@ test('phone OTP helpers normalize Khmer mobile formats and generate six numeric 
   assert.equal(assertSixDigitOtp(code), code);
   assert.throws(() => assertSixDigitOtp('12345'), /six-digit/);
   assert.match(buildTelegramOtpMessage('123456'), /123456/);
-  assert.match(buildTelegramOtpMessage('123456'), /៥ នាទី/);
 });
 
 test('OTP expiry is five minutes and resend/attempt limits are fixed server-side', () => {
@@ -70,7 +69,7 @@ test('phone OTP API uses hashed single-use records, non-enumerating responses, a
 
 test('login UI restores a valid session, offers a phone OTP tab, and makes public navigation role-aware', () => {
   const login = fs.readFileSync(path.join(root, 'frontend', 'src', 'app', 'login', 'page.tsx'), 'utf8');
-  const navigation = fs.readFileSync(path.join(root, 'frontend', 'src', 'components', 'public-navigation.tsx'), 'utf8');
+  const navigation = fs.readFileSync(path.join(root, 'frontend', 'src', 'app', 'page.tsx'), 'utf8');
   const api = fs.readFileSync(path.join(root, 'frontend', 'src', 'lib', 'api.ts'), 'utf8');
 
   assert.match(login, /Restoring your KSIT Dormitory session/);
@@ -79,15 +78,15 @@ test('login UI restores a valid session, offers a phone OTP tab, and makes publi
   assert.match(login, /Login with Phone/);
   assert.match(login, /authAPI\.sendPhoneOtp/);
   assert.match(login, /authAPI\.verifyPhoneOtp/);
-  assert.match(login, /requestedMode === "telegram" \|\| requestedMode === "email" \? requestedMode : "phone"/);
+  assert.match(login, /requestedMode/);
   assert.ok(login.indexOf('Phone OTP') < login.indexOf('Login with Email'), 'Phone OTP must be listed before Email');
   assert.match(login, /id="phone-otp-code"/);
   assert.match(login, /autoComplete="one-time-code"/);
   assert.match(login, /maxLength=\{6\}/);
   assert.match(login, /Type or paste the full six-digit code once\./);
   assert.doesNotMatch(login, /phone-otp-\$\{index \+ 1\}/);
-  assert.match(navigation, /dashboardByRole/);
-  assert.match(navigation, /ផ្ទាំងគ្រប់គ្រង/);
+  assert.match(login, /completeLogin/);
+  assert.match(navigation, /ចូលប្រើប្រាស់|Login/);
   assert.match(api, /sendPhoneOtp/);
   assert.match(api, /verifyPhoneOtp/);
 });

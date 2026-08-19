@@ -61,7 +61,18 @@ router.get('/me', authenticate, authController.getCurrentUser);
 router.post('/change-password', authenticate, authController.changePassword);
 router.post('/request-password-reset', authController.requestPasswordReset);
 
+/**
+ * @route   POST /api/auth/phone/register
+ * @desc    Register a new student account using phone OTP and verified contact info
+ * @access  Public
+ */
 router.post('/phone/register', authController.registerWithPhone);
+
+/**
+ * @route   POST /api/auth/telegram/webhook
+ * @desc    Telegram bot webhook handler for /start command
+ * @access  Public
+ */
 router.post('/telegram/webhook', authController.telegramWebhook);
 
 module.exports = router;

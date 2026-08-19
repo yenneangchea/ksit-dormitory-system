@@ -73,6 +73,7 @@ router.route('/utility-bills')
   .get(requireRole('admin', 'manager'), domain.listUtilityBills)
   .post(requireRole('admin', 'manager'), domain.createUtilityBill);
 router.get('/residence', requireRole('student'), domain.getMyResidence);
+router.patch('/auth/me/profile', requireRole('student', 'admin', 'manager', 'teacher'), domain.updateMyProfile);
 router.get('/student-bills', requireRole('admin', 'manager', 'student'), domain.listStudentBills);
 router.patch('/student-bills/:studentBillId/payment', requireRole('admin', 'manager', 'student'), domain.recordBillPayment);
 
