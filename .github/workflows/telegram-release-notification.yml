@@ -1,0 +1,26 @@
+name: Telegram Release Notification
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  announce-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Notify Telegram Update topic
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_GROUP_CHAT_ID: ${{ vars.TELEGRAM_GROUP_CHAT_ID }}
+          TELEGRAM_TOPIC_UPDATE_THREAD_ID: ${{ vars.TELEGRAM_TOPIC_UPDATE_THREAD_ID }}
+          KSIT_PUBLIC_APP_URL: https://ksit-dorm.vercel.app
+        run: node backend/scripts/send-release-notification.mjs

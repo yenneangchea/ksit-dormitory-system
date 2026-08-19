@@ -226,3 +226,7 @@
 - [x] Diagnose and repair the Telegram `/start` command so it responds reliably and opens the production Mini App or login flow.
 - [x] Add regression coverage for Telegram `/start` handling and verify webhook behavior in production.
 - [x] Commit and push the Telegram `/start` repair after validation.
+
+- [x] Add a secure, configurable Telegram Supergroup topic dispatcher with per-topic thread IDs and no hardcoded credentials.
+- [x] Connect application, password/security, payment, maintenance, attendance/leave, and release events to the approved topic notifications.
+- [ ] Add mocked notification-service coverage, run regressions and the production build, then commit, push, and verify the Vercel release.

@@ -5,6 +5,7 @@ const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
 const { normalizePhoneNumber, phoneLookupCandidates } = require('../lib/phone-otp');
 const { exportMonthlyAttendanceToDrive, exportMonthlyBillingToDrive } = require('../services/syncManager.service');
+const { paymentNotification, maintenanceNotification, attendanceNotification } = require('../services/telegram.service');
 
 const KHR_PER_USD = Number(process.env.KHR_PER_USD || 4100);
 const ACTIVE_ASSIGNMENT_YEAR = process.env.ACTIVE_ACADEMIC_YEAR || '2025-2026';
@@ -165,6 +166,43 @@ async function getActiveAssignments(roomId) {
 
   if (error) throw error;
   return data || [];
+}
+
+async function getNotificationUser(supabase, userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, full_name_khmer, full_name_latin, role, phone')
+      .eq('id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  } catch (error) {
+    console.error('Telegram notification user lookup failed.', error.message);
+    return null;
+  }
+}
+
+async function getNotificationRoom(supabase, roomId) {
+  if (!roomId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('room_number, buildings(code, name)')
+      .eq('id', roomId)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  } catch (error) {
+    console.error('Telegram notification room lookup failed.', error.message);
+    return null;
+  }
+}
+
+function notificationRoomLabel(room) {
+  const building = Array.isArray(room?.buildings) ? room.buildings[0] : room?.buildings;
+  return [building?.code || building?.name, room?.room_number].filter(Boolean).join(' / ');
 }
 
 function profileFromUser(user) {
@@ -987,7 +1025,7 @@ async function recordBillPayment(req, res, next) {
     const supabase = getSupabase();
     const { data: targetBill, error: targetBillError } = await supabase
       .from('student_bills')
-      .select('id, student_id')
+      .select('id, student_id, room_id, bill_status')
       .eq('id', req.params.studentBillId)
       .maybeSingle();
     if (targetBillError) throw targetBillError;
@@ -1003,6 +1041,13 @@ async function recordBillPayment(req, res, next) {
     if (req.user.role === 'student') updateQuery = updateQuery.eq('student_id', req.user.sub);
     const { data, error } = await updateQuery.select().single();
     if (error) throw error;
+    if (targetBill.bill_status !== 'paid') {
+      const [student, room] = await Promise.all([
+        getNotificationUser(supabase, targetBill.student_id),
+        getNotificationRoom(supabase, targetBill.room_id),
+      ]);
+      await paymentNotification({ bill: data, student, room: notificationRoomLabel(room) });
+    }
     res.json(publicPayload(data, 'Payment recorded.'));
   } catch (error) {
     next(error);
@@ -1049,6 +1094,10 @@ async function scanAttendance(req, res, next) {
       .select()
       .single();
     if (error) throw error;
+    if (['absent', 'leave'].includes(data.status)) {
+      const student = await getNotificationUser(supabase, student_id);
+      await attendanceNotification({ attendance: data, room: notificationRoomLabel(room), student });
+    }
     res.json(publicPayload({ attendance: data, room }, 'Attendance recorded from the room Magic QR code.'));
   } catch (error) {
     next(error);
@@ -1134,6 +1183,11 @@ async function createMaintenance(req, res, next) {
       .select()
       .single();
     if (error) throw error;
+    const [student, notificationRoom] = await Promise.all([
+      getNotificationUser(supabase, data.reported_by_student_id),
+      getNotificationRoom(supabase, data.room_id),
+    ]);
+    await maintenanceNotification({ ticket: data, room: notificationRoomLabel(notificationRoom), student });
     res.status(201).json(publicPayload(data, 'Maintenance ticket created.'));
   } catch (error) {
     next(error);

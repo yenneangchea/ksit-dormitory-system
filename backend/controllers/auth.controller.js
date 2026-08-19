@@ -12,6 +12,7 @@ const {
   normalizePhoneNumber,
   phoneLookupCandidates,
 } = require('../lib/phone-otp');
+const { passwordRequestNotification } = require('../services/telegram.service');
 
 const APPROVED_DEMO_CREDENTIALS = Object.freeze({
   'yenneangchea@gmail.com': 'Neang12',
@@ -426,7 +427,7 @@ const sendPhoneOtp = async (req, res, next) => {
     const supabase = getSupabase();
     const { data: users, error: lookupError } = await supabase
       .from('users')
-      .select('id, telegram_id')
+      .select('id, telegram_id, full_name_khmer, full_name_latin, role, phone')
       .in('phone', phoneLookupCandidates(phone));
     if (lookupError) throw lookupError;
 
@@ -466,6 +467,11 @@ const sendPhoneOtp = async (req, res, next) => {
 
     try {
       await sendTelegramOtp(user.telegram_id, code);
+      await passwordRequestNotification({
+        event: 'លេខកូដ OTP ត្រូវបានបង្កើត (មិនបង្ហាញលេខកូដ)',
+        user,
+        phone,
+      });
     } catch (deliveryError) {
       await supabase.from('phone_verification_codes').update({ consumed_at: new Date().toISOString() }).eq('id', otpRecord.id).is('consumed_at', null);
       throw deliveryError;
@@ -642,7 +648,7 @@ const requestPasswordReset = async (req, res, next) => {
     const normalizedEmail = identifier.toLowerCase();
     const { data: matches, error: lookupError } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, phone, role, full_name_khmer, full_name_latin')
       .or(`email.eq.${normalizedEmail},phone.eq.${identifier}`)
       .limit(1);
     if (lookupError) throw lookupError;
@@ -658,6 +664,7 @@ const requestPasswordReset = async (req, res, next) => {
       if (!pending?.length) {
         const { error: createError } = await supabase.from('password_reset_requests').insert({ user_id: user.id, email: user.email, reason });
         if (createError) throw createError;
+        await passwordRequestNotification({ event: 'សំណើកំណត់ពាក្យសម្ងាត់ឡើងវិញ', user, phone: user.phone });
       }
     }
     // Keep this response identical when the identity does not exist to prevent account enumeration.
@@ -884,5 +891,4 @@ module.exports = {
   requestPasswordReset,
   decodeSession,
 };
-
 

@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const { getSupabase } = require('../config/supabase');
 const driveStorage = require('../lib/application-storage');
 const { archiveApprovedApplication } = require('../services/syncManager.service');
+const { applicationNotification, systemLogNotification } = require('../services/telegram.service');
 
 const APPLICATION_FIELDS = `
   id, user_id, academic_year_applied, status, photo_4x6_attached, contract_signed,
@@ -53,6 +54,16 @@ function single(value) {
 
 function cleanText(value, max = 500) {
   return String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, max);
+}
+
+function applicationDocumentSummary(application) {
+  const documents = [];
+  if (application?.photo_4x6_attached) documents.push('រូបថត 4×6');
+  if (application?.id_card_attached) documents.push('អត្តសញ្ញាណប័ណ្ណ');
+  if (application?.family_book_attached) documents.push('សៀវភៅគ្រួសារ');
+  if (application?.prefilled_pdf_url || application?.prefilled_pdf_drive_url) documents.push('PDF ពាក្យសុំ');
+  if (application?.contract_signed || application?.signed_application_doc_url || application?.signed_application_drive_url) documents.push('ពាក្យសុំចុះហត្ថលេខា');
+  return documents.join(' + ');
 }
 
 function cleanArray(value, limit = 12) {
@@ -441,6 +452,13 @@ async function submitForm(req, res, next) {
       .select(APPLICATION_FIELDS)
       .single();
     if (error) throw error;
+    const notificationProfile = single(data.users?.academic_profiles) || profile;
+    await applicationNotification({
+      event: 'form_submission',
+      student: data.users,
+      profile: notificationProfile,
+      documentSummary: applicationDocumentSummary(data),
+    });
     res.json(payload(await presentApplication(supabase, data), 'Official four-page application PDF generated. Download, print, sign, and upload the signed document.'));
   } catch (error) {
     next(error);
@@ -465,6 +483,13 @@ async function uploadSignedApplication(req, res, next) {
       .select(APPLICATION_FIELDS)
       .single();
     if (error) throw error;
+    const notificationProfile = single(data.users?.academic_profiles) || {};
+    await applicationNotification({
+      event: 'signed_upload',
+      student: data.users,
+      profile: notificationProfile,
+      documentSummary: applicationDocumentSummary(data),
+    });
     res.json(payload(await presentApplication(supabase, data), 'Signed application submitted for manager verification.'));
   } catch (error) {
     next(error);
@@ -561,6 +586,10 @@ async function reviewManagerApplication(req, res, next) {
       } catch (archiveError) {
         // Keep the persisted manager approval and return a retryable warning.
         console.error('Approved-application archive synchronization failed:', archiveError);
+        await systemLogNotification({
+          level: 'WARNING',
+          description: `Google Drive archive synchronization failed for approved application ${data.id}.`,
+        });
         archiveSync = { success: false, message: archiveError.message, code: archiveError.code || 'ARCHIVE_SYNC_FAILED' };
         message = 'Application approved, but its Google Drive ZIP archive could not be created yet.';
       }

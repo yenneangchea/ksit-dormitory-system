@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import telegramService from '../services/telegram.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const databaseUrl = process.env.KSIT_SUPABASE_DATABASE_URL;
@@ -25,6 +26,10 @@ try {
       EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'signed-applications' AND public = false) AS signed_documents_private;
   `);
   console.log(JSON.stringify(rows[0]));
+  await telegramService.systemLogNotification({
+    level: 'INFO',
+    description: 'Student application lifecycle migration completed and its required columns and private storage bucket were verified.',
+  });
 } finally {
   await client.end();
 }
