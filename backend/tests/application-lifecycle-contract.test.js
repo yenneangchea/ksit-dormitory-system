@@ -69,6 +69,8 @@ test('manager decision contract supports approval, correction notes, rejection, 
   assert.match(manager, /request_correction/);
   assert.match(manager, /applicationsAPI\.autoAssign/);
   assert.match(manager, /signed_application/);
+  assert.match(controller, /event: `manager_\$\{action\}`/);
+  assert.match(controller, /notification: \{ application_topic: applicationTopicNotification \}/);
 });
 
 test('student wizard exposes all official form sections and five protected lifecycle stages', () => {

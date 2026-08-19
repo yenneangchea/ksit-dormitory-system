@@ -478,13 +478,16 @@ async function submitForm(req, res, next) {
       .single();
     if (error) throw error;
     const notificationProfile = single(data.users?.academic_profiles) || profile;
-    await applicationNotification({
+    const applicationTopicNotification = await applicationNotification({
       event: 'form_submission',
       student: data.users,
       profile: notificationProfile,
       documentSummary: applicationDocumentSummary(data),
     });
-    res.json(payload(await presentApplication(supabase, data), 'Official four-page application PDF generated. Download, print, sign, and upload the signed document.'));
+    res.json({
+      ...payload(await presentApplication(supabase, data), 'Official four-page application PDF generated. Download, print, sign, and upload the signed document.'),
+      notification: { application_topic: applicationTopicNotification },
+    });
   } catch (error) {
     next(error);
   }
@@ -509,13 +512,16 @@ async function uploadSignedApplication(req, res, next) {
       .single();
     if (error) throw error;
     const notificationProfile = single(data.users?.academic_profiles) || {};
-    await applicationNotification({
+    const applicationTopicNotification = await applicationNotification({
       event: 'signed_upload',
       student: data.users,
       profile: notificationProfile,
       documentSummary: applicationDocumentSummary(data),
     });
-    res.json(payload(await presentApplication(supabase, data), 'Signed application submitted for manager verification.'));
+    res.json({
+      ...payload(await presentApplication(supabase, data), 'Signed application submitted for manager verification.'),
+      notification: { application_topic: applicationTopicNotification },
+    });
   } catch (error) {
     next(error);
   }
@@ -621,8 +627,15 @@ async function reviewManagerApplication(req, res, next) {
     }
 
     await notifyDecision(responseApplication, status, notes);
+    const applicationTopicNotification = await applicationNotification({
+      event: `manager_${action}`,
+      student: responseApplication.users,
+      profile: single(responseApplication.users?.academic_profiles) || {},
+      documentSummary: applicationDocumentSummary(responseApplication),
+    });
     res.json({
       ...payload(await presentApplication(supabase, responseApplication), message),
+      notification: { application_topic: applicationTopicNotification },
       ...(archiveSync ? { sync: archiveSync.success === false ? archiveSync : { success: true, archive: archiveSync.archive } } : {}),
     });
   } catch (error) {

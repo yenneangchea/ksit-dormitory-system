@@ -79,3 +79,31 @@ test('does not send alerts to the General topic when a topic thread is missing',
     restoreEnvironment(originalEnvironment);
   }
 });
+
+test('labels Manager approval events as Application-topic decisions', async () => {
+  const originalEnvironment = saveEnvironment();
+  const originalFetch = global.fetch;
+  let request;
+  process.env.TELEGRAM_BOT_TOKEN = 'unit-test-token';
+  process.env.TELEGRAM_GROUP_CHAT_ID = '-1004316855963';
+  process.env.TELEGRAM_TOPIC_APPLICATION_THREAD_ID = '3';
+  global.fetch = async (_url, options) => {
+    request = JSON.parse(options.body);
+    return { ok: true, json: async () => ({ ok: true, result: { message_id: 100 } }) };
+  };
+
+  try {
+    const result = await telegram.applicationNotification({
+      event: 'manager_approve',
+      student: { full_name_latin: 'E2E Student' },
+      profile: { major: 'Computer Technology', academic_year: 1 },
+      documentSummary: 'E2E documents',
+    });
+    assert.equal(result.delivered, true);
+    assert.equal(request.message_thread_id, 3);
+    assert.match(request.text, /អនុម័ត/);
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment(originalEnvironment);
+  }
+});

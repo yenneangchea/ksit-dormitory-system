@@ -94,8 +94,14 @@ async function notify(topic, text, context = {}) {
 function applicationNotification({ student, profile, documentSummary, event }) {
   const major = cleanText(profile?.major, 160) || 'មិនបានបញ្ជាក់ជំនាញ';
   const year = Number(profile?.academic_year) || 'មិនបានបញ្ជាក់';
+  const heading = {
+    signed_upload: '📝 ឯកសារចុះហត្ថលេខាត្រូវបានដាក់ស្នើ!',
+    manager_approve: '✅ ពាក្យសុំស្នាក់នៅត្រូវបានអនុម័ត!',
+    manager_reject: '⛔ ពាក្យសុំស្នាក់នៅត្រូវបានបដិសេធ!',
+    manager_request_correction: '✏️ ពាក្យសុំត្រូវការកែសម្រួល!',
+  }[event] || '📝 ពាក្យសុំស្នាក់នៅថ្មី!';
   return notify(TOPICS.APPLICATION, [
-    event === 'signed_upload' ? '📝 ឯកសារចុះហត្ថលេខាត្រូវបានដាក់ស្នើ!' : '📝 ពាក្យសុំស្នាក់នៅថ្មី!',
+    heading,
     `👤 និស្សិត: ${displayName(student)}`,
     `🎓 ជំនាញ: ${major} - ឆ្នាំទី ${year}`,
     `📄 ឯកសារភ្ជាប់: ${cleanText(documentSummary, 400) || 'កំពុងរៀបចំឯកសារ'}`,
