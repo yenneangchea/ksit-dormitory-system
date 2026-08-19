@@ -111,6 +111,23 @@ function resolvePdfAsset(...segments) {
   return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
 }
 
+let cachedKhmerFont;
+
+async function loadKhmerPdfFont() {
+  if (cachedKhmerFont) return cachedKhmerFont;
+  const localFontPath = resolvePdfAsset('fonts', 'KantumruyPro-Regular.ttf');
+  if (fs.existsSync(localFontPath)) {
+    cachedKhmerFont = fs.readFileSync(localFontPath);
+    return cachedKhmerFont;
+  }
+
+  const publicBaseUrl = String(process.env.KSIT_PUBLIC_APP_URL || 'https://ksit-dorm.vercel.app').replace(/\/+$/, '');
+  const response = await fetch(`${publicBaseUrl}/fonts/KantumruyPro-Regular.ttf`);
+  if (!response.ok) throw new Error(`Unable to load the Khmer PDF font from the public application asset (${response.status}).`);
+  cachedKhmerFont = Buffer.from(await response.arrayBuffer());
+  return cachedKhmerFont;
+}
+
 function officialPdfFilename(application, profile) {
   const user = application?.users || {};
   const studentName = safeDownloadFileName(user.full_name_latin || user.full_name_khmer || profile?.student_id_card || 'KSIT_Student', 'KSIT_Student');
@@ -298,16 +315,16 @@ function signatureArea(doc, label, y) {
   doc.text('ហត្ថលេខា', 350, y + 34, { width: 150, align: 'center' });
 }
 
-function generateOfficialApplicationPdf(application, profile) {
+async function generateOfficialApplicationPdf(application, profile) {
   const user = application.users || {};
-  const fontPath = resolvePdfAsset('fonts', 'KantumruyPro-Regular.ttf');
+  const font = await loadKhmerPdfFont();
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 42, autoFirstPage: true });
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
     doc.on('error', reject);
     doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.registerFont('Khmer', fontPath);
+    doc.registerFont('Khmer', font);
     doc.font('Khmer');
 
     pdfHeader(doc, `ពាក្យសុំចូលស្នាក់នៅក្នុងអន្តេវាសិកដ្ឋានសិស្ស និស្សិត (${application.academic_year_applied})`, true);
@@ -623,5 +640,5 @@ module.exports = {
   streamApplicationDocument,
   listManagerApplications,
   reviewManagerApplication,
-  __private: { generateOfficialApplicationPdf, officialPdfFilename, mergeDraftData, boundedStep, resolvePdfAsset },
+  __private: { generateOfficialApplicationPdf, officialPdfFilename, mergeDraftData, boundedStep, resolvePdfAsset, loadKhmerPdfFont },
 };
