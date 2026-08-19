@@ -235,5 +235,5 @@
 - [x] Execute a clearly labeled synthetic student application through document upload, official PDF generation, Application-topic notification, and Manager approval, then report and clean up the test data where supported.
 - [ ] Add and apply the missing application-lifecycle Google Drive storage URL columns required by the deployed production API.
 - [x] Repair the Vercel PDF font asset path so official Khmer application PDFs can be generated in production.
-- [ ] Diagnose and repair missing Application-topic alerts for real student submission and Manager approval events, then verify production delivery.
-- [ ] Add an environment-overridable Application-topic routing fallback for the approved KSITDormitory Supergroup when Vercel variables are absent at runtime.
+- [x] Diagnose and repair missing Application-topic alerts for real student submission and Manager approval events, then verify production delivery.
+- [x] Add an environment-overridable Application-topic routing fallback for the approved KSITDormitory Supergroup when Vercel variables are absent at runtime.
