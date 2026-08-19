@@ -229,4 +229,5 @@
 
 - [x] Add a secure, configurable Telegram Supergroup topic dispatcher with per-topic thread IDs and no hardcoded credentials.
 - [x] Connect application, password/security, payment, maintenance, attendance/leave, and release events to the approved topic notifications.
-- [ ] Add mocked notification-service coverage, run regressions and the production build, then commit, push, and verify the Vercel release.
+- [x] Add mocked notification-service coverage, run regressions and the production build, then commit, push, and verify the Vercel release.
+- [ ] Configure the Telegram Supergroup topic environment variables in the Vercel Production environment and run one approved live topic-delivery test.
