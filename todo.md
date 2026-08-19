@@ -231,3 +231,4 @@
 - [x] Connect application, password/security, payment, maintenance, attendance/leave, and release events to the approved topic notifications.
 - [x] Add mocked notification-service coverage, run regressions and the production build, then commit, push, and verify the Vercel release.
 - [x] Configure the Telegram Supergroup topic environment variables in the Vercel Production environment and run one approved live topic-delivery test.
+- [x] Send authorized diagnostic messages to every configured Telegram Supergroup topic and record the delivery status.
