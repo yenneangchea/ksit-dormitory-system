@@ -101,6 +101,16 @@ function safeDownloadFileName(value, fallback = 'KSIT_Dorm_Application.pdf') {
   return normalized || fallback;
 }
 
+function resolvePdfAsset(...segments) {
+  const candidates = [
+    path.resolve(__dirname, '../assets', ...segments),
+    path.resolve(process.cwd(), 'assets', ...segments),
+    path.resolve(process.cwd(), 'server/assets', ...segments),
+    path.resolve(process.cwd(), 'backend/assets', ...segments),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0];
+}
+
 function officialPdfFilename(application, profile) {
   const user = application?.users || {};
   const studentName = safeDownloadFileName(user.full_name_latin || user.full_name_khmer || profile?.student_id_card || 'KSIT_Student', 'KSIT_Student');
@@ -265,7 +275,7 @@ function pdfLines(doc, lines, startY, width = 515) {
 
 function pdfHeader(doc, title, showPhoto) {
   doc.font('Khmer');
-  const logoPath = path.resolve(__dirname, '../assets/ksit-logo.png');
+  const logoPath = resolvePdfAsset('ksit-logo.png');
   if (fs.existsSync(logoPath)) doc.image(logoPath, 43, 35, { fit: [44, 44] });
   doc.font('Khmer').fontSize(11).text('ព្រះរាជាណាចក្រកម្ពុជា', { align: 'center' });
   doc.fontSize(9).text('ជាតិ សាសនា ព្រះមហាក្សត្រ', { align: 'center' });
@@ -290,7 +300,7 @@ function signatureArea(doc, label, y) {
 
 function generateOfficialApplicationPdf(application, profile) {
   const user = application.users || {};
-  const fontPath = path.resolve(__dirname, '../assets/fonts/KantumruyPro-Regular.ttf');
+  const fontPath = resolvePdfAsset('fonts', 'KantumruyPro-Regular.ttf');
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 42, autoFirstPage: true });
     const chunks = [];
@@ -613,5 +623,5 @@ module.exports = {
   streamApplicationDocument,
   listManagerApplications,
   reviewManagerApplication,
-  __private: { generateOfficialApplicationPdf, officialPdfFilename, mergeDraftData, boundedStep },
+  __private: { generateOfficialApplicationPdf, officialPdfFilename, mergeDraftData, boundedStep, resolvePdfAsset },
 };

@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -5,6 +6,9 @@ const nextConfig: NextConfig = {
   // focused on compilation while application tests cover authentication flows.
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  outputFileTracingIncludes: {
+    "/api/[...path]": [path.join(process.cwd(), "server/assets/**/*")],
   },
 };
 

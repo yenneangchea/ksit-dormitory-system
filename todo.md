@@ -234,3 +234,4 @@
 - [x] Send authorized diagnostic messages to every configured Telegram Supergroup topic and record the delivery status.
 - [ ] Execute a clearly labeled synthetic student application through document upload, official PDF generation, Application-topic notification, and Manager approval, then report and clean up the test data where supported.
 - [ ] Add and apply the missing application-lifecycle Google Drive storage URL columns required by the deployed production API.
+- [ ] Repair the Vercel PDF font asset path so official Khmer application PDFs can be generated in production.
